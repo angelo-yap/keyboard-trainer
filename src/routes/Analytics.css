@@ -1,0 +1,262 @@
+.analytics {
+  max-width: 900px;
+}
+
+.analytics-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.analytics-title {
+  font-weight: 900;
+  font-size: 20px;
+}
+
+.analytics-stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.analytics-stat-card {
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  text-align: center;
+}
+
+.analytics-stat-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.38);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 6px;
+}
+
+.analytics-stat-value {
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.analytics-tabs {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  width: fit-content;
+  margin-bottom: 20px;
+}
+
+.analytics-tab {
+  padding: 7px 16px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 13px;
+  text-transform: capitalize;
+  transition: all 0.15s;
+}
+
+.analytics-tab.active {
+  background: rgba(255, 140, 50, 0.85);
+  color: #111;
+  font-weight: 800;
+}
+
+.analytics-tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.analytics-panel {
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.analytics-panel-title {
+  font-weight: 800;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 14px;
+}
+
+.analytics-empty {
+  padding: 24px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 13px;
+}
+
+.wpm-chart {
+  overflow-x: auto;
+}
+
+.wpm-chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: fit-content;
+  padding: 0 4px;
+}
+
+.wpm-chart-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.wpm-chart-value {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.35);
+  font-weight: 400;
+}
+
+.wpm-chart-value.recent {
+  color: #ff8c32;
+  font-weight: 800;
+}
+
+.wpm-chart-rect {
+  border-radius: 6px 6px 3px 3px;
+  transition: height 0.3s;
+  position: relative;
+}
+
+.wpm-chart-date {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.25);
+  writing-mode: vertical-rl;
+  height: 30px;
+}
+
+.key-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.key-grid-item {
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  border: 1px solid;
+  text-align: center;
+  min-width: 56px;
+}
+
+.key-grid-key {
+  font-family: monospace;
+  font-weight: 900;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.key-grid-acc {
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.analytics-history-list {
+  max-height: 500px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.analytics-history-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.analytics-history-wpm {
+  font-weight: 800;
+  color: #ff8c32;
+  min-width: 80px;
+}
+
+.analytics-history-acc {
+  min-width: 70px;
+}
+
+.analytics-history-err {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.analytics-history-dur {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.analytics-history-date {
+  color: rgba(255, 255, 255, 0.25);
+  margin-left: auto;
+}
+
+.analytics-keys-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.analytics-practice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.analytics-practice-item {
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.analytics-practice-item.done {
+  border-color: rgba(100, 200, 100, 0.2);
+}
+
+.analytics-practice-icon {
+  font-size: 16px;
+}
+
+.analytics-practice-name {
+  font-weight: 700;
+  flex: 1;
+  font-size: 14px;
+}
+
+.analytics-practice-acc {
+  font-size: 13px;
+}
+
+.analytics-practice-wpm {
+  font-size: 13px;
+  color: #ff8c32;
+}
+
+.analytics-practice-tries {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.3);
+}

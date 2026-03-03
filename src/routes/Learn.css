@@ -1,0 +1,127 @@
+.learn {
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.learn-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.learn-progress-bar {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.learn-progress-fill {
+  height: 100%;
+  background: #ff8c32;
+  border-radius: 99px;
+  transition: width 0.35s ease;
+}
+
+.learn-step-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.4);
+  min-width: 50px;
+}
+
+.learn-dots {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.learn-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.learn-dot-active {
+  width: 24px;
+  background: #ff8c32;
+}
+
+.learn-dot-done {
+  background: #ff8c32;
+}
+
+.learn-card {
+  padding: 32px 36px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 24px;
+  min-height: 200px;
+}
+
+.learn-card-icon {
+  font-size: 52px;
+  margin-bottom: 18px;
+  line-height: 1;
+}
+
+.learn-card-title {
+  font-size: 26px;
+  font-weight: 900;
+  margin: 0 0 14px;
+  letter-spacing: -0.5px;
+}
+
+.learn-card-body {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.8;
+  max-width: 60ch;
+  margin: 0;
+}
+
+.learn-keyboard {
+  margin-bottom: 24px;
+}
+
+.learn-keyboard-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.learn-highlight-keyboard {
+  transform: scale(0.85);
+  transform-origin: top center;
+  margin-bottom: -40px;
+}
+
+.learn-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.learn-dots-inline {
+  display: flex;
+  gap: 6px;
+}
+
+.learn-dot-inline {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+}
+
+.learn-dot-inline.active {
+  color: rgba(255, 140, 50, 0.9);
+}

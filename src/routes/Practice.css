@@ -1,0 +1,225 @@
+.practice-select-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.practice-select-title {
+  font-weight: 900;
+  font-size: 20px;
+}
+
+.practice-select-subtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 2px;
+}
+
+.practice-lesson-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+
+.practice-lesson-card {
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  opacity: 1;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+
+.practice-lesson-card:hover:not(.locked) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+.practice-lesson-card.done {
+  background: rgba(100, 200, 100, 0.07);
+  border-color: rgba(100, 200, 100, 0.25);
+}
+
+.practice-lesson-card.locked {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.06);
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.practice-lesson-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.practice-lesson-icon {
+  font-size: 20px;
+}
+
+.practice-lesson-name {
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.practice-lesson-num {
+  color: rgba(255, 255, 255, 0.35);
+  margin-right: 8px;
+  font-size: 12px;
+}
+
+.practice-lesson-desc {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 1px;
+}
+
+.practice-lesson-keys {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.practice-key-chip {
+  padding: 2px 8px;
+  background: rgba(255, 140, 50, 0.15);
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: monospace;
+  color: #ff8c32;
+  border: 1px solid rgba(255, 140, 50, 0.2);
+  font-weight: 700;
+}
+
+.practice-lesson-stats {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.practice-lesson-stats .acc-good {
+  color: #7ec87e;
+}
+
+.practice-lesson-stats span {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.wpm-highlight {
+  color: #ff8c32 !important;
+}
+
+.attempts {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.practice-typing {
+  max-width: 920px;
+}
+
+.practice-typing-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.practice-typing-info {
+  flex: 1;
+}
+
+.practice-typing-name {
+  font-weight: 900;
+  font-size: 18px;
+}
+
+.practice-typing-hint {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 2px;
+}
+
+.practice-focus-keys {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  max-width: 220px;
+}
+
+.practice-focus-key {
+  padding: 5px 10px;
+  background: rgba(255, 140, 50, 0.15);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: monospace;
+  color: #ff8c32;
+  border: 1px solid rgba(255, 140, 50, 0.3);
+  font-weight: 800;
+  transition: all 0.1s;
+}
+
+.practice-focus-key.active {
+  background: rgba(255, 140, 50, 0.8);
+  color: #111;
+}
+
+.practice-finger-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border: 1px solid;
+  border-radius: 12px;
+  margin-bottom: 14px;
+  font-size: 13px;
+}
+
+.practice-finger-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.practice-combo {
+  margin-left: auto;
+  color: #ff8c32;
+  font-weight: 800;
+}
+
+.practice-progress-bar {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.practice-progress-fill {
+  height: 100%;
+  background: #ff8c32;
+  border-radius: 99px;
+  transition: width 0.1s;
+}
+
+.practice-hidden-input {
+  position: fixed;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+  top: 0;
+  left: 0;
+}
+
+.practice-keyboard-wrap {
+  margin-top: 16px;
+  transform: scale(0.88);
+  transform-origin: top center;
+  margin-bottom: -36px;
+}

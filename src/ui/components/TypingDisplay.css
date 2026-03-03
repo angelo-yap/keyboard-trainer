@@ -1,0 +1,30 @@
+.typing-display {
+  font-family: "Courier New", Consolas, monospace;
+  line-height: 1.9;
+  padding: 22px 26px;
+  background: rgba(255, 255, 255, 0.025);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+  min-height: 100px;
+  word-break: break-all;
+}
+
+.typing-char {
+  transition: color 0.06s;
+  position: relative;
+}
+
+.typing-cursor.caret-block {
+  border-radius: 3px;
+}
+
+.typing-cursor.caret-underline {
+  border-bottom: 2px solid #ff8c32;
+}
+
+.typing-cursor.caret-line {
+  border-left: 2px solid #ff8c32;
+}

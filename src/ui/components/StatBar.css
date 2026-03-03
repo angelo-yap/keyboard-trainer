@@ -1,0 +1,22 @@
+.stat-bar {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.stat-bar-item {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.stat-bar-label {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.stat-bar-value {
+  font-weight: 800;
+  font-size: 16px;
+}

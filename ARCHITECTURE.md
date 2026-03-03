@@ -1,0 +1,80 @@
+# UI Architecture (from KeyboardTrainer.jsx)
+
+## Structure
+
+The app uses a **sidebar + content** layout with tab-based navigation (no router).
+
+- **Splash** — Intro screen, "Get Started" enters the app
+- **Dashboard** — Sidebar (Home, Learn, Practice, WPM Test, Analytics, Settings) + content area
+- **Home** — Hero with stats, mode cards (Learn, Practice, WPM Test), recent tests
+- **Learn** — 10-step guided intro to touch typing with keyboard highlights
+- **Practice** — 12 progressive lessons with live finger highlighting
+- **Test** — WPM test with configurable duration (15/30/60/120s)
+- **Analytics** — Overview, history, key stats, practice progress
+- **Settings** — Test duration, display options, clear data
+
+## Folder Structure
+
+```
+src/
+├── main.tsx
+├── App.tsx
+├── index.css
+├── theme.css
+├── data/
+│   └── topWords.ts          # Top 500 words for WPM tests
+├── core/
+│   ├── keyboard/
+│   │   ├── fingerMap.ts     # FINGER_MAP, FINGER_NAMES, FINGER_COLORS
+│   │   └── keyboardLayout.ts # KEYBOARD_ROWS
+│   ├── lesson/
+│   │   ├── learnSteps.ts    # LEARN_STEPS (10 steps)
+│   │   └── lessons/
+│   │       └── practiceLessons.ts # 12 practice lessons
+│   └── storage/
+│       ├── localStorage.ts
+│       ├── settingsStore.ts
+│       ├── progressStore.ts
+│       ├── testHistoryStore.ts
+│       ├── streakStore.ts
+│       ├── keyStatsStore.ts
+│       └── clearData.ts
+├── hooks/
+│   └── useTyping.ts
+├── lib/
+│   └── shuffle.ts
+├── routes/
+│   ├── Home.tsx
+│   ├── Learn.tsx
+│   ├── Practice.tsx
+│   ├── Test.tsx
+│   ├── Analytics.tsx
+│   └── Settings.tsx
+└── ui/
+    ├── components/
+    │   ├── KeyboardVisual.tsx   # Full keyboard with finger colors
+    │   ├── TypingDisplay.tsx    # Character-by-character typing view
+    │   ├── StatBar.tsx
+    │   ├── ResultsCard.tsx
+    │   ├── Splash.tsx
+    │   ├── Button.tsx
+    │   └── settings/
+    │       ├── Toggle.tsx
+    │       ├── SegmentControl.tsx
+    │       ├── SettingsSection.tsx
+    │       └── SettingRow.tsx
+    └── layout/
+        └── Sidebar.tsx
+```
+
+## Adding New Content
+
+- **New lesson**: Add to `PRACTICE_LESSONS` in `practiceLessons.ts`
+- **New learn step**: Add to `LEARN_STEPS` in `learnSteps.ts`
+- **New tab**: Add to `TABS` in `Sidebar.tsx`, add case in `App.tsx` renderPage
+- **New setting**: Add to `Settings` type in `settingsStore.ts`, add UI in `Settings.tsx`
+
+## Legacy / Future
+
+- `LessonShell`, `KeyboardView`, `CameraPanel`, `FeedbackBanner`, `TrackingStatus` — Placeholders for future camera + hand-tracking integration
+- `ModeCard`, `AppLayout` — From previous game-launcher design; can be reused if switching back to card-based home

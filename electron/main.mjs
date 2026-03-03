@@ -1,5 +1,9 @@
-const { app, BrowserWindow } = require("electron");
-const path = require("path");
+import { app, BrowserWindow } from "electron";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const isDev = !app.isPackaged;
 
@@ -9,7 +13,7 @@ function createWindow() {
     height: 800,
     backgroundColor: "#111",
     webPreferences: {
-      preload: path.join(__dirname, "preload.cjs"),
+      preload: path.join(__dirname, "preload.mjs"),
     },
   });
 
@@ -17,7 +21,8 @@ function createWindow() {
     win.loadURL("http://localhost:5173");
     win.webContents.openDevTools({ mode: "detach" });
   } else {
-    win.loadFile(path.join(__dirname, "dist/index.html"));
+    // in production you'd point to your built renderer file
+    win.loadFile(path.join(__dirname, "../dist/index.html"));
   }
 }
 

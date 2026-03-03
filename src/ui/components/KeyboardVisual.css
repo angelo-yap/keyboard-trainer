@@ -1,0 +1,45 @@
+.keyboard-visual-inner {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.025);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  user-select: none;
+}
+
+.keyboard-row {
+  display: flex;
+  gap: 5px;
+}
+
+.keyboard-key {
+  border-radius: 9px;
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  transition: background 0.08s, border-color 0.08s, box-shadow 0.08s;
+  font-family: monospace;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.keyboard-key.key-long {
+  font-size: 10px;
+}
+
+.keyboard-key.key-medium {
+  font-size: 11px;
+}
+
+.keyboard-key-home {
+  position: absolute;
+  bottom: 5px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+}
