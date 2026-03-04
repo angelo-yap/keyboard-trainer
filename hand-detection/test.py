@@ -236,7 +236,10 @@ def main():
     print("3. Press 'r' to reset calibration.")
     print("4. Press 'q' to quit.\n")
 
-    cap = cv2.VideoCapture(2)
+    cap = cv2.VideoCapture(2, cv2.CAP_MSMF)
+    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
     if not cap.isOpened():
         print("❌ Cannot open webcam. Check your camera index.")
         return
@@ -279,7 +282,7 @@ def main():
         if not ret:
             break
 
-        frame = cv2.flip(frame, 1)  # Mirror for intuitive use
+        frame = cv2.flip(frame, -1)  # Mirror for intuitive use
         h, w = frame.shape[:2]
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = hands.process(rgb)
@@ -296,7 +299,7 @@ def main():
                 results.multi_hand_landmarks, results.multi_handedness
             ):
                 hand_label = hand_info.classification[0].label  # "Left" or "Right"
-
+                hand_label = "Right" if hand_label == "Left" else "Left"
                 mp_draw.draw_landmarks(
                     frame, hand_landmarks, mp_hands.HAND_CONNECTIONS,
                     mp_draw.DrawingSpec(color=(255, 255, 255), thickness=1, circle_radius=2),
