@@ -236,6 +236,7 @@ def main():
     print("3. Press 'r' to reset calibration.")
     print("4. Press 'q' to quit.\n")
 
+    # 2 is the index of the UVC Camera
     cap = cv2.VideoCapture(2, cv2.CAP_MSMF)
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
