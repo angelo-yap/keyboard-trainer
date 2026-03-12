@@ -66,18 +66,18 @@ FINGER_TIPS = {
 #                     "R_INDEX", "R_MIDDLE", "R_RING", "R_PINKY", "THUMB"
 KEYBOARD_ZONES = [
     # (x_start, x_end, zone_name, correct_fingers_set)
-    (0.00, 0.12, "L_PINKY_ZONE",  {"L_PINKY"}),
-    (0.12, 0.22, "L_RING_ZONE",   {"L_RING"}),
-    (0.22, 0.32, "L_MIDDLE_ZONE", {"L_MIDDLE"}),
-    (0.32, 0.50, "L_INDEX_ZONE",  {"L_INDEX"}),
-    (0.50, 0.68, "R_INDEX_ZONE",  {"R_INDEX"}),
-    (0.68, 0.78, "R_MIDDLE_ZONE", {"R_MIDDLE"}),
-    (0.78, 0.88, "R_RING_ZONE",   {"R_RING"}),
-    (0.88, 1.00, "R_PINKY_ZONE",  {"R_PINKY"}),
+    (0.00, 0.11, "L_PINKY_ZONE",  {"L_PINKY"}),
+    (0.11, 0.18, "L_RING_ZONE",   {"L_RING"}),
+    (0.18, 0.25, "L_MIDDLE_ZONE", {"L_MIDDLE"}),
+    (0.25, 0.38, "L_INDEX_ZONE",  {"L_INDEX"}),
+    (0.38, 0.54, "R_INDEX_ZONE",  {"R_INDEX"}),
+    (0.54, 0.62, "R_MIDDLE_ZONE", {"R_MIDDLE"}),
+    (0.62, 0.70, "R_RING_ZONE",   {"R_RING"}),
+    (0.70, 1.00, "R_PINKY_ZONE",  {"R_PINKY"}),
 ]
 
 # Space bar: bottom 20% of keyboard height → thumbs only
-SPACEBAR_Y_FRAC = 0.80  # below this y-fraction = spacebar row
+SPACEBAR_Y_FRAC = 0.85  # below this y-fraction = spacebar row
 
 # ──────────────────────────────────────────────────────────────
 # ZONE COLORS (BGR) for visualization
@@ -107,6 +107,19 @@ FINGER_LABEL_MAP = {
     ("Right", "RING"):   "R_RING",
     ("Right", "PINKY"):  "R_PINKY",
 }
+
+# Row stagger offsets (fraction of keyboard width)
+# Each row is offset to the right as you go down (standard QWERTY stagger)
+ROW_STAGGER = [
+    -0.02,  # Number row (top)
+    0.01,  # QWERTY row
+    0.02,   # ASDF row (home row)
+    0.05,   # ZXCV row
+    0.10,   # Spacebar row (heavily centered)
+]
+
+# Y positions of each row boundary (fraction of keyboard height)
+ROW_Y = [0.0, 0.20, 0.42, 0.63, SPACEBAR_Y_FRAC, 1.0]
 
 # ──────────────────────────────────────────────────────────────
 # KEYBOARD CALIBRATION
@@ -145,17 +158,14 @@ class KeyboardCalibrator:
 
     def draw_overlay(self, frame):
         """Draw the calibration corners and keyboard zone overlays."""
-        if len(self.corners) >= 2:
+        if self.calibrated:
+            self._draw_zones(frame)
+        elif len(self.corners) >= 2:
             for i in range(len(self.corners) - 1):
                 cv2.line(frame, self.corners[i], self.corners[i+1], (0, 255, 255), 2)
-        if self.calibrated:
-            # Close the quad
-            cv2.line(frame, self.corners[3], self.corners[0], (0, 255, 255), 2)
-            self._draw_zones(frame)
 
     def _draw_zones(self, frame):
-        """Draw keyboard finger zones as colored overlays on the frame."""
-        h, w = frame.shape[:2]
+        """Draw keyboard finger zones as staggered colored overlays on the frame."""
         overlay = frame.copy()
 
         def kb_to_img(fx, fy):
@@ -163,24 +173,39 @@ class KeyboardCalibrator:
             res = cv2.perspectiveTransform(pt, self.inv_transform)
             return int(res[0][0][0]), int(res[0][0][1])
 
-        # Draw regular finger zones
+        # Draw finger zones as staggered parallelograms
         for (x0, x1, zone_name, _) in KEYBOARD_ZONES:
             color = ZONE_COLORS.get(zone_name, (128, 128, 128))
-            pts = np.array([
-                kb_to_img(x0, 0.0),
-                kb_to_img(x1, 0.0),
-                kb_to_img(x1, SPACEBAR_Y_FRAC),
-                kb_to_img(x0, SPACEBAR_Y_FRAC),
-            ], dtype=np.int32)
+
+            # Build a polygon spanning all keyboard rows with stagger applied
+            # Left edge points going top to bottom
+            left_pts = [
+                kb_to_img(x0 + ROW_STAGGER[0], ROW_Y[0]),
+                kb_to_img(x0 + ROW_STAGGER[1], ROW_Y[1]),
+                kb_to_img(x0 + ROW_STAGGER[2], ROW_Y[2]),
+                kb_to_img(x0 + ROW_STAGGER[3], ROW_Y[3]),
+                kb_to_img(x0 + ROW_STAGGER[4], ROW_Y[4]),
+            ]
+            # Right edge points going bottom to top
+            right_pts = [
+                kb_to_img(x1 + ROW_STAGGER[4], ROW_Y[4]),
+                kb_to_img(x1 + ROW_STAGGER[3], ROW_Y[3]),
+                kb_to_img(x1 + ROW_STAGGER[2], ROW_Y[2]),
+                kb_to_img(x1 + ROW_STAGGER[1], ROW_Y[1]),
+                kb_to_img(x1 + ROW_STAGGER[0], ROW_Y[0]),
+            ]
+
+            pts = np.array(left_pts + right_pts, dtype=np.int32)
             cv2.fillPoly(overlay, [pts], color)
-            # Zone label
-            cx, cy = kb_to_img((x0 + x1) / 2, 0.15)
+
+            # Zone label at home row height
+            cx, cy = kb_to_img((x0 + x1) / 2 + ROW_STAGGER[2], ROW_Y[2] + 0.05)
             label = zone_name.replace("_ZONE", "").replace("_", "\n")
             for i, line in enumerate(label.split("\n")):
                 cv2.putText(overlay, line, (cx - 25, cy + i * 16),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
 
-        # Draw spacebar zone
+        # Draw spacebar zone (flat, no stagger)
         space_pts = np.array([
             kb_to_img(0.0, SPACEBAR_Y_FRAC),
             kb_to_img(1.0, SPACEBAR_Y_FRAC),
@@ -192,7 +217,6 @@ class KeyboardCalibrator:
         cv2.putText(overlay, "SPACE (Thumbs)", (cx - 60, cy),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.45, (50, 50, 50), 1)
 
-        # Blend overlay
         cv2.addWeighted(overlay, 0.3, frame, 0.7, 0, frame)
 
 
@@ -200,12 +224,26 @@ class KeyboardCalibrator:
 # TYPING CHECKER
 # ──────────────────────────────────────────────────────────────
 
+def get_stagger_for_y(fy):
+    """Return the stagger offset for a given y position."""
+    for i in range(len(ROW_Y) - 1):
+        if ROW_Y[i] <= fy <= ROW_Y[i + 1]:
+            # Interpolate stagger between the two row boundaries
+            t = (fy - ROW_Y[i]) / (ROW_Y[i + 1] - ROW_Y[i])
+            top_stagger = ROW_STAGGER[i] if i < len(ROW_STAGGER) else ROW_STAGGER[-1]
+            bot_stagger = ROW_STAGGER[i + 1] if i + 1 < len(ROW_STAGGER) else ROW_STAGGER[-1]
+            return top_stagger + t * (bot_stagger - top_stagger)
+    return 0.0
+
 def get_zone_for_keyboard_point(fx, fy):
     """Return (zone_name, correct_fingers_set) for a point in keyboard space."""
     if fy > SPACEBAR_Y_FRAC:
         return "SPACEBAR", {"L_THUMB", "R_THUMB"}
+    # Subtract the stagger offset so detection matches the visual zones
+    stagger = get_stagger_for_y(fy)
+    adjusted_fx = fx - stagger
     for (x0, x1, zone_name, correct) in KEYBOARD_ZONES:
-        if x0 <= fx <= x1:
+        if x0 <= adjusted_fx <= x1:
             return zone_name, correct
     return None, set()
 
@@ -237,7 +275,7 @@ def main():
     print("4. Press 'q' to quit.\n")
 
     # 2 is the index of the UVC Camera
-    cap = cv2.VideoCapture(1, cv2.CAP_MSMF)
+    cap = cv2.VideoCapture(0, cv2.CAP_MSMF)
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
