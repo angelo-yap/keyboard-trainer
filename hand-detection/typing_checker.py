@@ -32,13 +32,40 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import time
+import json
+import os
+
+# ──────────────────────────────────────────────────────────────
+# SHARED STATE FILE
+# Must match the path in backend.py
+# ──────────────────────────────────────────────────────────────
+
+SHARED_STATE_FILE = "typing_state.json"
+
+def write_state(verdict: str, wrong_fingers: list):
+    """
+    Write the current typing verdict and wrong fingers to the shared
+    JSON file so backend.py can read and broadcast it via SSE.
+    Uses atomic write (temp file + rename) to prevent backend.py
+    from reading a half-written file.
+    """
+    state = {
+        "verdict": verdict,
+        "wrong_fingers": wrong_fingers,
+        "timestamp": time.time(),
+    }
+    try:
+        tmp_path = SHARED_STATE_FILE + ".tmp"
+        with open(tmp_path, "w") as f:
+            json.dump(state, f)
+        os.replace(tmp_path, SHARED_STATE_FILE)
+    except IOError as e:
+        print(f"Warning: Could not write state file: {e}")
+
 
 # ──────────────────────────────────────────────────────────────
 # FINGER INDEX REFERENCE (MediaPipe hand landmark indices)
 # ──────────────────────────────────────────────────────────────
-# Each hand: 0=WRIST, 1-4=THUMB, 5-8=INDEX, 9-12=MIDDLE,
-#            13-16=RING, 17-20=PINKY
-# Tip landmarks: THUMB=4, INDEX=8, MIDDLE=12, RING=16, PINKY=20
 
 FINGER_TIPS = {
     "THUMB":  4,
@@ -50,38 +77,22 @@ FINGER_TIPS = {
 
 # ──────────────────────────────────────────────────────────────
 # KEYBOARD ZONE DEFINITIONS
-# Keyboard is split into columns (x-ratio 0→1 across keyboard width)
-# Each zone maps to the correct finger(s) that should press those keys.
-#
-# We define zones as x-ranges (fraction of keyboard width).
-# Typical QWERTY column layout (approx):
-#   |  ~  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |  0  |  -  |  =  |
-#   zone:  LP    LP   LR   LM   LI   LI   RI   RI   RM   RR   RP   RP   RP
-#
-# We define 8 column zones + 1 bottom space bar zone.
 # ──────────────────────────────────────────────────────────────
 
-# Zone definitions: (x_start_frac, x_end_frac, correct_finger_label)
-# Fingers labeled as: "L_PINKY", "L_RING", "L_MIDDLE", "L_INDEX",
-#                     "R_INDEX", "R_MIDDLE", "R_RING", "R_PINKY", "THUMB"
 KEYBOARD_ZONES = [
     # (x_start, x_end, zone_name, correct_fingers_set)
-    (0.00, 0.12, "L_PINKY_ZONE",  {"L_PINKY"}),
-    (0.12, 0.22, "L_RING_ZONE",   {"L_RING"}),
-    (0.22, 0.32, "L_MIDDLE_ZONE", {"L_MIDDLE"}),
-    (0.32, 0.50, "L_INDEX_ZONE",  {"L_INDEX"}),
-    (0.50, 0.68, "R_INDEX_ZONE",  {"R_INDEX"}),
-    (0.68, 0.78, "R_MIDDLE_ZONE", {"R_MIDDLE"}),
-    (0.78, 0.88, "R_RING_ZONE",   {"R_RING"}),
-    (0.88, 1.00, "R_PINKY_ZONE",  {"R_PINKY"}),
+    (0.00, 0.11, "L_PINKY_ZONE",  {"L_PINKY"}),
+    (0.11, 0.18, "L_RING_ZONE",   {"L_RING"}),
+    (0.18, 0.25, "L_MIDDLE_ZONE", {"L_MIDDLE"}),
+    (0.25, 0.38, "L_INDEX_ZONE",  {"L_INDEX"}),
+    (0.38, 0.54, "R_INDEX_ZONE",  {"R_INDEX"}),
+    (0.54, 0.62, "R_MIDDLE_ZONE", {"R_MIDDLE"}),
+    (0.62, 0.70, "R_RING_ZONE",   {"R_RING"}),
+    (0.70, 1.00, "R_PINKY_ZONE",  {"R_PINKY"}),
 ]
 
-# Space bar: bottom 20% of keyboard height → thumbs only
-SPACEBAR_Y_FRAC = 0.80  # below this y-fraction = spacebar row
+SPACEBAR_Y_FRAC = 0.90
 
-# ──────────────────────────────────────────────────────────────
-# ZONE COLORS (BGR) for visualization
-# ──────────────────────────────────────────────────────────────
 ZONE_COLORS = {
     "L_PINKY_ZONE":  (200, 100, 255),
     "L_RING_ZONE":   (255, 140,  80),
@@ -95,7 +106,6 @@ ZONE_COLORS = {
 }
 
 FINGER_LABEL_MAP = {
-    # (hand_label, finger_name) -> zone finger label
     ("Left",  "PINKY"):  "L_PINKY",
     ("Left",  "RING"):   "L_RING",
     ("Left",  "MIDDLE"): "L_MIDDLE",
@@ -108,6 +118,16 @@ FINGER_LABEL_MAP = {
     ("Right", "PINKY"):  "R_PINKY",
 }
 
+ROW_STAGGER = [
+    -0.02,  # Number row (top)
+     0.01,  # QWERTY row
+     0.02,  # ASDF row (home row)
+     0.05,  # ZXCV row
+     0.10,  # Spacebar row
+]
+
+ROW_Y = [0.0, 0.20, 0.42, 0.63, SPACEBAR_Y_FRAC, 1.0]
+
 # ──────────────────────────────────────────────────────────────
 # KEYBOARD CALIBRATION
 # ──────────────────────────────────────────────────────────────
@@ -116,9 +136,9 @@ class KeyboardCalibrator:
     """Click four corners of keyboard (TL, TR, BR, BL) to calibrate."""
 
     def __init__(self):
-        self.corners = []       # list of (x, y) image points
+        self.corners = []
         self.calibrated = False
-        self.transform = None   # perspective transform matrix
+        self.transform = None
         self.inv_transform = None
 
     def mouse_callback(self, event, x, y, flags, param):
@@ -129,7 +149,6 @@ class KeyboardCalibrator:
                 self._compute_transform()
 
     def _compute_transform(self):
-        """Compute perspective warp from keyboard quad → unit square."""
         src = np.float32(self.corners)
         dst = np.float32([[0, 0], [1, 0], [1, 1], [0, 1]])
         self.transform = cv2.getPerspectiveTransform(src, dst)
@@ -138,24 +157,18 @@ class KeyboardCalibrator:
         print("✅ Keyboard calibrated!")
 
     def image_to_keyboard(self, x, y):
-        """Convert image pixel (x,y) to keyboard-relative (fx, fy) in [0,1]."""
         pt = np.float32([[[x, y]]])
         result = cv2.perspectiveTransform(pt, self.transform)
         return float(result[0][0][0]), float(result[0][0][1])
 
     def draw_overlay(self, frame):
-        """Draw the calibration corners and keyboard zone overlays."""
-        if len(self.corners) >= 2:
+        if self.calibrated:
+            self._draw_zones(frame)
+        elif len(self.corners) >= 2:
             for i in range(len(self.corners) - 1):
                 cv2.line(frame, self.corners[i], self.corners[i+1], (0, 255, 255), 2)
-        if self.calibrated:
-            # Close the quad
-            cv2.line(frame, self.corners[3], self.corners[0], (0, 255, 255), 2)
-            self._draw_zones(frame)
 
     def _draw_zones(self, frame):
-        """Draw keyboard finger zones as colored overlays on the frame."""
-        h, w = frame.shape[:2]
         overlay = frame.copy()
 
         def kb_to_img(fx, fy):
@@ -163,24 +176,31 @@ class KeyboardCalibrator:
             res = cv2.perspectiveTransform(pt, self.inv_transform)
             return int(res[0][0][0]), int(res[0][0][1])
 
-        # Draw regular finger zones
         for (x0, x1, zone_name, _) in KEYBOARD_ZONES:
             color = ZONE_COLORS.get(zone_name, (128, 128, 128))
-            pts = np.array([
-                kb_to_img(x0, 0.0),
-                kb_to_img(x1, 0.0),
-                kb_to_img(x1, SPACEBAR_Y_FRAC),
-                kb_to_img(x0, SPACEBAR_Y_FRAC),
-            ], dtype=np.int32)
+            left_pts = [
+                kb_to_img(x0 + ROW_STAGGER[0], ROW_Y[0]),
+                kb_to_img(x0 + ROW_STAGGER[1], ROW_Y[1]),
+                kb_to_img(x0 + ROW_STAGGER[2], ROW_Y[2]),
+                kb_to_img(x0 + ROW_STAGGER[3], ROW_Y[3]),
+                kb_to_img(x0 + ROW_STAGGER[4], ROW_Y[4]),
+            ]
+            right_pts = [
+                kb_to_img(x1 + ROW_STAGGER[4], ROW_Y[4]),
+                kb_to_img(x1 + ROW_STAGGER[3], ROW_Y[3]),
+                kb_to_img(x1 + ROW_STAGGER[2], ROW_Y[2]),
+                kb_to_img(x1 + ROW_STAGGER[1], ROW_Y[1]),
+                kb_to_img(x1 + ROW_STAGGER[0], ROW_Y[0]),
+            ]
+            pts = np.array(left_pts + right_pts, dtype=np.int32)
             cv2.fillPoly(overlay, [pts], color)
-            # Zone label
-            cx, cy = kb_to_img((x0 + x1) / 2, 0.15)
+
+            cx, cy = kb_to_img((x0 + x1) / 2 + ROW_STAGGER[2], ROW_Y[2] + 0.05)
             label = zone_name.replace("_ZONE", "").replace("_", "\n")
             for i, line in enumerate(label.split("\n")):
                 cv2.putText(overlay, line, (cx - 25, cy + i * 16),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
 
-        # Draw spacebar zone
         space_pts = np.array([
             kb_to_img(0.0, SPACEBAR_Y_FRAC),
             kb_to_img(1.0, SPACEBAR_Y_FRAC),
@@ -192,7 +212,6 @@ class KeyboardCalibrator:
         cv2.putText(overlay, "SPACE (Thumbs)", (cx - 60, cy),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.45, (50, 50, 50), 1)
 
-        # Blend overlay
         cv2.addWeighted(overlay, 0.3, frame, 0.7, 0, frame)
 
 
@@ -200,27 +219,42 @@ class KeyboardCalibrator:
 # TYPING CHECKER
 # ──────────────────────────────────────────────────────────────
 
+def get_stagger_for_y(fy):
+    for i in range(len(ROW_Y) - 1):
+        if ROW_Y[i] <= fy <= ROW_Y[i + 1]:
+            t = (fy - ROW_Y[i]) / (ROW_Y[i + 1] - ROW_Y[i])
+            top_stagger = ROW_STAGGER[i] if i < len(ROW_STAGGER) else ROW_STAGGER[-1]
+            bot_stagger = ROW_STAGGER[i + 1] if i + 1 < len(ROW_STAGGER) else ROW_STAGGER[-1]
+            return top_stagger + t * (bot_stagger - top_stagger)
+    return 0.0
+
+
 def get_zone_for_keyboard_point(fx, fy):
-    """Return (zone_name, correct_fingers_set) for a point in keyboard space."""
     if fy > SPACEBAR_Y_FRAC:
         return "SPACEBAR", {"L_THUMB", "R_THUMB"}
+    stagger = get_stagger_for_y(fy)
+    adjusted_fx = fx - stagger
     for (x0, x1, zone_name, correct) in KEYBOARD_ZONES:
-        if x0 <= fx <= x1:
+        if x0 <= adjusted_fx <= x1:
             return zone_name, correct
     return None, set()
 
 
 def classify_typing(active_touches):
     """
-    active_touches: list of (finger_label, zone_name, correct_fingers_set)
-    Returns: "GOOD", "BAD", or "IDLE"
+    Returns: (verdict, wrong_fingers_list)
+    verdict is "GOOD", "BAD", or "IDLE"
+    wrong_fingers_list contains labels of fingers in wrong zones
     """
     if not active_touches:
-        return "IDLE"
+        return "IDLE", []
+    wrong = []
     for (finger_label, zone_name, correct_fingers) in active_touches:
         if finger_label not in correct_fingers:
-            return "BAD"
-    return "GOOD"
+            wrong.append(finger_label)
+    if wrong:
+        return "BAD", wrong
+    return "GOOD", []
 
 
 # ──────────────────────────────────────────────────────────────
@@ -235,9 +269,10 @@ def main():
     print("   Top-Left → Top-Right → Bottom-Right → Bottom-Left")
     print("3. Press 'r' to reset calibration.")
     print("4. Press 'q' to quit.\n")
+    print(f"📡 Writing state to: {SHARED_STATE_FILE}")
+    print("   Start backend.py to serve this data to your Electron app.\n")
 
-    # 2 is the index of the UVC Camera
-    cap = cv2.VideoCapture(2, cv2.CAP_MSMF)
+    cap = cv2.VideoCapture(0, cv2.CAP_MSMF)
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
@@ -257,18 +292,15 @@ def main():
     calibrator = KeyboardCalibrator()
     calibrating = False
 
-    # Feedback smoothing: keep last N verdicts
     verdict_history = []
     HISTORY_LEN = 8
 
-    # "Pressing" detection: fingertip must be within keyboard bounds
-    # and close to the keyboard plane (we use y-proximity heuristic)
-    PRESS_ZONE_Y_MAX = 1.10   # allow slight overshoot below keyboard
+    PRESS_ZONE_Y_MAX = 1.10
     PRESS_ZONE_X_MARGIN = 0.05
 
-    # Feedback display
-    verdict_display = "IDLE"
-    verdict_timer = 0.0
+    # Track last written state to avoid redundant file writes
+    last_written_verdict = None
+    last_written_wrong = None
 
     def on_mouse(event, x, y, flags, param):
         if calibrating:
@@ -283,23 +315,21 @@ def main():
         if not ret:
             break
 
-        frame = cv2.flip(frame, -1)  # Mirror for intuitive use
+        frame = cv2.flip(frame, -1)
         h, w = frame.shape[:2]
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = hands.process(rgb)
 
-        # ── Draw keyboard zones ──
         calibrator.draw_overlay(frame)
 
-        # ── Process hands ──
         active_touches = []
-        finger_positions = []   # (finger_label, px, py, in_zone)
+        finger_positions = []
 
         if results.multi_hand_landmarks and calibrator.calibrated:
             for hand_landmarks, hand_info in zip(
                 results.multi_hand_landmarks, results.multi_handedness
             ):
-                hand_label = hand_info.classification[0].label  # "Left" or "Right"
+                hand_label = hand_info.classification[0].label
                 hand_label = "Right" if hand_label == "Left" else "Left"
                 mp_draw.draw_landmarks(
                     frame, hand_landmarks, mp_hands.HAND_CONNECTIONS,
@@ -314,10 +344,8 @@ def main():
                     lm = hand_landmarks.landmark[tip_idx]
                     px, py = int(lm.x * w), int(lm.y * h)
 
-                    # Convert to keyboard space
                     fx, fy = calibrator.image_to_keyboard(px, py)
 
-                    # Check if fingertip is over the keyboard
                     in_bounds = (
                         -PRESS_ZONE_X_MARGIN <= fx <= 1 + PRESS_ZONE_X_MARGIN
                         and 0 <= fy <= PRESS_ZONE_Y_MAX
@@ -343,18 +371,24 @@ def main():
                         cv2.FONT_HERSHEY_SIMPLEX, 0.38, (255, 255, 255), 1)
 
         # ── Compute verdict ──
-        verdict = classify_typing(active_touches)
+        verdict, wrong_fingers = classify_typing(active_touches)
         verdict_history.append(verdict)
         if len(verdict_history) > HISTORY_LEN:
             verdict_history.pop(0)
 
-        # Smooth: show BAD if any recent BAD, else GOOD if any recent GOOD
         if "BAD" in verdict_history:
             smoothed = "BAD"
         elif "GOOD" in verdict_history:
             smoothed = "GOOD"
         else:
             smoothed = "IDLE"
+
+        # ── Write shared state only when something changes ──
+        sorted_wrong = sorted(wrong_fingers)
+        if smoothed != last_written_verdict or sorted_wrong != last_written_wrong:
+            write_state(smoothed, sorted_wrong)
+            last_written_verdict = smoothed
+            last_written_wrong = sorted_wrong
 
         # ── Draw verdict banner ──
         banner_h = 70
@@ -373,7 +407,6 @@ def main():
 
         cv2.rectangle(frame, (0, 0), (w, banner_h), banner_color, -1)
 
-        # Center the text
         font = cv2.FONT_HERSHEY_DUPLEX
         font_scale = 1.1
         thickness = 2
@@ -382,7 +415,6 @@ def main():
         ty = (banner_h + th) // 2 - 4
         cv2.putText(frame, verdict_text, (tx, ty), font, font_scale, text_color, thickness)
 
-        # ── Calibration instructions ──
         if calibrating and not calibrator.calibrated:
             msg = f"Click corner {len(calibrator.corners)+1}/4  (TL → TR → BR → BL)"
             cv2.putText(frame, msg, (10, h - 20),
@@ -392,7 +424,6 @@ def main():
                         (10, h - 20), cv2.FONT_HERSHEY_SIMPLEX,
                         0.7, (200, 200, 50), 2)
 
-        # ── Legend ──
         legend_items = [
             ("Left Hand", ""),
             ("L.PINKY",  ZONE_COLORS["L_PINKY_ZONE"]),
@@ -433,6 +464,8 @@ def main():
             verdict_history.clear()
             print("Calibration reset.")
 
+    # Reset state on exit
+    write_state("IDLE", [])
     cap.release()
     cv2.destroyAllWindows()
     hands.close()
