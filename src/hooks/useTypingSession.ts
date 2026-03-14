@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useState } from "react";
 import { useTyping } from "./useTyping";
 import type { TypingStats } from "./useTyping";
 import type { SessionState } from "../core/session/sessionTypes";
@@ -9,13 +9,19 @@ import {
   endSession,
   getSessionMetrics,
 } from "../core/session/sessionTracker";
+import { createSessionRecorder } from "../core/session/sessionMetrics";
+import type { SessionReport } from "../core/session/sessionMetrics";
+import { sessionHistoryStore } from "../core/storage/sessionHistoryStore";
 
 export type { SessionState } from "../core/session/sessionTypes";
 export type { SessionMetrics } from "../core/session/sessionTypes";
+export type { SessionReport } from "../core/session/sessionMetrics";
 
 export type UseTypingSessionOptions = {
   text: string;
   enabled?: boolean;
+  sessionType: "practice" | "test" | "drill";
+  lessonId?: string;
   onComplete?: (stats: TypingStats, session: SessionState) => void;
   onProgress?: (progress: { nextChar: string; typedLength: number; totalLength: number }) => void;
 };
@@ -31,12 +37,28 @@ export type UseTypingSessionOptions = {
 export function useTypingSession({
   text,
   enabled = true,
+  sessionType,
+  lessonId,
   onComplete,
   onProgress,
 }: UseTypingSessionOptions) {
   const sessionRef = useRef<SessionState | null>(null);
   const lastCorrectTimeRef = useRef<number | null>(null);
   const wpmIntervalRef = useRef<ReturnType<typeof setInterval>>();
+  const recorderRef = useRef<ReturnType<typeof createSessionRecorder> | null>(null);
+  const tickIntervalRef = useRef<ReturnType<typeof setInterval>>();
+  const [report, setReport] = useState<SessionReport | null>(null);
+
+  const finishRecorder = useCallback(() => {
+    const rec = recorderRef.current;
+    if (!rec) return null;
+    recorderRef.current = null;
+    clearInterval(tickIntervalRef.current);
+    const r = rec.finish();
+    sessionHistoryStore.save(r);
+    setReport(r);
+    return r;
+  }, []);
 
   const handleKeystroke = useCallback(
     (event: {
@@ -50,6 +72,22 @@ export function useTypingSession({
       if (!sessionRef.current) {
         sessionRef.current = createEmptyState(event.startedAt);
       }
+      if (!recorderRef.current) {
+        const prevBest = sessionHistoryStore.getPersonalBest();
+        const prevAvg = sessionHistoryStore.getAverageWpm(20);
+        recorderRef.current = createSessionRecorder({
+          sessionType,
+          lessonId,
+          prevBestWpm: prevBest,
+          prevAvgWpm: prevAvg,
+        });
+        tickIntervalRef.current = setInterval(() => recorderRef.current?.tick(), 3000);
+      }
+      recorderRef.current.recordKeypress({
+        key: event.typedChar.toLowerCase(),
+        expected: event.expectedChar.toLowerCase(),
+        correct: event.correct,
+      });
       const lastCorrect = lastCorrectTimeRef.current;
       sessionRef.current = recordKeystroke(
         sessionRef.current,
@@ -66,11 +104,12 @@ export function useTypingSession({
         lastCorrectTimeRef.current = event.time;
       }
     },
-    []
+    [sessionType, lessonId]
   );
 
   const handleComplete = useCallback(
     (stats: TypingStats) => {
+      finishRecorder();
       if (sessionRef.current) {
         const endedAt = Date.now();
         sessionRef.current = endSession(sessionRef.current, endedAt);
@@ -83,7 +122,7 @@ export function useTypingSession({
         });
       }
     },
-    [onComplete]
+    [onComplete, finishRecorder]
   );
 
   const typing = useTyping({
@@ -113,6 +152,9 @@ export function useTypingSession({
   useEffect(() => {
     sessionRef.current = null;
     lastCorrectTimeRef.current = null;
+    recorderRef.current = null;
+    clearInterval(tickIntervalRef.current);
+    setReport(null);
   }, [text]);
 
   const sessionMetrics =
@@ -120,19 +162,26 @@ export function useTypingSession({
       ? getSessionMetrics(sessionRef.current)
       : null;
 
+  const liveWpm = recorderRef.current?.getliveWpm() ?? 0;
+  const liveAccuracy = recorderRef.current?.getLiveAccuracy() ?? 100;
+
   const reset = useCallback(() => {
     sessionRef.current = null;
     lastCorrectTimeRef.current = null;
+    recorderRef.current = null;
+    clearInterval(tickIntervalRef.current);
+    setReport(null);
     typing.reset();
   }, [typing]);
 
   /** End session early (e.g. for timed tests). Returns finalized session state. */
   const endSessionEarly = useCallback((): SessionState | null => {
     if (!sessionRef.current || sessionRef.current.endedAt) return null;
+    finishRecorder();
     const endedAt = Date.now();
     sessionRef.current = endSession(sessionRef.current, endedAt);
     return sessionRef.current;
-  }, []);
+  }, [finishRecorder]);
 
   return {
     ...typing,
@@ -142,5 +191,11 @@ export function useTypingSession({
     sessionState: sessionRef.current,
     /** Computed metrics using WPM/accuracy formulas */
     sessionMetrics,
+    /** Report from reportcard when session finishes */
+    report,
+    /** Live WPM during session (from recorder) */
+    liveWpm,
+    /** Live accuracy during session (from recorder) */
+    liveAccuracy,
   };
 }

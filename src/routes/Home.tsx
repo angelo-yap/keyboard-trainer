@@ -23,7 +23,7 @@ import { useTypingSession } from "../hooks/useTypingSession";
 import { getSessionMetrics } from "../core/session/sessionTracker";
 import { getCallout } from "../core/keyboard/getCallout";
 import { TypingDisplay } from "../ui/components/TypingDisplay";
-import { SessionAnalytics } from "../ui/components/SessionAnalytics";
+import { SessionReportCard } from "../ui/components/SessionReport";
 import { Keyboard } from "../ui/components/keyboard";
 import type { Settings } from "../core/storage/settingsStore";
 
@@ -210,10 +210,6 @@ const HandCue: React.FC<{
 
 export const Home: React.FC<HomeProps> = ({ onTabChange, settings }) => {
   const [lessonId, setLessonId] = useState<number | null>(null);
-  const [doneSession, setDoneSession] = useState<{
-    session: import("../core/session/sessionTypes").SessionState;
-    metrics: import("../core/session/sessionTypes").SessionMetrics;
-  } | null>(null);
 
   const lessons = useMemo(() => getLessonSummaries(), []);
   const weakKeys = useMemo(() => getWeakKeys(), []);
@@ -230,7 +226,9 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, settings }) => {
 
   const typing = useTypingSession({
     text,
-    enabled: !!lesson && !doneSession,
+    enabled: !!lesson,
+    sessionType: "practice",
+    lessonId: lesson ? String(lesson.id) : undefined,
     onComplete: (_, session) => {
       if (lesson) {
         const metrics = getSessionMetrics(session);
@@ -239,14 +237,13 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, settings }) => {
           accuracy: metrics.accuracy,
           date: new Date().toISOString(),
         });
-        setDoneSession({ session, metrics });
       }
     },
   });
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (!lesson || doneSession) return;
+      if (!lesson || typing.report) return;
       const idx = typing.typed.length;
       const expected = text[idx];
       const isCorrect = e.key === expected;
@@ -255,7 +252,7 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, settings }) => {
       }
       typing.handleKeyDown(e);
     },
-    [lesson, doneSession, text, typing]
+    [lesson, text, typing]
   );
 
   const dayLabel =
@@ -271,42 +268,34 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, settings }) => {
   const startLesson = useCallback((id: number) => setLessonId(id), []);
   const exitSession = useCallback(() => {
     setLessonId(null);
-    setDoneSession(null);
     typing.reset();
   }, [typing]);
   const exitResults = useCallback(() => {
     setLessonId(null);
-    setDoneSession(null);
     typing.reset();
   }, [typing]);
 
   /* ── Results view ──────────────────────────────────────────────────── */
-  if (doneSession && lesson) {
+  if (typing.report && lesson) {
     return (
       <div className="home-results-wrap">
-        <SessionAnalytics
-          session={doneSession.session}
-          metrics={doneSession.metrics}
-          title={
-            doneSession.metrics.accuracy >= 90 ? "Lesson Complete!" : "Keep Going!"
+        <SessionReportCard
+          report={typing.report}
+          onRetry={() => typing.reset()}
+          onNextLesson={
+            PRACTICE_LESSONS.some((l) => l.id === lessonId! + 1)
+              ? () => {
+                  const next = PRACTICE_LESSONS.find((l) => l.id === lessonId! + 1);
+                  if (next) {
+                    setLessonId(next.id);
+                    typing.reset();
+                  } else {
+                    exitResults();
+                  }
+                }
+              : undefined
           }
-          onRetry={() => {
-            setDoneSession(null);
-            typing.reset();
-          }}
-          onBack={exitResults}
-          onNext={() => {
-            const next = PRACTICE_LESSONS.find((l) => l.id === lessonId! + 1);
-            if (next) {
-              setDoneSession(null);
-              setLessonId(next.id);
-              typing.reset();
-            } else {
-              exitResults();
-            }
-          }}
-          nextLabel="Next Lesson"
-          showNext={PRACTICE_LESSONS.some((l) => l.id === lessonId! + 1)}
+          onHome={exitResults}
         />
       </div>
     );

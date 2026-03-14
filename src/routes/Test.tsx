@@ -6,7 +6,7 @@ import { saveTestResult } from "../core/storage/testHistoryStore";
 import { updateStreak } from "../core/storage/streakStore";
 import { Keyboard } from "../ui/components/keyboard";
 import { TypingDisplay } from "../ui/components/TypingDisplay";
-import { SessionAnalytics } from "../ui/components/SessionAnalytics";
+import { SessionReportCard } from "../ui/components/SessionReport";
 import { Button } from "../ui/components/Button";
 import type { Settings } from "../core/storage/settingsStore";
 import "../ui/Layout/LessonStage.css";
@@ -31,10 +31,6 @@ export function Test({ onBack, settings }: TestProps) {
   const [timeLeft, setTimeLeft] = useState(duration);
   const [timerStarted, setTimerStarted] = useState(false);
   const [textTransitioning, setTextTransitioning] = useState(false);
-  const [doneSession, setDoneSession] = useState<{
-    session: import("../core/session/sessionTypes").SessionState;
-    metrics: import("../core/session/sessionTypes").SessionMetrics;
-  } | null>(null);
 
   const timerRef = useRef<ReturnType<typeof setInterval>>();
   const endSessionRef = useRef<() => import("../core/session/sessionTypes").SessionState | null>(null);
@@ -45,6 +41,7 @@ export function Test({ onBack, settings }: TestProps) {
   const typing = useTypingSession({
     text,
     enabled: testStatus === "active",
+    sessionType: "test",
     onComplete: (_, session) => {
       if (hasEndedRef.current) return;
       hasEndedRef.current = true;
@@ -60,7 +57,6 @@ export function Test({ onBack, settings }: TestProps) {
         date: new Date().toISOString(),
       });
       updateStreak();
-      setDoneSession({ session, metrics });
       setTestStatus("finished");
     },
   });
@@ -78,7 +74,6 @@ export function Test({ onBack, settings }: TestProps) {
     setText(newText);
     setTimeLeft(duration);
     setTimerStarted(false);
-    setDoneSession(null);
     typingRef.current?.reset();
   }, [duration, includePunctuation, includeNumbers]);
 
@@ -126,7 +121,7 @@ export function Test({ onBack, settings }: TestProps) {
       setTimeLeft((t) => {
         if (t <= 1) {
           clearInterval(timerRef.current);
-          if (!hasEndedRef.current) {
+            if (!hasEndedRef.current) {
             hasEndedRef.current = true;
             const session = endSessionRef.current?.();
             if (session) {
@@ -141,7 +136,6 @@ export function Test({ onBack, settings }: TestProps) {
                 date: new Date().toISOString(),
               });
               updateStreak();
-              setDoneSession({ session, metrics });
             }
             setTestStatus("finished");
           }
@@ -164,7 +158,6 @@ export function Test({ onBack, settings }: TestProps) {
     clearInterval(timerRef.current);
     setTestStatus("setup");
     setTimerStarted(false);
-    setDoneSession(null);
     typingRef.current?.reset();
   }, []);
 
@@ -186,15 +179,13 @@ export function Test({ onBack, settings }: TestProps) {
   }, [duration]);
 
   /* ── Finished: show results ─────────────────────────────────────────── */
-  if (testStatus === "finished" && doneSession) {
+  if (testStatus === "finished" && typing.report) {
     return (
       <div className="test-results-wrap">
-        <SessionAnalytics
-          session={doneSession.session}
-          metrics={doneSession.metrics}
-          title="Test Complete"
+        <SessionReportCard
+          report={typing.report}
           onRetry={retryWithSameSettings}
-          onBack={onBack}
+          onHome={onBack}
         />
         <div className="test-results-actions">
           <Button variant="secondary" onClick={backToSetup}>
