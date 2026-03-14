@@ -10,9 +10,10 @@ import "./Settings.css";
 
 type SettingsProps = {
   onBack: () => void;
+  onSettingsChange?: () => void;
 };
 
-export function Settings({ onBack }: SettingsProps) {
+export function Settings({ onBack, onSettingsChange }: SettingsProps) {
   const [settings, setSettings] = useState<SettingsType>(getSettings);
   const [cleared, setCleared] = useState(false);
 
@@ -20,6 +21,7 @@ export function Settings({ onBack }: SettingsProps) {
     const next = { ...settings, [key]: val };
     setSettings(next);
     saveSettings(next);
+    onSettingsChange?.();
   };
 
   const handleClearData = () => {
@@ -57,11 +59,24 @@ export function Settings({ onBack }: SettingsProps) {
       <SettingsSection title="Display">
         <SettingRow
           label="Show Keyboard"
-          desc="Show keyboard visual while typing"
+          desc="Show keyboard while typing. Ctrl+K or Cmd+K to toggle."
         >
           <Toggle
             value={settings.showKeyboard}
             onChange={(v) => update("showKeyboard", v)}
+          />
+        </SettingRow>
+        <SettingRow
+          label="Keyboard Layout"
+          desc="Mac or Windows bottom row"
+        >
+          <SegmentControl
+            options={[
+              ["mac", "Mac"],
+              ["windows", "Windows"],
+            ]}
+            value={settings.keyboardLayout ?? "mac"}
+            onChange={(v) => update("keyboardLayout", v)}
           />
         </SettingRow>
         <SettingRow

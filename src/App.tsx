@@ -1,65 +1,140 @@
-import { useState } from "react";
-import { Splash } from "./ui/components/Splash";
-import { Sidebar } from "./ui/layout/Sidebar";
+import { useState, useMemo, useEffect } from "react";
+import { AppLayout } from "./ui/layout/AppLayout";
+import { Welcome } from "./ui/components/Welcome";
 import { Home } from "./routes/Home";
 import { Learn } from "./routes/Learn";
-import { Practice } from "./routes/Practice";
 import { Test } from "./routes/Test";
 import { Analytics } from "./routes/Analytics";
 import { Settings } from "./routes/Settings";
-import { getSettings } from "./core/storage/settingsStore";
+import { getSettings, saveSettings } from "./core/storage/settingsStore";
+import { getPersonalBest } from "./core/storage/testHistoryStore";
+import {
+  isFirstLaunch,
+  markOnboardingCompleted,
+  markOnboardingSkipped,
+} from "./core/storage/onboardingStore";
 import "./App.css";
 
-function Dashboard() {
-  const [tab, setTab] = useState("home");
-  const settings = getSettings();
+type Tab = "home" | "learn" | "test" | "analytics" | "settings";
+
+type OnboardingView = "welcome" | "learn" | null;
+
+export function App() {
+  const [tab, setTab] = useState<Tab>("home");
+  const [onboardingView, setOnboardingView] = useState<OnboardingView>(() =>
+    isFirstLaunch() ? "welcome" : null,
+  );
+  const [settingsVersion, setSettingsVersion] = useState(0);
+
+  const settings = useMemo(() => getSettings(), [settingsVersion]);
+  const personalBest = getPersonalBest();
+
+  /* Ctrl+K / Cmd+K toggles keyboard visibility */
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        const s = getSettings();
+        saveSettings({ ...s, showKeyboard: !s.showKeyboard });
+        setSettingsVersion((v) => v + 1);
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  const exitOnboarding = useMemo(
+    () => ({
+      skip: () => {
+        markOnboardingSkipped();
+        setOnboardingView(null);
+        setTab("home");
+      },
+      complete: () => {
+        markOnboardingCompleted();
+        setOnboardingView(null);
+        setTab("home");
+      },
+    }),
+    [],
+  );
 
   const renderPage = () => {
     switch (tab) {
       case "home":
-        return <Home setTab={setTab} />;
+        return <Home onTabChange={setTab} settings={settings} />;
       case "learn":
-        return <Learn onBack={() => setTab("home")} />;
-      case "practice":
-        return <Practice onBack={() => setTab("home")} settings={settings} />;
+        return (
+          <Learn
+            onBack={() => setTab("home")}
+            onCurriculumComplete={
+              onboardingView === "learn" ? exitOnboarding.complete : undefined
+            }
+            settings={settings}
+          />
+        );
       case "test":
         return <Test onBack={() => setTab("home")} settings={settings} />;
       case "analytics":
         return <Analytics onBack={() => setTab("home")} />;
       case "settings":
-        return <Settings onBack={() => setTab("home")} />;
+        return (
+          <Settings
+            onBack={() => setTab("home")}
+            onSettingsChange={() => setSettingsVersion((v) => v + 1)}
+          />
+        );
       default:
         return null;
     }
   };
 
+  /* ── First-time onboarding flow ────────────────────────────────────── */
+  if (onboardingView === "welcome") {
+    return (
+      <div className="app-onboarding-shell">
+        <Welcome
+          onStart={() => setOnboardingView("learn")}
+          onSkip={exitOnboarding.skip}
+        />
+      </div>
+    );
+  }
+
+  if (onboardingView === "learn") {
+    return (
+      <AppLayout
+        activeTab="learn"
+        onTabChange={(t) => {
+          if (t !== "learn") {
+            markOnboardingSkipped();
+            setOnboardingView(null);
+            setTab(t);
+          }
+        }}
+        personalBest={personalBest ?? undefined}
+      >
+        <div key="learn" className="app-page-transition">
+          <Learn
+            onBack={exitOnboarding.skip}
+            onCurriculumComplete={exitOnboarding.complete}
+            settings={settings}
+          />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  /* ── Normal app flow (returning users) ──────────────────────────────── */
   return (
-    <div className="app-dashboard">
-      <Sidebar tab={tab} setTab={setTab} />
-
-      <main className="app-main">
-        <header className="app-header">
-          <div className="app-header-title">
-            {tab === "test" ? "WPM Test" : tab.charAt(0).toUpperCase() + tab.slice(1)}
-          </div>
-          <div className="app-header-status">
-            <div className="app-header-dot" />
-            <span>Local storage active</span>
-          </div>
-        </header>
-
-        <div className="app-content">{renderPage()}</div>
-      </main>
-    </div>
-  );
-}
-
-export function App() {
-  const [stage, setStage] = useState<"splash" | "app">("splash");
-
-  return stage === "splash" ? (
-    <Splash onDone={() => setStage("app")} />
-  ) : (
-    <Dashboard />
+    <AppLayout
+      activeTab={tab}
+      onTabChange={setTab}
+      personalBest={personalBest ?? undefined}
+    >
+      <div key={tab} className="app-page-transition">
+        {renderPage()}
+      </div>
+    </AppLayout>
   );
 }

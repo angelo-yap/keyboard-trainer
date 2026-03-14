@@ -1,0 +1,90 @@
+/* ─── Welcome — first-time onboarding greeting ─────────────────────────── */
+
+.welcome-root {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--page-padding);
+  background: var(--color-bg);
+}
+
+@media (max-width: 600px) {
+  .welcome-root {
+    padding: var(--space-4);
+  }
+}
+
+.welcome-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line-2);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8);
+}
+
+.welcome-title {
+  font-family: var(--font-serif);
+  font-size: 28px;
+  font-weight: 400;
+  color: var(--color-text);
+  margin: 0 0 var(--space-4);
+  line-height: 1.2;
+}
+
+.welcome-sub {
+  font-size: 14px;
+  font-weight: var(--font-weight-light);
+  color: var(--color-text-2);
+  line-height: 1.7;
+  margin: 0 0 var(--space-4);
+}
+
+.welcome-sub--muted {
+  color: var(--color-text-3);
+  font-size: 13px;
+}
+
+.welcome-sub:last-of-type {
+  margin-bottom: var(--space-6);
+}
+
+.welcome-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.welcome-cta {
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background var(--transition-base), color var(--transition-base),
+    border-color var(--transition-base);
+  border: 1px solid transparent;
+}
+
+.welcome-cta--primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.welcome-cta--primary:hover {
+  opacity: 0.9;
+}
+
+.welcome-cta--skip {
+  background: transparent;
+  border-color: var(--color-line-2);
+  color: var(--color-text-3);
+}
+
+.welcome-cta--skip:hover {
+  color: var(--color-text-2);
+  border-color: var(--color-line-3);
+}

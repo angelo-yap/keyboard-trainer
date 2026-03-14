@@ -11,7 +11,7 @@ export const FINGER_MAP: Record<string, number> = {
   i: 5, k: 5, m: 5,
   o: 6, l: 6, ",": 6,
   p: 7, ";": 7, ".": 7, "'": 7,
-  " ": 4, // thumb
+  /* space: thumb — handled specially in lessonGuidance */
 };
 
 export const FINGER_NAMES = [
@@ -22,4 +22,16 @@ export const FINGER_NAMES = [
 export const FINGER_COLORS = [
   "#e07b54", "#e09a54", "#c8c45a", "#7ec87e",
   "#7ec8a8", "#5a9ec8", "#7a8ec8", "#9a7ec8",
+];
+
+/** Softer colors for keyboard finger hints — minimal, not distracting */
+export const FINGER_COLORS_SOFT = [
+  "rgba(160, 120, 100, 0.12)",
+  "rgba(160, 140, 100, 0.12)",
+  "rgba(140, 150, 100, 0.12)",
+  "rgba(100, 150, 120, 0.12)",
+  "rgba(100, 150, 140, 0.12)",
+  "rgba(100, 140, 160, 0.12)",
+  "rgba(120, 130, 160, 0.12)",
+  "rgba(140, 120, 160, 0.12)",
 ];

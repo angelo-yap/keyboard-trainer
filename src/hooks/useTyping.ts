@@ -15,11 +15,21 @@ export type TypingProgress = {
   totalLength: number;
 };
 
+export type KeystrokeEvent = {
+  startedAt: number;
+  time: number; // ms since session start
+  expectedChar: string;
+  typedChar: string;
+  correct: boolean;
+  index: number;
+};
+
 export type UseTypingOptions = {
   text: string;
   enabled?: boolean;
   onComplete?: (stats: TypingStats) => void;
   onProgress?: (progress: TypingProgress) => void;
+  onKeystroke?: (event: KeystrokeEvent) => void;
 };
 
 export function useTyping({
@@ -27,6 +37,7 @@ export function useTyping({
   enabled = true,
   onComplete,
   onProgress,
+  onKeystroke,
 }: UseTypingOptions) {
   const [typed, setTyped] = useState("");
   const [errors, setErrors] = useState<Set<number>>(new Set());
@@ -105,6 +116,17 @@ export function useTyping({
           setStartTime(t);
         }
 
+        const startedAt = startTimeRef.current ?? Date.now();
+        const timeMs = Date.now() - startedAt;
+        onKeystroke?.({
+          startedAt,
+          time: timeMs,
+          expectedChar: expected,
+          typedChar: e.key,
+          correct: isCorrect,
+          index: idx,
+        });
+
         if (!isCorrect) {
           setErrors((err) => new Set([...err, idx]));
           setCombo(0);
@@ -133,7 +155,7 @@ export function useTyping({
         return next;
       });
     },
-    [enabled, text, errors, startTime, onComplete, onProgress, getStats]
+    [enabled, text, errors, startTime, onComplete, onProgress, onKeystroke, getStats]
   );
 
   const liveStats: TypingStats =

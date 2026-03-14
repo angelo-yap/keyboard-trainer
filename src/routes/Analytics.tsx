@@ -11,13 +11,6 @@ type AnalyticsProps = {
   onBack: () => void;
 };
 
-const panel = {
-  padding: "16px 20px",
-  background: "rgba(255,255,255,0.03)",
-  borderRadius: 18,
-  border: "1px solid rgba(255,255,255,0.08)",
-};
-
 export function Analytics({ onBack }: AnalyticsProps) {
   const [tab, setTab] = useState<"overview" | "history" | "keys" | "practice">("overview");
   const history = getTestHistory();
@@ -60,11 +53,11 @@ export function Analytics({ onBack }: AnalyticsProps) {
 
       <div className="analytics-stats">
         {[
-          ["Best WPM", bestWpm || "—", "#ff8c32"],
-          ["Avg WPM", avgWpm || "—", "rgba(255,255,255,0.85)"],
-          ["Avg Accuracy", avgAcc ? avgAcc + "%" : "—", avgAcc >= 95 ? "#7ec87e" : "rgba(255,255,255,0.85)"],
-          ["Sessions", history.length, "rgba(255,255,255,0.7)"],
-          ["🔥 Streak", streak.count + " days", "#ff8c32"],
+          ["Best WPM", bestWpm || "—", "var(--color-accent)"],
+          ["Avg WPM", avgWpm || "—", "var(--color-text)"],
+          ["Avg Accuracy", avgAcc ? avgAcc + "%" : "—", avgAcc >= 95 ? "var(--color-correct)" : "var(--color-text)"],
+          ["Sessions", history.length, "var(--color-text-2)"],
+          ["Streak", streak.count + " days", "var(--color-accent)"],
         ].map(([label, val, color]) => (
           <div key={String(label)} className="analytics-stat-card">
             <div className="analytics-stat-label">{label}</div>
@@ -90,7 +83,7 @@ export function Analytics({ onBack }: AnalyticsProps) {
       {tab === "overview" && (
         <div className="analytics-tab-content">
           {chartData.length >= 2 ? (
-            <div className="analytics-panel" style={panel}>
+            <div className="analytics-panel">
               <div className="analytics-panel-title">
                 WPM Progress (last {chartData.length} tests)
               </div>
@@ -101,16 +94,16 @@ export function Analytics({ onBack }: AnalyticsProps) {
           )}
 
           {worstKeys.length > 0 && (
-            <div className="analytics-panel" style={panel}>
+            <div className="analytics-panel">
               <div className="analytics-panel-title">Keys to improve</div>
-              <KeyGrid keys={worstKeys} color="#ff5555" />
+              <KeyGrid keys={worstKeys} variant="weak" />
             </div>
           )}
         </div>
       )}
 
       {tab === "history" && (
-        <div className="analytics-panel" style={panel}>
+        <div className="analytics-panel">
           <div className="analytics-panel-title">
             All test sessions ({history.length})
           </div>
@@ -122,15 +115,9 @@ export function Analytics({ onBack }: AnalyticsProps) {
                 <div key={i} className="analytics-history-item">
                   <span className="analytics-history-wpm">{h.wpm} WPM</span>
                   <span
-                    className="analytics-history-acc"
-                    style={{
-                      color:
-                        h.accuracy >= 95
-                          ? "#7ec87e"
-                          : h.accuracy >= 85
-                            ? "#e09a54"
-                            : "#ff5555",
-                    }}
+                    className={`analytics-history-acc analytics-history-acc--${
+                      h.accuracy >= 95 ? "good" : h.accuracy >= 85 ? "warn" : "weak"
+                    }`}
                   >
                     {h.accuracy}% acc
                   </span>
@@ -152,18 +139,18 @@ export function Analytics({ onBack }: AnalyticsProps) {
 
       {tab === "keys" && (
         <div className="analytics-keys-grid">
-          <div className="analytics-panel" style={panel}>
+          <div className="analytics-panel">
             <div className="analytics-panel-title">Weakest keys</div>
             {worstKeys.length ? (
-              <KeyGrid keys={worstKeys} color="#ff5555" />
+              <KeyGrid keys={worstKeys} variant="weak" />
             ) : (
               <Empty msg="Not enough data yet" />
             )}
           </div>
-          <div className="analytics-panel" style={panel}>
+          <div className="analytics-panel">
             <div className="analytics-panel-title">Strongest keys</div>
             {bestKeys.length ? (
-              <KeyGrid keys={bestKeys} color="#7ec87e" />
+              <KeyGrid keys={bestKeys} variant="strong" />
             ) : (
               <Empty msg="Not enough data yet" />
             )}
@@ -172,7 +159,7 @@ export function Analytics({ onBack }: AnalyticsProps) {
       )}
 
       {tab === "practice" && (
-        <div className="analytics-panel" style={panel}>
+        <div className="analytics-panel">
           <div className="analytics-panel-title">Lesson progress</div>
           <div className="analytics-practice-list">
             {PRACTICE_LESSONS.map((lesson) => {
@@ -189,17 +176,16 @@ export function Analytics({ onBack }: AnalyticsProps) {
                   key={lesson.id}
                   className={`analytics-practice-item ${done ? "done" : ""}`}
                 >
-                  <span className="analytics-practice-icon">
-                    {done ? "✅" : attempts.length ? "🔄" : "⬜"}
+                  <span className={`analytics-practice-icon analytics-practice-icon--${done ? "done" : attempts.length ? "progress" : "pending"}`}>
+                    {done ? "✓" : attempts.length ? "○" : "○"}
                   </span>
                   <span className="analytics-practice-name">{lesson.name}</span>
                   {bestAcc !== null && (
                     <>
                       <span
-                        className="analytics-practice-acc"
-                        style={{
-                          color: bestAcc >= 90 ? "#7ec87e" : "#e09a54",
-                        }}
+                        className={`analytics-practice-acc analytics-practice-acc--${
+                          bestAcc >= 90 ? "good" : "warn"
+                        }`}
                       >
                         {bestAcc}% acc
                       </span>
@@ -251,15 +237,12 @@ function WpmChart({
                 {d.wpm}
               </div>
               <div
-                className="wpm-chart-rect"
+                className={`wpm-chart-rect wpm-chart-rect--${
+                  isRecent ? "recent" : d.accuracy >= 95 ? "good" : "warn"
+                }`}
                 style={{
                   width: W_unit,
                   height: h,
-                  background: isRecent
-                    ? "#ff8c32"
-                    : d.accuracy >= 95
-                      ? "rgba(126,200,126,0.7)"
-                      : "rgba(255,140,50,0.45)",
                 }}
                 title={`${d.wpm} WPM, ${d.accuracy}% acc`}
               />
@@ -279,22 +262,21 @@ function WpmChart({
 
 function KeyGrid({
   keys,
-  color,
+  variant,
 }: {
   keys: { key: string; accuracy: number; attempts: number }[];
-  color: string;
+  variant: "weak" | "strong";
 }) {
   return (
     <div className="key-grid">
       {keys.map(({ key, accuracy, attempts }) => (
         <div
           key={key}
-          className="key-grid-item"
-          style={{ borderColor: `${color}40` }}
+          className={`key-grid-item key-grid-item--${variant}`}
           title={`${attempts} attempts`}
         >
           <div className="key-grid-key">{key.toUpperCase()}</div>
-          <div className="key-grid-acc" style={{ color }}>
+          <div className="key-grid-acc">
             {accuracy}%
           </div>
         </div>

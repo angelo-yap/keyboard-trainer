@@ -1,66 +1,94 @@
-/* Keyboard Trainer — Game Launcher Theme
- * Dark gray base + orange accent
- */
+/* ─── tenfingers · theme.css ───────────────────────────────────────────────
+   Drop this file into src/theme.css, replacing the existing one.
+   All design tokens for the dark, focused aesthetic.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* Dev: Google Fonts. For production Electron, replace with @font-face — see INTEGRATION.md in src/fromclaude/files/ */
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
 
 :root {
-  /* Colors */
-  --color-bg: #1a1a1a;
-  --color-bg-elevated: #252525;
-  --color-bg-card: #2a2a2a;
-  --color-border: #3a3a3a;
-  --color-border-hover: #4a4a4a;
+  /* ── Backgrounds ─────────────────────────────────────────────────── */
+  --color-bg:             #0F0F0D;   /* page / shell */
+  --color-surface:        #181815;   /* cards, panels */
+  --color-surface-2:      #1E1E1A;   /* inset surfaces, hover states */
+  --color-surface-3:      #242420;   /* deepest inset */
 
-  --color-accent: #ff7a18;
-  --color-accent-hover: #ff8f3d;
-  --color-accent-muted: rgba(255, 122, 24, 0.25);
-  --color-accent-glow: rgba(255, 122, 24, 0.4);
+  /* ── Borders ─────────────────────────────────────────────────────── */
+  --color-line:           rgba(255, 255, 255, 0.07);   /* subtle dividers */
+  --color-line-2:         rgba(255, 255, 255, 0.12);   /* visible borders */
+  --color-line-3:         rgba(255, 255, 255, 0.18);   /* emphasis borders */
 
-  --color-text: #e8e8e8;
-  --color-text-muted: #9a9a9a;
-  --color-text-dim: #6a6a6a;
+  /* ── Text ────────────────────────────────────────────────────────── */
+  --color-text:           #E8E4DC;   /* primary */
+  --color-text-2:         #8A8780;   /* secondary / muted */
+  --color-text-3:         #4A4844;   /* tertiary / placeholder */
 
-  /* Typography */
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+  /* ── Accent — gold ───────────────────────────────────────────────── */
+  --color-accent:         #C8A96E;
+  --color-accent-dim:     rgba(200, 169, 110, 0.15);
+  --color-accent-border:  rgba(200, 169, 110, 0.25);
+  --color-accent-dark:    #7A6540;
 
-  --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-base: 1rem;
-  --text-lg: 1.125rem;
-  --text-xl: 1.25rem;
-  --text-2xl: 1.5rem;
-  --text-3xl: 2rem;
-  --text-4xl: 2.5rem;
+  /* ── Semantic — green (correct / mastered) ───────────────────────── */
+  --color-correct:        #4A9B6F;
+  --color-correct-dim:    rgba(74, 155, 111, 0.12);
+  --color-correct-border: rgba(74, 155, 111, 0.25);
 
-  --font-medium: 500;
-  --font-semibold: 600;
-  --font-bold: 700;
+  /* ── Semantic — red (error / weak) ──────────────────────────────── */
+  --color-error:          #C06060;
+  --color-error-dim:      rgba(192, 96, 96, 0.12);
+  --color-error-border:   rgba(192, 96, 96, 0.25);
 
-  /* Spacing */
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.25rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
-  --space-10: 2.5rem;
-  --space-12: 3rem;
-  --space-16: 4rem;
+  /* ── Typography ──────────────────────────────────────────────────── */
+  --font-sans:   'IBM Plex Sans',  system-ui, sans-serif;
+  --font-mono:   'IBM Plex Mono',  'Courier New', monospace;
+  --font-serif:  'Instrument Serif', Georgia, serif;
 
-  /* Radii */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
+  --font-weight-light:   300;
+  --font-weight-regular: 400;
+  --font-weight-medium:  500;
 
-  /* Shadows */
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px var(--color-accent-glow);
+  /* ── Spacing scale ───────────────────────────────────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
 
-  /* Transitions */
-  --transition-fast: 150ms ease;
-  --transition-normal: 200ms ease;
+  /* ── Radius ──────────────────────────────────────────────────────── */
+  --radius-sm:  4px;
+  --radius-md:  6px;
+  --radius-lg:  8px;
+  --radius-xl:  12px;
+
+  /* ── Topbar / sidebar dimensions ─────────────────────────────────── */
+  --topbar-height:  44px;
+  --sidebar-width:  0px;   /* tab-based, no sidebar needed */
+
+  /* ── Responsive breakpoints ──────────────────────────────────────── */
+  --bp-compact:     800px;   /* compact desktop layout */
+  --bp-narrow:      600px;   /* narrow / stacked layout */
+  --page-padding:   clamp(var(--space-4), 4vw, var(--space-10));
+
+  /* ── Transitions ─────────────────────────────────────────────────── */
+  --transition-fast: 80ms ease;
+  --transition-base: 150ms ease;
+
+  /* ── Shadows ─────────────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-glow: 0 0 12px rgba(200, 169, 110, 0.25);
+
+  /* ── Accent hover (for buttons) ──────────────────────────────────── */
+  --color-accent-hover: #d4b87a;
+
+  /* ── Grade colors (results) ──────────────────────────────────────── */
+  --color-grade-s: #ffd700;
+  --color-grade-a: #4A9B6F;
+  --color-grade-b: #C8A96E;
+  --color-grade-c: #e09a54;
+  --color-grade-d: #C06060;
 }

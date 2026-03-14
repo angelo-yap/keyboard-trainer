@@ -1,78 +1,109 @@
-import { useEffect, useRef } from "react";
+/* ─── src/ui/components/TypingDisplay.tsx ────────────────────────────────────
+   Renders the text-to-type with per-character state coloring.
+   Words are kept on single lines (no mid-word breaks).
+   ──────────────────────────────────────────────────────────────────────── */
+
+import React, { useEffect, useRef } from "react";
 import "./TypingDisplay.css";
 
-const FONT_SIZES = { sm: 18, md: 22, lg: 28 };
+export type CharState = "done" | "correct" | "error" | "cursor" | "ahead";
 
-type TypingDisplayProps = {
-  text: string;
+interface TypingDisplayProps {
+  /** The full string the user needs to type */
+  target: string;
+  /** How many characters the user has typed so far */
   typed: string;
-  errors: Set<number>;
-  fontSize?: "sm" | "md" | "lg";
-  caretStyle?: "block" | "line" | "underline";
+  /** Optional: show a blinking cursor at the current position */
+  showCursor?: boolean;
+  /** Optional: additional class */
+  className?: string;
+  /** Optional: click to focus (e.g. for hidden input capture) */
   onClick?: () => void;
-  maxVisible?: number;
-};
+}
 
-export function TypingDisplay({
-  text,
+function getCharState(
+  charIndex: number,
+  typed: string,
+  target: string
+): CharState {
+  if (charIndex < typed.length) {
+    return typed[charIndex] === target[charIndex] ? "correct" : "error";
+  }
+  if (charIndex === typed.length) return "cursor";
+  return "ahead";
+}
+
+/** Split target into segments (word+space or space-only) so words never break across lines */
+function getWordSegments(target: string): { text: string; startIndex: number }[] {
+  const segments: { text: string; startIndex: number }[] = [];
+  const regex = /\S+\s*|\s+/g;
+  let m;
+  while ((m = regex.exec(target)) !== null) {
+    segments.push({ text: m[0], startIndex: m.index });
+  }
+  return segments;
+}
+
+export const TypingDisplay: React.FC<TypingDisplayProps> = ({
+  target,
   typed,
-  errors,
-  fontSize = "md",
-  caretStyle = "block",
+  showCursor = true,
+  className = "",
   onClick,
-  maxVisible = 300,
-}: TypingDisplayProps) {
-  const caretRef = useRef<HTMLSpanElement>(null);
+}) => {
+  const cursorRef = useRef<HTMLSpanElement>(null);
 
+  /* Keep cursor in view with smooth scroll */
   useEffect(() => {
-    caretRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    cursorRef.current?.scrollIntoView({
+      block: "nearest",
+      inline: "nearest",
+      behavior: "smooth",
+    });
   }, [typed.length]);
 
-  const fSize = FONT_SIZES[fontSize] || 22;
-  const cursorIdx = typed.length;
-
-  const startIdx = Math.max(0, cursorIdx - 80);
-  const displayText = text.slice(startIdx, startIdx + maxVisible);
-  const displayOffset = startIdx;
+  const segments = getWordSegments(target);
 
   return (
     <div
-      className="typing-display"
+      className={`typing-display ${className}`}
+      aria-live="off"
       onClick={onClick}
-      style={{ fontSize: fSize, cursor: onClick ? "text" : "default" }}
+      style={onClick ? { cursor: "text" } : undefined}
     >
-      {displayText.split("").map((char, di) => {
-        const i = di + displayOffset;
-        const isCursor = i === cursorIdx;
-        const isTyped = i < cursorIdx;
-        const isError = errors.has(i);
-
-        let color: string;
-        let bg: string;
-        if (isTyped) {
-          color = isError ? "rgba(255, 90, 90, 0.9)" : "rgba(255,255,255,0.35)";
-          bg = isError ? "rgba(255,60,60,0.12)" : "transparent";
-        } else if (isCursor) {
-          color = "rgba(255,255,255,0.95)";
-          bg = caretStyle === "block" ? "rgba(255,140,50,0.5)" : "transparent";
-        } else {
-          color = "rgba(255,255,255,0.2)";
-          bg = "transparent";
-        }
-
-        const displayChar = char === " " ? "\u00A0" : char;
-
+      {segments.map((seg, segIdx) => {
+        const chars = seg.text.split("");
         return (
           <span
-            key={i}
-            ref={isCursor ? caretRef : null}
-            className={`typing-char ${isCursor ? "typing-cursor" : ""} ${caretStyle === "block" && isCursor ? "caret-block" : ""} ${caretStyle === "underline" && isCursor ? "caret-underline" : ""} ${caretStyle === "line" && isCursor ? "caret-line" : ""}`}
-            style={{ color, background: bg }}
+            key={segIdx}
+            className="typing-display__word"
           >
-            {displayChar}
+            {chars.map((ch, j) => {
+              const charIndex = seg.startIndex + j;
+              const state = getCharState(charIndex, typed, target);
+              const isCursorPos = showCursor && state === "cursor";
+
+              return (
+                <span
+                  key={charIndex}
+                  ref={isCursorPos ? cursorRef : undefined}
+                  className={[
+                    "typing-display__char",
+                    `typing-display__char--${state}`,
+                    ch === " " ? "typing-display__char--space" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
+                  {ch === " " ? "\u00A0" : ch}
+                </span>
+              );
+            })}
           </span>
         );
       })}
     </div>
   );
-}
+};
+
+export default TypingDisplay;

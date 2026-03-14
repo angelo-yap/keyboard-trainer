@@ -1,80 +1,109 @@
+/* ─── ResultsCard — legacy results view, matches SessionAnalytics style ─ */
+
 .results-card {
-  padding: 36px 40px;
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: var(--space-8) var(--space-10);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line-2);
+  border-radius: var(--radius-xl);
   text-align: center;
   max-width: 560px;
   margin: 0 auto;
 }
 
 .results-card-title {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.4);
-  letter-spacing: 2px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-3);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .results-card-hero {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  gap: 16px;
-  margin-bottom: 28px;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
 }
 
 .results-card-wpm {
+  font-family: var(--font-mono);
   font-size: 80px;
-  font-weight: 900;
-  color: #ff8c32;
+  font-weight: var(--font-weight-light);
+  color: var(--color-accent);
   line-height: 1;
 }
 
 .results-card-wpm-label {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.4);
-  margin-top: 2px;
+  color: var(--color-text-3);
+  margin-top: var(--space-1);
 }
 
 .results-card-grade {
+  font-family: var(--font-serif);
   font-size: 48px;
-  font-weight: 900;
+  font-weight: 400;
   line-height: 1;
-  padding-bottom: 14px;
+  padding-bottom: var(--space-3);
+}
+
+.results-card-grade--s {
+  color: var(--color-grade-s);
+  text-shadow: 0 0 30px rgba(255, 215, 0, 0.4);
+}
+.results-card-grade--a {
+  color: var(--color-grade-a);
+  text-shadow: 0 0 30px rgba(74, 155, 111, 0.4);
+}
+.results-card-grade--b {
+  color: var(--color-grade-b);
+  text-shadow: 0 0 30px rgba(200, 169, 110, 0.4);
+}
+.results-card-grade--c {
+  color: var(--color-grade-c);
+  text-shadow: 0 0 30px rgba(224, 154, 84, 0.4);
+}
+.results-card-grade--d {
+  color: var(--color-grade-d);
+  text-shadow: 0 0 30px rgba(192, 96, 96, 0.4);
 }
 
 .results-card-stats {
   display: flex;
-  gap: 12px;
+  gap: var(--space-3);
   justify-content: center;
-  margin-bottom: 28px;
+  margin-bottom: var(--space-6);
   flex-wrap: wrap;
 }
 
 .results-card-stat {
-  padding: 10px 18px;
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line);
   min-width: 80px;
 }
 
 .results-card-stat-label {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.35);
-  margin-bottom: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-text-3);
+  margin-bottom: var(--space-1);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em;
 }
 
 .results-card-stat-value {
+  font-family: var(--font-mono);
   font-size: 20px;
-  font-weight: 800;
+  font-weight: var(--font-weight-light);
+  color: var(--color-text);
 }
 
 .results-card-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--space-2);
   justify-content: center;
 }

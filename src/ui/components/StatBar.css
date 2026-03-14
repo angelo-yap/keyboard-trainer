@@ -1,22 +1,25 @@
+/* ─── StatBar — minimal stats bar, uses theme tokens ──────────────────── */
+
 .stat-bar {
   display: flex;
-  gap: 20px;
+  gap: var(--space-5);
   align-items: center;
-  font-size: 13px;
-  margin-bottom: 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .stat-bar-item {
   display: flex;
-  gap: 6px;
+  gap: var(--space-2);
   align-items: baseline;
 }
 
 .stat-bar-label {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--color-text-3);
 }
 
 .stat-bar-value {
-  font-weight: 800;
-  font-size: 16px;
+  font-weight: var(--font-weight-medium);
+  font-size: 14px;
 }

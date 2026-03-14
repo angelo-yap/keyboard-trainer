@@ -1,11 +1,14 @@
 import { getLS, setLS } from "./localStorage";
 
+export type KeyboardLayoutType = "mac" | "windows";
+
 export type Settings = {
   testDuration: number;
   wordCount: number;
   testMode: "time" | "words";
   showKeyboard: boolean;
   showFingerHints: boolean;
+  keyboardLayout: KeyboardLayoutType;
   soundEnabled: boolean;
   caretStyle: "block" | "line" | "underline";
   smoothCaret: boolean;
@@ -18,6 +21,7 @@ const DEFAULT_SETTINGS: Settings = {
   testMode: "time",
   showKeyboard: true,
   showFingerHints: true,
+  keyboardLayout: "mac",
   soundEnabled: false,
   caretStyle: "block",
   smoothCaret: true,

@@ -1,16 +1,24 @@
+/* ─── Toggle — matches theme design language ──────────────────────────── */
+
 .toggle {
   width: 44px;
   height: 26px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-line-2);
   position: relative;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background var(--transition-base), border-color var(--transition-base);
   flex-shrink: 0;
 }
 
+.toggle:hover {
+  border-color: var(--color-line-3);
+}
+
 .toggle-on {
-  background: rgba(255, 140, 50, 0.85);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 .toggle-thumb {
@@ -20,11 +28,12 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: white;
-  transition: left 0.2s;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  background: var(--color-text);
+  transition: left var(--transition-base);
+  box-shadow: var(--shadow-sm);
 }
 
 .toggle-on .toggle-thumb {
   left: 21px;
+  background: var(--color-bg);
 }

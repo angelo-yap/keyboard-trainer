@@ -24,7 +24,7 @@ export function Splash({ onDone }: SplashProps) {
         <p className="splash-subtitle">Learn · Practice · Test · Local analytics</p>
 
         <button className="splash-cta" onClick={onDone}>
-          Get Started →
+          Get Started
         </button>
       </div>
 

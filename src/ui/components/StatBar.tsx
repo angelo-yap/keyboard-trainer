@@ -13,16 +13,16 @@ type StatBarProps = {
 
 export function StatBar({ stats, extra = [] }: StatBarProps) {
   const items: StatItem[] = [
-    { label: "WPM", value: stats.wpm || 0, color: "#ff8c32" },
+    { label: "WPM", value: stats.wpm || 0, color: "var(--color-accent)" },
     {
       label: "Accuracy",
       value: (stats.accuracy ?? 100) + "%",
-      color: (stats.accuracy ?? 100) < 90 ? "#ff5555" : "#7ec87e",
+      color: (stats.accuracy ?? 100) < 90 ? "var(--color-error)" : "var(--color-correct)",
     },
     {
       label: "Errors",
       value: stats.errors || 0,
-      color: stats.errors > 0 ? "#ff5555" : "rgba(255,255,255,0.6)",
+      color: stats.errors > 0 ? "var(--color-error)" : "var(--color-text-3)",
     },
     ...extra,
   ];

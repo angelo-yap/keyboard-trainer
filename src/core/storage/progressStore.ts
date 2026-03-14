@@ -1,5 +1,15 @@
 import { getLS, setLS } from "./localStorage";
 
+const LEARN_PROGRESS_KEY = "kt_learn_progress";
+
+export function getLearnProgress(): number {
+  return getLS(LEARN_PROGRESS_KEY, 0);
+}
+
+export function saveLearnProgress(stepIndex: number): void {
+  setLS(LEARN_PROGRESS_KEY, stepIndex);
+}
+
 export type PracticeAttempt = {
   wpm: number;
   accuracy: number;

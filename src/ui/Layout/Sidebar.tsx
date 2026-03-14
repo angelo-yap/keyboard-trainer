@@ -5,12 +5,12 @@ import { PRACTICE_LESSONS } from "../../core/lesson/lessons/practiceLessons";
 import "./Sidebar.css";
 
 const TABS = [
-  { id: "home", label: "Home", icon: "🏠" },
-  { id: "learn", label: "Learn", icon: "📘" },
-  { id: "practice", label: "Practice", icon: "🎯" },
-  { id: "test", label: "WPM Test", icon: "⌨️" },
-  { id: "analytics", label: "Analytics", icon: "📊" },
-  { id: "settings", label: "Settings", icon: "⚙️" },
+  { id: "home", label: "Home" },
+  { id: "learn", label: "Learn" },
+  { id: "practice", label: "Practice" },
+  { id: "test", label: "WPM Test" },
+  { id: "analytics", label: "Analytics" },
+  { id: "settings", label: "Settings" },
 ];
 
 type SidebarProps = {
@@ -44,7 +44,6 @@ export function Sidebar({ tab, setTab }: SidebarProps) {
             onClick={() => setTab(t.id)}
             className={`sidebar-tab ${tab === t.id ? "sidebar-tab-active" : ""}`}
           >
-            <span className="sidebar-tab-icon">{t.icon}</span>
             {t.label}
             {t.id === "practice" && completedLessons > 0 && (
               <span className="sidebar-badge">
@@ -57,7 +56,7 @@ export function Sidebar({ tab, setTab }: SidebarProps) {
 
       <div className="sidebar-footer">
         {streak.count > 0 && (
-          <div className="sidebar-streak">🔥 {streak.count} day streak</div>
+          <div className="sidebar-streak">{streak.count} day streak</div>
         )}
         {bestWpm && (
           <div className="sidebar-best">

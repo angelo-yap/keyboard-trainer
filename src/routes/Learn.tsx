@@ -1,114 +1,361 @@
-import { useState, useEffect } from "react";
-import { LEARN_STEPS } from "../core/lesson/learnSteps";
-import { KeyboardVisual } from "../ui/components/KeyboardVisual";
-import { Button } from "../ui/components/Button";
+/* ─── src/routes/Learn.tsx ───────────────────────────────────────────────────
+   Drives the interactive learn curriculum defined in learnSteps.ts.
+
+   Key behaviours:
+   - "Continue" is locked until the current step's drill is satisfied.
+   - Drill completion state is tracked locally; the route emits
+     onBack() when the user exits or completes the curriculum.
+   - Progress is saved to progressStore so the user can resume mid-curriculum.
+   ──────────────────────────────────────────────────────────────────────── */
+
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
+import "../ui/Layout/LessonStage.css";
 import "./Learn.css";
+import { TypingDisplay } from "../ui/components/TypingDisplay";
+import { Keyboard } from "../ui/components/keyboard";
+import type { Settings } from "../core/storage/settingsStore";
+import {
+  LEARN_STEPS,
+  TOTAL_STEPS,
+  isLastStep,
+  type LearnStep,
+} from "../core/lesson/learnSteps";
+import { getLearnProgress, saveLearnProgress } from "../core/storage/progressStore";
 
-type LearnProps = {
+/* ── Props ────────────────────────────────────────────────────────────── */
+
+interface LearnProps {
+  /** Called when user returns to home (back from step 0 or skip to practice) */
   onBack: () => void;
-};
+  /** Called when user completes the final step (curriculum complete). If not provided, onBack is used. */
+  onCurriculumComplete?: () => void;
+  settings?: Settings;
+}
 
-export function Learn({ onBack }: LearnProps) {
-  const [step, setStep] = useState(0);
-  const current = LEARN_STEPS[step];
-  const total = LEARN_STEPS.length;
+/* ── Drill state machine ──────────────────────────────────────────────── */
 
-  const canNext = step < total - 1;
-  const canPrev = step > 0;
+interface DrillState {
+  typed: string;
+  keyHits: Record<string, number>;
+  repsCompleted: number;
+  isComplete: boolean;
+}
 
-  return (
-    <div className="learn">
-      <div className="learn-header">
-        <Button variant="secondary" onClick={onBack}>
-          ← Back
-        </Button>
-        <div className="learn-progress-bar">
-          <div
-            className="learn-progress-fill"
-            style={{ width: `${((step + 1) / total) * 100}%` }}
-          />
-        </div>
-        <span className="learn-step-label">
-          {step + 1} / {total}
-        </span>
-      </div>
+function makeFreshDrillState(): DrillState {
+  return { typed: "", keyHits: {}, repsCompleted: 0, isComplete: false };
+}
 
-      <div className="learn-dots">
-        {LEARN_STEPS.map((s, i) => (
-          <div
-            key={i}
-            onClick={() => setStep(i)}
-            className={`learn-dot ${i === step ? "learn-dot-active" : ""} ${i < step ? "learn-dot-done" : ""}`}
-          />
-        ))}
-      </div>
+/* ── Drill logic ─────────────────────────────────────────────────────── */
 
-      <div className="learn-card">
-        <div className="learn-card-icon">{current.icon}</div>
-        <h3 className="learn-card-title">{current.title}</h3>
-        <p className="learn-card-body">{current.body}</p>
-      </div>
+function evaluateDrill(step: LearnStep, state: DrillState): boolean {
+  const { drill } = step;
 
-      {current.highlight.length > 0 && (
-        <div className="learn-keyboard">
-          <div className="learn-keyboard-label">Highlighted keys for this step</div>
-          <HighlightKeyboard keys={current.highlight} />
-        </div>
-      )}
+  if (drill.type === "none") return true;
 
-      <div className="learn-nav">
-        <Button
-          variant="secondary"
-          onClick={() => canPrev && setStep((s) => s - 1)}
-          disabled={!canPrev}
-        >
-          ← Previous
-        </Button>
+  if (drill.type === "hold") return true;
 
-        <div className="learn-dots-inline">
-          {LEARN_STEPS.map((s, i) => (
-            <span
-              key={i}
-              className={`learn-dot-inline ${i <= step ? "active" : ""}`}
-              onClick={() => setStep(i)}
-            >
-              ●
-            </span>
-          ))}
-        </div>
+  const required = drill.requiredReps ?? 1;
 
-        {canNext ? (
-          <Button variant="primary" onClick={() => setStep((s) => s + 1)}>
-            Next →
-          </Button>
-        ) : (
-          <Button variant="primary" onClick={onBack}>
-            Start Practicing! 🎯
-          </Button>
-        )}
-      </div>
-    </div>
+  if (drill.type === "keys") {
+    const keys = drill.keys ?? [];
+    return keys.every((k) => (state.keyHits[k] ?? 0) >= required);
+  }
+
+  if (drill.type === "sequence") {
+    return state.repsCompleted >= required;
+  }
+
+  return false;
+}
+
+/* ── Step progress dots ──────────────────────────────────────────────── */
+
+const StepDots: React.FC<{ current: number; total: number }> = ({
+  current,
+  total,
+}) => (
+  <div
+    className="learn-step-dots"
+    aria-label={`Step ${current + 1} of ${total}`}
+  >
+    {Array.from({ length: total }, (_, i) => (
+      <div
+        key={i}
+        className={[
+          "learn-step-dot",
+          i < current ? "learn-step-dot--done" : "",
+          i === current ? "learn-step-dot--current" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      />
+    ))}
+  </div>
+);
+
+/* ── Body renderer ───────────────────────────────────────────────────── */
+
+/** Converts **bold** markers to <strong> elements */
+function renderBody(text: string): React.ReactNode[] {
+  const parts = text.split(/\*\*(.+?)\*\*/g);
+  return parts.map((part, i) =>
+    i % 2 === 1 ? <strong key={i}>{part}</strong> : part,
   );
 }
 
-function HighlightKeyboard({ keys }: { keys: string[] }) {
-  const [idx, setIdx] = useState(0);
+/* ── Main component ──────────────────────────────────────────────────── */
 
+export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
+  const [stepIndex, setStepIndex] = useState(() =>
+    Math.min(getLearnProgress(), TOTAL_STEPS - 1),
+  );
+  const [drill, setDrill] = useState<DrillState>(makeFreshDrillState());
+  const [lastKey, setLastKey] = useState<string>("");
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const step = LEARN_STEPS[stepIndex];
+  const drillDone = useMemo(() => evaluateDrill(step, drill), [step, drill]);
+
+  /* Focus input whenever step changes */
   useEffect(() => {
-    if (keys.length === 0) return;
-    const interval = setInterval(() => {
-      setIdx((i) => (i + 1) % keys.length);
-    }, 700);
-    return () => clearInterval(interval);
-  }, [keys.length]);
+    setDrill(makeFreshDrillState());
+    setLastKey("");
+    if (step.drill.type !== "none") {
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [stepIndex]);
+
+  /* ── Navigation ────────────────────────────────────────────────────── */
+  const handleContinue = useCallback(() => {
+    if (!drillDone) return;
+    saveLearnProgress(stepIndex + 1);
+
+    if (isLastStep(step.id)) {
+      (onCurriculumComplete ?? onBack)();
+      return;
+    }
+
+    setStepIndex((i) => i + 1);
+    inputRef.current?.focus();
+  }, [drillDone, stepIndex, step, onBack, onCurriculumComplete]);
+
+  /* Enter to advance — document listener so it works even when input not focused */
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Enter") return;
+      if (!drillDone) return;
+      e.preventDefault();
+      handleContinue();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [drillDone, handleContinue]);
+
+  /* ── Key handler ───────────────────────────────────────────────────── */
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (step.drill.type === "none" || step.drill.type === "hold") return;
+
+      const key = e.key === " " ? " " : e.key.toLowerCase();
+      setLastKey(key);
+
+      if (step.drill.type === "keys") {
+        const validKeys = step.drill.keys ?? [];
+        if (validKeys.includes(key)) {
+          setDrill((prev) => ({
+            ...prev,
+            keyHits: {
+              ...prev.keyHits,
+              [key]: (prev.keyHits[key] ?? 0) + 1,
+            },
+          }));
+        }
+        e.preventDefault();
+        return;
+      }
+
+      if (step.drill.type === "sequence") {
+        const seq = step.drill.sequence ?? "";
+        e.preventDefault();
+
+        if (e.key === "Backspace") {
+          setDrill((prev) => ({
+            ...prev,
+            typed: prev.typed.slice(0, -1),
+          }));
+          return;
+        }
+
+        if (e.key === "Tab") return;
+
+        const printable = e.key.length === 1;
+        if (!printable) return;
+
+        setDrill((prev) => {
+          const next = prev.typed + (e.key === " " ? " " : e.key);
+
+          if (next === seq) {
+            const reps = prev.repsCompleted + 1;
+            const required = step.drill.requiredReps ?? 1;
+            return {
+              ...prev,
+              typed: "",
+              repsCompleted: reps,
+              isComplete: reps >= required,
+            };
+          }
+
+          if (next.length > seq.length) {
+            return { ...prev, typed: "" };
+          }
+
+          return { ...prev, typed: next };
+        });
+      }
+    },
+    [step],
+  );
+
+  const handleBack = useCallback(() => {
+    if (stepIndex === 0) {
+      onBack();
+      return;
+    }
+    setStepIndex((i) => i - 1);
+  }, [stepIndex, onBack]);
+
+  const keysDrillKeys =
+    step.drill.type === "keys" ? step.drill.keys ?? [] : [];
+  const required = step.drill.requiredReps ?? 1;
+
+  const paragraphs = step.body
+    .split("\n\n")
+    .map((p) => p.trim())
+    .filter(Boolean);
 
   return (
-    <div className="learn-highlight-keyboard">
-      <KeyboardVisual
-        highlightChar={keys[idx % keys.length]}
-        pressedKey=""
-        showFingerColors={true}
-      />
+    <div className="lesson-stage-root lesson-stage-root--with-footer learn-root">
+      <div className="lesson-stage-topbar learn-topbar">
+        <button
+          className="lesson-stage-topbar__back"
+          onClick={handleBack}
+        >
+          ← back
+        </button>
+        <StepDots current={stepIndex} total={TOTAL_STEPS} />
+        <span className="learn-topbar__label mono-label">
+          {stepIndex + 1} / {TOTAL_STEPS}
+        </span>
+      </div>
+
+      <div
+        className={`learn-body${step.splitLayout ? " learn-body--split" : ""}`}
+        onClick={() => inputRef.current?.focus()}
+      >
+        <input
+          ref={inputRef}
+          className="learn-capture-input"
+          onKeyDown={handleKeyDown}
+          readOnly
+          tabIndex={0}
+        />
+
+        <div className="learn-concept">
+          <div className="learn-concept__eyebrow mono-label">{step.eyebrow}</div>
+          <h2 className="learn-concept__title">{step.title}</h2>
+          <div className="learn-concept__body">
+            {paragraphs.map((para, i) => (
+              <p key={i}>{renderBody(para)}</p>
+            ))}
+          </div>
+        </div>
+
+        <div className="learn-drill-col">
+          {settings?.showKeyboard !== false && (
+            <div className="lesson-stage-keyboard-wrap">
+              <Keyboard
+                layoutType={settings?.keyboardLayout ?? "mac"}
+                highlightKeys={step.highlight}
+                pressedKey={lastKey}
+                showFingerHints={settings?.showFingerHints !== false}
+                mode="lesson"
+              />
+            </div>
+          )}
+
+          <div className="learn-drill">
+            {step.drill.type === "keys" && (
+              <div className="learn-drill__keys">
+                {keysDrillKeys.map((k) => {
+                  const hits = drill.keyHits[k] ?? 0;
+                  const done = hits >= required;
+                  return (
+                    <div
+                      key={k}
+                      className={`learn-drill__key-target${done ? " learn-drill__key-target--done" : ""}`}
+                    >
+                      <span className="learn-drill__key-target-key">{k}</span>
+                      <div className="learn-drill__key-pips">
+                        {Array.from({ length: required }, (_, i) => (
+                          <div
+                            key={i}
+                            className={`learn-drill__key-pip${i < hits ? " learn-drill__key-pip--filled" : ""}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {step.drill.type === "sequence" && (
+              <div className="learn-drill__sequence">
+                <TypingDisplay
+                  target={step.drill.sequence ?? ""}
+                  typed={drill.typed}
+                  showCursor={true}
+                  className="learn-typing-display"
+                />
+                {(step.drill.requiredReps ?? 1) > 1 && (
+                  <div className="learn-drill__rep-count">
+                    {drill.repsCompleted} / {step.drill.requiredReps} complete
+                  </div>
+                )}
+              </div>
+            )}
+
+            {step.drill.hint && (
+              <div className="learn-drill__hint mono-label">
+                {step.drill.hint}
+              </div>
+            )}
+
+            {drillDone && step.drill.type !== "none" && (
+              <div className="learn-drill__complete">ready to continue</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="learn-footer">
+        <button className="learn-footer__skip" onClick={onBack}>
+          skip to practice
+        </button>
+        <button
+          className={`learn-footer__continue${drillDone ? " learn-footer__continue--ready" : ""}`}
+          onClick={handleContinue}
+          disabled={!drillDone}
+        >
+          {isLastStep(step.id) ? "start practising →" : "continue →"}
+        </button>
+      </div>
     </div>
   );
 }

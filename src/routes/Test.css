@@ -1,88 +1,274 @@
+/* ─── Test route — uses LessonStage layout (Learn-style structure) ───────
+   Setup and Results keep their own layout. Active test uses lesson-stage.
+   ──────────────────────────────────────────────────────────────────── */
+
 .test {
-  max-width: 920px;
+  max-width: min(920px, 100%);
+  margin: 0 auto;
+  padding: var(--page-padding);
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.test-controls {
+@media (max-width: 600px) {
+  .test {
+    padding: var(--space-4);
+  }
+}
+
+/* ── Setup state ─────────────────────────────────────────────────────── */
+.test-setup {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
+  justify-content: center;
+  padding: var(--space-6);
+  min-height: calc(100vh - var(--topbar-height) - 48px);
 }
 
-.test-duration {
+@media (max-width: 600px) {
+  .test-setup {
+    padding: var(--space-4);
+  }
+}
+
+.test-setup-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line-2);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8);
+}
+
+.test-setup-title {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  margin-bottom: var(--space-2);
+}
+
+.test-setup-sub {
+  font-size: 14px;
+  color: var(--color-text-3);
+  margin-bottom: var(--space-6);
+}
+
+.test-setup-section {
+  margin-bottom: var(--space-5);
+}
+
+.test-setup-label {
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: var(--space-2);
+}
+
+.test-setup-duration {
   display: flex;
-  gap: 4px;
-  background: rgba(255, 255, 255, 0.04);
-  padding: 4px;
-  border-radius: 99px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  gap: var(--space-1);
+  background: var(--color-surface-2);
+  padding: var(--space-1);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-line-2);
 }
 
-.test-duration-btn {
-  padding: 6px 14px;
-  border-radius: 99px;
+.test-setup-duration-btn {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.55);
-  font-weight: 500;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.15s;
-}
-
-.test-duration-btn.active {
-  background: rgba(255, 140, 50, 0.85);
-  color: #111;
-  font-weight: 800;
-}
-
-.test-timer {
-  margin-left: auto;
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-}
-
-.test-timer-value {
-  font-size: 42px;
-  font-weight: 900;
-  font-family: monospace;
-  min-width: 70px;
-  text-align: right;
-  transition: color 0.3s;
-  line-height: 1;
-}
-
-.test-timer-label {
+  color: var(--color-text-3);
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-medium);
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.3);
-  margin-bottom: 2px;
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.test-setup-duration-btn:hover {
+  color: var(--color-text-2);
+}
+
+.test-setup-duration-btn.active {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.test-setup-toggles {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.test-setup-toggle {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line-2);
+  background: var(--color-surface-2);
+  color: var(--color-text-3);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.test-setup-toggle:hover {
+  color: var(--color-text-2);
+  border-color: var(--color-line-3);
+}
+
+.test-setup-toggle.active {
+  background: var(--color-accent-dim);
+  border-color: var(--color-accent-border);
+  color: var(--color-accent);
+}
+
+.test-setup-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-line);
+}
+
+/* ── Active: Test-specific overrides on LessonStage layout ────────────── */
+.test-topbar-controls {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.test-topbar-duration-btn {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  border: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-2);
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.test-topbar-duration-btn:hover {
+  color: var(--color-accent);
+}
+
+.test-topbar-badge {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  border: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.test-topbar-badge.on {
+  color: var(--color-accent);
+}
+
+.test-topbar-badge.off {
+  color: var(--color-text-3);
+}
+
+.test-topbar-badge:hover {
+  background: var(--color-surface-3);
+}
+
+.test-topbar-new-btn {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-line-2);
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-text-3);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.test-topbar-new-btn:hover {
+  color: var(--color-text-2);
+  border-color: var(--color-line-3);
+}
+
+.test-topbar-timer {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-accent);
+}
+
+.test-topbar-timer--warn {
+  color: var(--color-accent-dark);
+}
+
+.test-topbar-timer--critical {
+  color: var(--color-error);
 }
 
 .test-timer-bar {
   height: 3px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 99px;
+  background: var(--color-surface-2);
+  border-radius: 0;
   overflow: hidden;
-  margin-bottom: 16px;
+  flex-shrink: 0;
 }
 
 .test-timer-fill {
   height: 100%;
-  border-radius: 99px;
-  transition: width 1s linear, background 0.3s;
+  border-radius: 0;
+  transition: width 1s linear, background var(--transition-base);
+  background: var(--color-accent);
+}
+
+.test-timer-fill--warn {
+  background: var(--color-accent-dark);
+}
+
+.test-timer-fill--critical {
+  background: var(--color-error);
 }
 
 .test-idle-hint {
-  text-align: center;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.3);
-  padding: 8px 0 16px;
-  letter-spacing: 0.5px;
+  font-size: 12px;
+  color: var(--color-text-3);
+  letter-spacing: 0.04em;
+}
+
+.test-typing-wrap {
+  width: 100%;
+  max-width: min(720px, 95vw);
+  cursor: text;
+  transition: opacity 0.18s ease;
+  display: flex;
+  justify-content: center;
+}
+
+.test-typing-wrap--transitioning {
+  opacity: 0;
+}
+
+/* Match Learn typing scale: clamp(18px, 3.5vw, 24px) */
+.test-typing-wrap .typing-display {
+  font-size: clamp(18px, 3.5vw, 24px) !important;
+  letter-spacing: 0.08em;
+  line-height: 1.5;
 }
 
 .test-hidden-input {
-  position: fixed;
+  position: absolute;
   opacity: 0;
   width: 1px;
   height: 1px;
@@ -91,9 +277,21 @@
   left: 0;
 }
 
-.test-keyboard-wrap {
-  margin-top: 16px;
-  transform: scale(0.88);
-  transform-origin: top center;
-  margin-bottom: -36px;
+/* ── Results state ──────────────────────────────────────────────────── */
+.test-results-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: min(520px, 95vw);
+  margin: 0 auto;
+  padding: var(--page-padding);
+  min-height: calc(100vh - var(--topbar-height) - 48px);
+}
+
+.test-results-actions {
+  margin-top: var(--space-6);
+  display: flex;
+  justify-content: center;
 }

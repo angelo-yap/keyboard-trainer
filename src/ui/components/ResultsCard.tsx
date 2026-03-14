@@ -23,8 +23,6 @@ export function ResultsCard({
 }: ResultsCardProps) {
   const grade =
     result.accuracy >= 98 ? "S" : result.accuracy >= 95 ? "A" : result.accuracy >= 90 ? "B" : result.accuracy >= 80 ? "C" : "D";
-  const gradeColor =
-    grade === "S" ? "#ffd700" : grade === "A" ? "#7ec87e" : grade === "B" ? "#ff8c32" : grade === "C" ? "#e09a54" : "#ff5555";
 
   return (
     <div className="results-card">
@@ -35,10 +33,7 @@ export function ResultsCard({
           <div className="results-card-wpm">{result.wpm}</div>
           <div className="results-card-wpm-label">words per minute</div>
         </div>
-        <div
-          className="results-card-grade"
-          style={{ color: gradeColor, textShadow: `0 0 30px ${gradeColor}60` }}
-        >
+        <div className={`results-card-grade results-card-grade--${grade.toLowerCase()}`}>
           {grade}
         </div>
       </div>
