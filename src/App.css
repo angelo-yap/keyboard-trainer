@@ -1,42 +1,100 @@
-#root {
-  max-width: 1280px;
+.app-shell {
+  max-width: 960px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 2rem 1rem 3rem;
+  color: #e9edf3;
+}
+
+h1,
+h2 {
+  margin: 0;
+}
+
+header p {
+  margin-top: 0.5rem;
+  color: #abb3c2;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.status-grid article {
+  background: #1a1f2b;
+  border: 1px solid #2a3242;
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.status-grid p {
+  margin: 0.6rem 0 0;
+}
+
+.status-grid .large {
+  font-size: 1.7rem;
+  font-weight: 700;
+}
+
+.letter-form {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.6rem;
+  align-items: end;
+}
+
+.letter-form label {
+  display: block;
+  color: #c3cbdb;
+  margin-right: 0.4rem;
+}
+
+.letter-form input {
+  width: 72px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid #364156;
+  background: #0f1420;
+  color: #f2f5f9;
   text-align: center;
+  font-size: 1.05rem;
+  font-weight: 700;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+button {
+  border: 1px solid #3c4b66;
+  border-radius: 8px;
+  background: #162033;
+  color: #dce5f3;
+  padding: 0.5rem 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+button:hover {
+  background: #1c2a43;
+}
+
+.letter-pad {
+  margin-top: 1.2rem;
+  display: grid;
+  grid-template-columns: repeat(13, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.message {
+  margin-top: 1rem;
+  color: #b8c2d6;
+}
+
+@media (max-width: 900px) {
+  .status-grid {
+    grid-template-columns: 1fr;
   }
-  to {
-    transform: rotate(360deg);
+
+  .letter-pad {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
   }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
 }
