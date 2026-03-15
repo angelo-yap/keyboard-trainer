@@ -12,11 +12,11 @@ import {
 import { createSessionRecorder } from "../core/session/sessionMetrics";
 import type { SessionReport } from "../core/session/sessionMetrics";
 import { sessionHistoryStore } from "../core/storage/sessionHistoryStore";
-
+ 
 export type { SessionState } from "../core/session/sessionTypes";
 export type { SessionMetrics } from "../core/session/sessionTypes";
 export type { SessionReport } from "../core/session/sessionMetrics";
-
+ 
 export type UseTypingSessionOptions = {
   text: string;
   enabled?: boolean;
@@ -25,7 +25,7 @@ export type UseTypingSessionOptions = {
   onComplete?: (stats: TypingStats, session: SessionState) => void;
   onProgress?: (progress: { nextChar: string; typedLength: number; totalLength: number }) => void;
 };
-
+ 
 /**
  * Typing hook with full session tracking for post-session analytics.
  * - Timer starts on first keystroke, continues even when paused
@@ -48,7 +48,7 @@ export function useTypingSession({
   const recorderRef = useRef<ReturnType<typeof createSessionRecorder> | null>(null);
   const tickIntervalRef = useRef<ReturnType<typeof setInterval>>();
   const [report, setReport] = useState<SessionReport | null>(null);
-
+ 
   const finishRecorder = useCallback(() => {
     const rec = recorderRef.current;
     if (!rec) return null;
@@ -59,7 +59,7 @@ export function useTypingSession({
     setReport(r);
     return r;
   }, []);
-
+ 
   const handleKeystroke = useCallback(
     (event: {
       startedAt: number;
@@ -106,16 +106,21 @@ export function useTypingSession({
     },
     [sessionType, lessonId]
   );
-
+ 
   const handleComplete = useCallback(
     (stats: TypingStats) => {
+      // If no onComplete handler, this is a timer-driven test — the timer
+      // owns the session lifecycle. Don't finalize the recorder here or the
+      // session will end the moment the text buffer runs out mid-test.
+      if (!onComplete) return;
+ 
       finishRecorder();
       if (sessionRef.current) {
         const endedAt = Date.now();
         sessionRef.current = endSession(sessionRef.current, endedAt);
-        onComplete?.(stats, sessionRef.current);
+        onComplete(stats, sessionRef.current);
       } else {
-        onComplete?.(stats, {
+        onComplete(stats, {
           ...createEmptyState(Date.now()),
           endedAt: Date.now(),
           elapsedMs: 0,
@@ -124,7 +129,7 @@ export function useTypingSession({
     },
     [onComplete, finishRecorder]
   );
-
+ 
   const typing = useTyping({
     text,
     enabled,
@@ -132,7 +137,7 @@ export function useTypingSession({
     onProgress,
     onKeystroke: handleKeystroke,
   });
-
+ 
   // WPM samples every second while session is active
   useEffect(() => {
     if (!typing.startTime || typing.isComplete) {
@@ -147,7 +152,7 @@ export function useTypingSession({
     }, 1000);
     return () => clearInterval(wpmIntervalRef.current);
   }, [typing.startTime, typing.isComplete]);
-
+ 
   // Reset session state when text changes
   useEffect(() => {
     sessionRef.current = null;
@@ -156,15 +161,15 @@ export function useTypingSession({
     clearInterval(tickIntervalRef.current);
     setReport(null);
   }, [text]);
-
+ 
   const sessionMetrics =
     sessionRef.current && typing.startTime
       ? getSessionMetrics(sessionRef.current)
       : null;
-
+ 
   const liveWpm = recorderRef.current?.getliveWpm() ?? 0;
   const liveAccuracy = recorderRef.current?.getLiveAccuracy() ?? 100;
-
+ 
   const reset = useCallback(() => {
     sessionRef.current = null;
     lastCorrectTimeRef.current = null;
@@ -173,7 +178,7 @@ export function useTypingSession({
     setReport(null);
     typing.reset();
   }, [typing]);
-
+ 
   /** End session early (e.g. for timed tests). Returns finalized session state. */
   const endSessionEarly = useCallback((): SessionState | null => {
     if (!sessionRef.current || sessionRef.current.endedAt) return null;
@@ -182,7 +187,7 @@ export function useTypingSession({
     sessionRef.current = endSession(sessionRef.current, endedAt);
     return sessionRef.current;
   }, [finishRecorder]);
-
+ 
   return {
     ...typing,
     reset,

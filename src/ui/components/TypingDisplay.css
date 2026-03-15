@@ -1,4 +1,4 @@
-/* ─── src/ui/components/TypingDisplay.css ───────────────────────────────── */
+/* ─── TypingDisplay.css ─────────────────────────────────────────────────── */
 
 .typing-display {
   font-family: var(--font-mono);
@@ -14,6 +14,24 @@
   -webkit-user-select: none;
 }
 
+/* ── Viewport wrapper — Test mode ────────────────────────────────────────── */
+/* Clips to 3 lines. The inner .typing-display scrolls natively via scrollTo.
+   No translateY, no JS per-render measuring — identical perf to learn mode.  */
+.typing-display--viewport-wrap {
+  width: 100%;
+  height: calc(32px * 3);   /* exactly 3 lines at 32px line-height */
+  overflow: hidden;          /* clip — scrollbar never shows */
+  position: relative;
+}
+
+/* Override font/layout for test viewport */
+.typing-display--viewport-wrap .typing-display {
+  font-size: 18px;
+  line-height: 32px;
+  justify-content: flex-start;
+  letter-spacing: 0.05em;
+}
+
 /* Keep each word on one line — no mid-word breaks */
 .typing-display__word {
   white-space: nowrap;
@@ -26,11 +44,9 @@
   transition: color 60ms ease;
 }
 
-/* ── States ───────────────────────────────────────────────────────────── */
+/* ── States ──────────────────────────────────────────────────────────────── */
 
-.typing-display__char--correct {
-  color: var(--color-correct);
-}
+.typing-display__char--correct { color: var(--color-correct); }
 
 .typing-display__char--error {
   color: var(--color-error);
@@ -43,7 +59,6 @@
   scroll-margin: 40px;
 }
 
-/* Blinking underline cursor */
 .typing-display__char--cursor::after {
   content: "";
   position: absolute;
@@ -56,21 +71,9 @@
   animation: typing-cursor-blink 1s ease-in-out infinite;
 }
 
-.typing-display__char--ahead {
-  color: var(--color-text-3);
-}
-
-/* Space characters should still take up natural width */
-.typing-display__char--space {
-  /* inherits width from &nbsp; */
-}
+.typing-display__char--ahead { color: var(--color-text-3); }
 
 @keyframes typing-cursor-blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
 }

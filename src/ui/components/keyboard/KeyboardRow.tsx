@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { KeyDef } from "./keyboardLayouts";
 import { KeyboardKey } from "./KeyboardKey";
 import { FINGER_MAP, FINGER_COLORS_SOFT } from "../../../core/keyboard/fingerMap";
@@ -29,7 +30,7 @@ function getFingerColor(def: KeyDef): string | null {
   return FINGER_COLORS_SOFT[idx] ?? null;
 }
 
-export function KeyboardRow({
+export const KeyboardRow = memo(function KeyboardRow({
   keys,
   indent,
   unitSize,
@@ -75,4 +76,4 @@ export function KeyboardRow({
       })}
     </div>
   );
-}
+});

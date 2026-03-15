@@ -249,22 +249,13 @@
 
 .test-typing-wrap {
   width: 100%;
-  max-width: min(720px, 95vw);
+  max-width: 680px;
   cursor: text;
   transition: opacity 0.18s ease;
-  display: flex;
-  justify-content: center;
 }
 
 .test-typing-wrap--transitioning {
   opacity: 0;
-}
-
-/* Match Learn typing scale: clamp(18px, 3.5vw, 24px) */
-.test-typing-wrap .typing-display {
-  font-size: clamp(18px, 3.5vw, 24px) !important;
-  letter-spacing: 0.08em;
-  line-height: 1.5;
 }
 
 .test-hidden-input {
@@ -278,20 +269,19 @@
 }
 
 /* ── Results state ──────────────────────────────────────────────────── */
-.test-results-wrap {
+.test-results-page {
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  max-width: min(520px, 95vw);
-  margin: 0 auto;
-  padding: var(--page-padding);
   min-height: calc(100vh - var(--topbar-height) - 48px);
+  overflow-y: auto;
 }
 
-.test-results-actions {
-  margin-top: var(--space-6);
+.test-results-extra-actions {
   display: flex;
   justify-content: center;
+  padding: 0 clamp(var(--space-6), 6vw, 80px) var(--space-8);
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
 }

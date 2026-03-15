@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTypingSession } from "../hooks/useTypingSession";
 import { getSessionMetrics } from "../core/session/sessionTracker";
-import { generateTestText } from "../core/test/testTextGenerator";
+import { generateTestText, generateWordChunk } from "../core/test/testTextGenerator";
 import { saveTestResult } from "../core/storage/testHistoryStore";
 import { updateStreak } from "../core/storage/streakStore";
 import { Keyboard } from "../ui/components/keyboard";
@@ -22,6 +22,13 @@ type TestProps = {
 const DURATION_OPTIONS = [15, 30, 60, 120] as const;
 const TRANSITION_MS = 180;
 
+/**
+ * How many characters ahead of the cursor we maintain as a buffer.
+ * When remaining chars drops below this, we append more words.
+ */
+const BUFFER_AHEAD_CHARS = 300;
+const REFILL_WORD_COUNT = 30;
+
 export function Test({ onBack, settings }: TestProps) {
   const [testStatus, setTestStatus] = useState<TestStatus>("setup");
   const [duration, setDuration] = useState(settings?.testDuration || 60);
@@ -35,29 +42,50 @@ export function Test({ onBack, settings }: TestProps) {
   const timerRef = useRef<ReturnType<typeof setInterval>>();
   const endSessionRef = useRef<() => import("../core/session/sessionTypes").SessionState | null>(null);
   const hasEndedRef = useRef(false);
+  const startRef = useRef<number | null>(null);
   const prevSettingsRef = useRef({ duration, includePunctuation, includeNumbers });
   const typingRef = useRef<{ reset: () => void } | null>(null);
+  const refillingRef = useRef(false);
+
+  // Keep options in refs so refill callback doesn't go stale
+  const includePunctuationRef = useRef(includePunctuation);
+  const includeNumbersRef = useRef(includeNumbers);
+  includePunctuationRef.current = includePunctuation;
+  includeNumbersRef.current = includeNumbers;
+
+  // Keep current text length in a ref so refill can check without stale closures
+  const textLengthRef = useRef(0);
+  textLengthRef.current = text.length;
+
+  const maybeRefill = useCallback((typedLength: number) => {
+    const remaining = textLengthRef.current - typedLength;
+
+    if (remaining >= BUFFER_AHEAD_CHARS || refillingRef.current) return;
+
+    refillingRef.current = true;
+
+    const chunk = generateWordChunk(
+      REFILL_WORD_COUNT,
+      includePunctuationRef.current,
+      includeNumbersRef.current,
+    );
+
+    setText((prev) => `${prev} ${chunk}`);
+
+    setTimeout(() => {
+      refillingRef.current = false;
+    }, 0);
+  }, []);
 
   const typing = useTypingSession({
     text,
     enabled: testStatus === "active",
     sessionType: "test",
-    onComplete: (_, session) => {
-      if (hasEndedRef.current) return;
-      hasEndedRef.current = true;
-      clearInterval(timerRef.current);
-      const metrics = getSessionMetrics(session);
-      saveTestResult({
-        wpm: metrics.wpm,
-        rawWpm: metrics.rawWpm,
-        accuracy: metrics.accuracy,
-        errors: metrics.errors,
-        chars: metrics.chars,
-        duration,
-        date: new Date().toISOString(),
-      });
-      updateStreak();
-      setTestStatus("finished");
+    // Timer is the ONLY thing that ends a timed test.
+    // Text exhaustion is prevented by the dynamic refill above.
+    onComplete: undefined,
+    onProgress: ({ typedLength }) => {
+      maybeRefill(typedLength);
     },
   });
 
@@ -110,42 +138,41 @@ export function Test({ onBack, settings }: TestProps) {
   /* Timer starts on first keystroke */
   useEffect(() => {
     if (testStatus !== "active" || !typing.startTime || timerStarted) return;
+    startRef.current = Date.now();
     setTimerStarted(true);
     setTimeLeft(duration);
   }, [testStatus, typing.startTime, timerStarted, duration]);
 
-  /* Countdown when timer has started */
+  /* Countdown — 100ms interval against a fixed start timestamp, not integer decrement */
   useEffect(() => {
-    if (testStatus !== "active" || !timerStarted) return;
-    timerRef.current = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 1) {
-          clearInterval(timerRef.current);
-            if (!hasEndedRef.current) {
-            hasEndedRef.current = true;
-            const session = endSessionRef.current?.();
-            if (session) {
-              const metrics = getSessionMetrics(session);
-              saveTestResult({
-                wpm: metrics.wpm,
-                rawWpm: metrics.rawWpm,
-                accuracy: metrics.accuracy,
-                errors: metrics.errors,
-                chars: metrics.chars,
-                duration,
-                date: new Date().toISOString(),
-              });
-              updateStreak();
-            }
-            setTestStatus("finished");
-          }
-          return 0;
+    if (testStatus !== "active") return;
+    const interval = setInterval(() => {
+      if (!startRef.current) return;
+      const elapsed = (Date.now() - startRef.current) / 1000;
+      const remaining = Math.max(0, duration - elapsed);
+      setTimeLeft(Math.ceil(remaining));
+      if (remaining <= 0 && !hasEndedRef.current) {
+        clearInterval(interval);
+        hasEndedRef.current = true;
+        const session = endSessionRef.current?.();
+        if (session) {
+          const metrics = getSessionMetrics(session);
+          saveTestResult({
+            wpm: metrics.wpm,
+            rawWpm: metrics.rawWpm,
+            accuracy: metrics.accuracy,
+            errors: metrics.errors,
+            chars: metrics.chars,
+            duration,
+            date: new Date().toISOString(),
+          });
+          updateStreak();
         }
-        return t - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timerRef.current);
-  }, [testStatus, timerStarted, duration]);
+        setTestStatus("finished");
+      }
+    }, 100);
+    return () => clearInterval(interval);
+  }, [testStatus, duration]);
 
   const startTest = useCallback(() => {
     hasEndedRef.current = false;
@@ -181,13 +208,13 @@ export function Test({ onBack, settings }: TestProps) {
   /* ── Finished: show results ─────────────────────────────────────────── */
   if (testStatus === "finished" && typing.report) {
     return (
-      <div className="test-results-wrap">
+      <div className="test-results-page">
         <SessionReportCard
           report={typing.report}
           onRetry={retryWithSameSettings}
           onHome={onBack}
         />
-        <div className="test-results-actions">
+        <div className="test-results-extra-actions">
           <Button variant="secondary" onClick={backToSetup}>
             Change Settings
           </Button>
@@ -335,6 +362,7 @@ export function Test({ onBack, settings }: TestProps) {
             <TypingDisplay
               target={text}
               typed={typing.typed}
+              mode="viewport"
             />
           </div>
 
@@ -343,7 +371,6 @@ export function Test({ onBack, settings }: TestProps) {
               <Keyboard
                 layoutType={settings?.keyboardLayout ?? "mac"}
                 highlightKey=""
-                pressedKey={typing.pressedKey}
                 showFingerHints={false}
                 mode="test"
               />

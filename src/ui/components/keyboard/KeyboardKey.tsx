@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { KeyDef } from "./keyboardLayouts";
 import "./Keyboard.css";
 
@@ -13,7 +14,7 @@ type KeyboardKeyProps = {
   mode: "lesson" | "test";
 };
 
-export function KeyboardKey({
+export const KeyboardKey = memo(function KeyboardKey({
   def,
   unitSize,
   gap,
@@ -54,4 +55,4 @@ export function KeyboardKey({
       {isHome && !isHighlighted && !isPressed && <span className="kb-key__home-dot" />}
     </div>
   );
-}
+});

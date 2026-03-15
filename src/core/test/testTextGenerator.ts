@@ -21,10 +21,22 @@ export type TestTextOptions = {
   includeNumbers: boolean;
 };
 
-export function generateTestText(options: TestTextOptions): string {
-  const { durationSeconds, includePunctuation, includeNumbers } = options;
-  const wordCount = wordsForDuration(durationSeconds);
-  const words = shuffle([...TOP_500]).slice(0, wordCount);
+/**
+ * Build a chunk of words as a string (no trailing space).
+ * Each chunk is independently shuffled so repetition is minimised.
+ */
+export function generateWordChunk(
+  wordCount: number,
+  includePunctuation: boolean,
+  includeNumbers: boolean
+): string {
+  // Cycle through the word pool with shuffled passes to avoid repetition
+  const pool = shuffle([...TOP_500]);
+  const words: string[] = [];
+  while (words.length < wordCount) {
+    words.push(...pool.slice(0, wordCount - words.length));
+    if (words.length < wordCount) pool.push(...shuffle([...TOP_500]));
+  }
 
   const result: string[] = [];
 
@@ -51,4 +63,12 @@ export function generateTestText(options: TestTextOptions): string {
   }
 
   return result.join("");
+}
+
+export function generateTestText(options: TestTextOptions): string {
+  const { durationSeconds, includePunctuation, includeNumbers } = options;
+  // Generate a large initial buffer — enough for even the fastest typist
+  // at 200 WPM for the full duration, with a comfortable extra margin.
+  const wordCount = Math.max(wordsForDuration(durationSeconds) * 2, 80);
+  return generateWordChunk(wordCount, includePunctuation, includeNumbers);
 }

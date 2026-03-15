@@ -14,7 +14,7 @@
 html, body, #root {
   height: 100%;
   width: 100%;
-  overflow: hidden;           /* Electron window — no scroll on the shell */
+  overflow: hidden;
 }
 
 body {
@@ -36,9 +36,12 @@ body {
   scroll-padding: 24px;
 }
 
-.scrollable::-webkit-scrollbar        { width: 4px; }
-.scrollable::-webkit-scrollbar-track  { background: transparent; }
-.scrollable::-webkit-scrollbar-thumb  { background: var(--color-line-2); border-radius: 2px; }
+.scrollable::-webkit-scrollbar { width: 4px; }
+.scrollable::-webkit-scrollbar-track { background: transparent; }
+.scrollable::-webkit-scrollbar-thumb {
+  background: var(--color-line-2);
+  border-radius: 2px;
+}
 
 /* ── Utility: mono label ──────────────────────────────────────────────── */
 .mono-label {

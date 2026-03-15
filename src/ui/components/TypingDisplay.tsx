@@ -1,68 +1,127 @@
-/* ─── src/ui/components/TypingDisplay.tsx ────────────────────────────────────
-   Renders the text-to-type with per-character state coloring.
-   Words are kept on single lines (no mid-word breaks).
-   ──────────────────────────────────────────────────────────────────────── */
-
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, memo, useMemo } from "react";
 import "./TypingDisplay.css";
 
 export type CharState = "done" | "correct" | "error" | "cursor" | "ahead";
 
 interface TypingDisplayProps {
-  /** The full string the user needs to type */
   target: string;
-  /** How many characters the user has typed so far */
   typed: string;
-  /** Optional: show a blinking cursor at the current position */
   showCursor?: boolean;
-  /** Optional: additional class */
   className?: string;
-  /** Optional: click to focus (e.g. for hidden input capture) */
   onClick?: () => void;
+  mode?: "viewport" | "full";
 }
 
-function getCharState(
-  charIndex: number,
-  typed: string,
-  target: string
-): CharState {
-  if (charIndex < typed.length) {
-    return typed[charIndex] === target[charIndex] ? "correct" : "error";
-  }
-  if (charIndex === typed.length) return "cursor";
+function getCharState(i: number, typed: string, target: string): CharState {
+  if (i < typed.length) return typed[i] === target[i] ? "correct" : "error";
+  if (i === typed.length) return "cursor";
   return "ahead";
 }
 
-/** Split target into segments (word+space or space-only) so words never break across lines */
 function getWordSegments(target: string): { text: string; startIndex: number }[] {
   const segments: { text: string; startIndex: number }[] = [];
   const regex = /\S+\s*|\s+/g;
-  let m;
+  let m: RegExpExecArray | null;
   while ((m = regex.exec(target)) !== null) {
     segments.push({ text: m[0], startIndex: m.index });
   }
   return segments;
 }
 
-export const TypingDisplay: React.FC<TypingDisplayProps> = ({
+const Char = memo(function Char({
+  ch,
+  state,
+  isCursor,
+  cursorRef,
+}: {
+  ch: string;
+  state: CharState;
+  isCursor?: boolean;
+  cursorRef?: React.RefObject<HTMLSpanElement | null>;
+}) {
+  return (
+    <span
+      ref={isCursor ? cursorRef : undefined}
+      className={[
+        "typing-display__char",
+        `typing-display__char--${state}`,
+        ch === " " ? "typing-display__char--space" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      {ch === " " ? "\u00A0" : ch}
+    </span>
+  );
+});
+
+/**
+ * Word segment that only re-renders when the cursor enters or leaves it.
+ * Words the cursor has already passed stay frozen (memo'd as "correct"/"error").
+ * Words the cursor hasn't reached yet stay frozen as "ahead".
+ * Only the 1–2 words around the cursor ever re-render per keystroke.
+ */
+const WordSegment = memo(
+  function WordSegment({
+    text,
+    startIndex,
+    typed,
+    target,
+    cursorRef,
+  }: {
+    text: string;
+    startIndex: number;
+    typed: string;
+    target: string;
+    cursorRef: React.RefObject<HTMLSpanElement | null>;
+  }) {
+    return (
+      <span className="typing-display__word">
+        {text.split("").map((ch, j) => {
+          const i = startIndex + j;
+          const state = getCharState(i, typed, target);
+          const isCursor = state === "cursor";
+          return (
+            <Char
+              key={i}
+              ch={ch}
+              state={state}
+              isCursor={isCursor}
+              cursorRef={cursorRef}
+            />
+          );
+        })}
+      </span>
+    );
+  },
+  // Only re-render when the cursor moves into or out of this word
+  (prev, next) => {
+    if (prev.text !== next.text || prev.startIndex !== next.startIndex) return false;
+    const wordEnd = prev.startIndex + prev.text.length;
+    const wordStart = prev.startIndex;
+    const prevCursorHere =
+      prev.typed.length >= wordStart && prev.typed.length <= wordEnd;
+    const nextCursorHere =
+      next.typed.length >= wordStart && next.typed.length <= wordEnd;
+    if (!prevCursorHere && !nextCursorHere) return true; // skip re-render
+    return false; // re-render
+  }
+);
+
+function TypingDisplayInner({
   target,
   typed,
-  showCursor = true,
-  className = "",
+  className,
   onClick,
-}) => {
-  const cursorRef = useRef<HTMLSpanElement>(null);
-
-  /* Keep cursor in view with smooth scroll */
-  useEffect(() => {
-    cursorRef.current?.scrollIntoView({
-      block: "nearest",
-      inline: "nearest",
-      behavior: "smooth",
-    });
-  }, [typed.length]);
-
-  const segments = getWordSegments(target);
+  cursorRef,
+}: {
+  target: string;
+  typed: string;
+  className: string;
+  onClick?: () => void;
+  cursorRef: React.RefObject<HTMLSpanElement | null>;
+}) {
+  const segments = useMemo(() => getWordSegments(target), [target]);
 
   return (
     <div
@@ -71,39 +130,83 @@ export const TypingDisplay: React.FC<TypingDisplayProps> = ({
       onClick={onClick}
       style={onClick ? { cursor: "text" } : undefined}
     >
-      {segments.map((seg, segIdx) => {
-        const chars = seg.text.split("");
-        return (
-          <span
-            key={segIdx}
-            className="typing-display__word"
-          >
-            {chars.map((ch, j) => {
-              const charIndex = seg.startIndex + j;
-              const state = getCharState(charIndex, typed, target);
-              const isCursorPos = showCursor && state === "cursor";
-
-              return (
-                <span
-                  key={charIndex}
-                  ref={isCursorPos ? cursorRef : undefined}
-                  className={[
-                    "typing-display__char",
-                    `typing-display__char--${state}`,
-                    ch === " " ? "typing-display__char--space" : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                >
-                  {ch === " " ? "\u00A0" : ch}
-                </span>
-              );
-            })}
-          </span>
-        );
-      })}
+      {segments.map((seg) => (
+        <WordSegment
+          key={seg.startIndex}
+          text={seg.text}
+          startIndex={seg.startIndex}
+          typed={typed}
+          target={target}
+          cursorRef={cursorRef}
+        />
+      ))}
     </div>
   );
+}
+
+function FullTypingDisplay({
+  target,
+  typed,
+  className = "",
+  onClick,
+}: TypingDisplayProps) {
+  const cursorRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    cursorRef.current?.scrollIntoView({ block: "nearest" });
+  }, [typed.length]);
+
+  return (
+    <TypingDisplayInner
+      target={target}
+      typed={typed}
+      className={className}
+      onClick={onClick}
+      cursorRef={cursorRef}
+    />
+  );
+}
+
+function ViewportTypingDisplay({
+  target,
+  typed,
+  className = "",
+  onClick,
+}: TypingDisplayProps) {
+  const cursorRef = useRef<HTMLSpanElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  // Only scroll when the line actually changes — avoids a forced layout reflow every keystroke
+  const lastLineRef = useRef(-1);
+
+  useEffect(() => {
+    const cursor = cursorRef.current;
+    const wrap = wrapRef.current;
+    if (!cursor || !wrap) return;
+
+    const lineH = 32;
+    const currentLine = Math.floor(cursor.offsetTop / lineH);
+    if (currentLine === lastLineRef.current) return;
+    lastLineRef.current = currentLine;
+
+    wrap.scrollTop = Math.max(0, cursor.offsetTop - lineH);
+  }, [typed.length]);
+
+  return (
+    <div ref={wrapRef} className="typing-display--viewport-wrap">
+      <TypingDisplayInner
+        target={target}
+        typed={typed}
+        className={className}
+        onClick={onClick}
+        cursorRef={cursorRef}
+      />
+    </div>
+  );
+}
+
+export const TypingDisplay: React.FC<TypingDisplayProps> = (props) => {
+  if (props.mode === "viewport") return <ViewportTypingDisplay {...props} />;
+  return <FullTypingDisplay {...props} />;
 };
 
 export default TypingDisplay;
