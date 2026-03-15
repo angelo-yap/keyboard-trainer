@@ -3,7 +3,6 @@
    ──────────────────────────────────────────────────────────────────────── */
 
 @import './theme.css';
-@import './ui/components/ui.css';
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -14,7 +13,7 @@
 html, body, #root {
   height: 100%;
   width: 100%;
-  overflow: hidden;
+  overflow: hidden;           /* Electron window — no scroll on the shell */
 }
 
 body {
@@ -33,15 +32,11 @@ body {
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--color-line-2) transparent;
-  scroll-padding: 24px;
 }
 
-.scrollable::-webkit-scrollbar { width: 4px; }
-.scrollable::-webkit-scrollbar-track { background: transparent; }
-.scrollable::-webkit-scrollbar-thumb {
-  background: var(--color-line-2);
-  border-radius: 2px;
-}
+.scrollable::-webkit-scrollbar        { width: 4px; }
+.scrollable::-webkit-scrollbar-track  { background: transparent; }
+.scrollable::-webkit-scrollbar-thumb  { background: var(--color-line-2); border-radius: 2px; }
 
 /* ── Utility: mono label ──────────────────────────────────────────────── */
 .mono-label {

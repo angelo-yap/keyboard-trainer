@@ -1,0 +1,79 @@
+/* ─── TypingDisplay.css ─────────────────────────────────────────────────── */
+
+.typing-display {
+  font-family: var(--font-mono);
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: var(--font-weight-light);
+  letter-spacing: 0.06em;
+  line-height: 1.4;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── Viewport wrapper — Test mode ────────────────────────────────────────── */
+/* Clips to 3 lines. The inner .typing-display scrolls natively via scrollTo.
+   No translateY, no JS per-render measuring — identical perf to learn mode.  */
+.typing-display--viewport-wrap {
+  width: 100%;
+  height: calc(32px * 3);   /* exactly 3 lines at 32px line-height */
+  overflow: hidden;          /* clip — scrollbar never shows */
+  position: relative;
+}
+
+/* Override font/layout for test viewport */
+.typing-display--viewport-wrap .typing-display {
+  font-size: 18px;
+  line-height: 32px;
+  justify-content: flex-start;
+  letter-spacing: 0.05em;
+}
+
+/* Keep each word on one line — no mid-word breaks */
+.typing-display__word {
+  white-space: nowrap;
+  display: inline;
+}
+
+.typing-display__char {
+  display: inline-block;
+  position: relative;
+  transition: color 60ms ease;
+}
+
+/* ── States ──────────────────────────────────────────────────────────────── */
+
+.typing-display__char--correct { color: var(--color-correct); }
+
+.typing-display__char--error {
+  color: var(--color-error);
+  background: var(--color-error-dim);
+  border-radius: 2px;
+}
+
+.typing-display__char--cursor {
+  color: var(--color-text);
+  scroll-margin: 40px;
+}
+
+.typing-display__char--cursor::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 2px;
+  background: var(--color-accent);
+  border-radius: 1px;
+  animation: typing-cursor-blink 1s ease-in-out infinite;
+}
+
+.typing-display__char--ahead { color: var(--color-text-3); }
+
+@keyframes typing-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}

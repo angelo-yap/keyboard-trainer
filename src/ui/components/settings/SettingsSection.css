@@ -1,0 +1,23 @@
+/* ─── SettingsSection — matches theme design language ────────────────── */
+
+.settings-section {
+  margin-bottom: var(--space-5);
+}
+
+.settings-section-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: var(--font-weight-regular);
+  color: var(--color-accent);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-2);
+  padding-left: var(--space-1);
+}
+
+.settings-section-content {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-line-2);
+  overflow: hidden;
+}

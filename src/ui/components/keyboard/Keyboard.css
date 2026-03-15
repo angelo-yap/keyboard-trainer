@@ -1,0 +1,101 @@
+/* ─── Keyboard — configuration-based, minimal design ──────────────────── */
+
+/* Scale down when container is narrower than keyboard intrinsic width (~605px) */
+@container kb (max-width: 605px) {
+  .kb-root {
+    transform: scale(calc(100cqw / 605px));
+    transform-origin: center top;
+  }
+}
+
+.kb-root {
+  display: flex;
+  justify-content: center;
+  user-select: none;
+}
+
+.kb-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-line-2);
+}
+
+.kb-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.kb-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-3);
+  background: var(--color-surface-2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease,
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.kb-key:hover {
+  background: var(--color-surface-3);
+  border-color: var(--color-line-2);
+}
+
+.kb-key--space {
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: var(--color-text-3);
+}
+
+.kb-key--wide {
+  font-size: 10px;
+}
+
+.kb-key--home {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.kb-key__home-dot {
+  position: absolute;
+  bottom: 5px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--color-text-3);
+  opacity: 0.6;
+}
+
+.kb-key {
+  position: relative;
+}
+
+/* Lesson mode: subtle highlight for target key */
+.kb-key--highlighted {
+  background: var(--color-accent-dim);
+  border-color: var(--color-accent-border);
+  color: var(--color-accent);
+  box-shadow: 0 0 8px rgba(200, 169, 110, 0.15);
+}
+
+/* Pressed key: brief depress + pulse (unified across lesson and test) */
+.kb-key--pressed {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-bg);
+  transform: scale(0.96);
+  box-shadow: 0 0 10px rgba(200, 169, 110, 0.2);
+}

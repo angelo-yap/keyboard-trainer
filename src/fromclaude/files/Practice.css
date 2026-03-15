@@ -1,0 +1,311 @@
+/* ─── src/routes/Practice.css ───────────────────────────────────────────── */
+
+/* ── Shell ────────────────────────────────────────────────────────────── */
+.practice-root {
+  display: grid;
+  grid-template-rows: var(--topbar-height) 3px 1fr auto;
+  height: 100%;
+  background: var(--color-bg);
+  overflow: hidden;
+  cursor: text;
+}
+
+/* Invisible input that captures keystrokes */
+.practice-capture-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.practice-section-label {
+  margin-bottom: var(--space-2);
+  display: block;
+}
+
+/* ── Session bar ──────────────────────────────────────────────────────── */
+.practice-bar {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-6);
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--color-line);
+  height: var(--topbar-height);
+}
+
+.practice-bar__back {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-3);
+  letter-spacing: 0.04em;
+  transition: color var(--transition-fast);
+}
+
+.practice-bar__back:hover { color: var(--color-text-2); }
+
+.practice-bar__title {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text-2);
+}
+
+.practice-bar__title em {
+  font-style: normal;
+  color: var(--color-accent);
+}
+
+.practice-bar__metrics {
+  margin-left: auto;
+  display: flex;
+  gap: var(--space-5);
+}
+
+.practice-live-metric {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-3);
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.practice-live-metric strong {
+  font-size: 15px;
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text);
+}
+
+.practice-live-metric--ok   strong { color: var(--color-correct); }
+.practice-live-metric--warn strong { color: var(--color-error); }
+
+/* ── Accuracy strip ───────────────────────────────────────────────────── */
+.practice-acc-strip {
+  display: flex;
+  gap: 2px;
+  height: 3px;
+  padding: 0 0;
+}
+
+.practice-acc-seg {
+  flex: 1;
+  border-radius: 1px;
+  background: var(--color-surface-2);
+}
+
+.practice-acc-seg--hit      { background: var(--color-correct); }
+.practice-acc-seg--miss     { background: var(--color-error); }
+.practice-acc-seg--upcoming { background: var(--color-surface-2); }
+
+/* ── Body ─────────────────────────────────────────────────────────────── */
+.practice-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-10) var(--space-12);
+  gap: var(--space-8);
+  overflow: hidden;
+}
+
+.practice-cue-label {
+  /* mono-label handles styles */
+}
+
+/* Text display sizing override for practice */
+.practice-text-display {
+  max-width: 680px;
+  width: 100%;
+  text-align: center;
+}
+
+/* ── Finger callout ───────────────────────────────────────────────────── */
+.practice-callout {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-4) var(--space-6);
+  background: var(--color-accent-dim);
+  border: 1px solid var(--color-accent-border);
+  border-radius: var(--radius-lg);
+  max-width: 680px;
+  width: 100%;
+}
+
+.practice-callout__key {
+  font-family: var(--font-mono);
+  font-size: 36px;
+  font-weight: var(--font-weight-light);
+  color: var(--color-accent);
+  min-width: 36px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.practice-callout__divider {
+  width: 1px;
+  height: 44px;
+  background: var(--color-accent-border);
+  flex-shrink: 0;
+}
+
+.practice-callout__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.practice-callout__primary {
+  font-size: 14px;
+  color: var(--color-text);
+  font-weight: var(--font-weight-regular);
+  margin-bottom: var(--space-1);
+}
+
+.practice-callout__primary strong {
+  color: var(--color-accent);
+  font-weight: var(--font-weight-medium);
+}
+
+.practice-callout__secondary {
+  font-size: 12px;
+  color: var(--color-text-2);
+  font-weight: var(--font-weight-light);
+  line-height: 1.55;
+}
+
+/* ── Hand cue ─────────────────────────────────────────────────────────── */
+.practice-hand-cue {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.practice-hc-finger-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.practice-hc-finger {
+  width: 18px;
+  border-radius: 8px 8px 3px 3px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-line-2);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: var(--color-text-3);
+  transition: background var(--transition-base), border-color var(--transition-base);
+}
+
+.practice-hc-finger--active {
+  background: rgba(200, 169, 110, 0.2);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.practice-hc-thumb {
+  width: 22px;
+  height: 16px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-line-2);
+}
+
+.practice-hc-thumb--left  { border-radius: 3px 8px 8px 3px; }
+.practice-hc-thumb--right { border-radius: 8px 3px 3px 8px; }
+
+/* ── Key accuracy list ────────────────────────────────────────────────── */
+.practice-key-acc {
+  max-width: 280px;
+  width: 100%;
+}
+
+.practice-key-acc-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.practice-key-acc-row__key {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-2);
+  width: 14px;
+  text-align: center;
+}
+
+.practice-key-acc-row__track {
+  flex: 1;
+  height: 3px;
+  background: var(--color-surface-2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.practice-key-acc-row__fill {
+  height: 100%;
+  background: var(--color-correct);
+  border-radius: 2px;
+  transition: width var(--transition-base);
+}
+
+.practice-key-acc-row__fill--weak {
+  background: var(--color-error);
+}
+
+.practice-key-acc-row__pct {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-3);
+  min-width: 32px;
+  text-align: right;
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────── */
+.practice-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-3) var(--space-6);
+  border-top: 1px solid var(--color-line);
+}
+
+.practice-footer__hint {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-3);
+}
+
+.practice-footer__hint kbd {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-text-2);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-line-2);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+.practice-footer__pause-btn {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--color-line-2);
+  color: var(--color-text-3);
+  padding: 5px var(--space-3);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.practice-footer__pause-btn:hover {
+  color: var(--color-text-2);
+  border-color: var(--color-line-3);
+}

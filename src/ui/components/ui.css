@@ -1,0 +1,142 @@
+/* ─── Shared UI primitives — uses theme.css tokens ───────────────────── */
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line-2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.card-padding-sm {
+  padding: var(--space-3);
+}
+
+.card-padding-md {
+  padding: var(--space-5);
+}
+
+.card-padding-lg {
+  padding: var(--space-8);
+}
+
+/* Button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-medium);
+  transition: background-color var(--transition-fast), color var(--transition-fast),
+    border-color var(--transition-fast), transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-sm {
+  padding: var(--space-2) var(--space-3);
+  font-size: 12px;
+}
+
+.btn-md {
+  padding: var(--space-2) var(--space-4);
+  font-size: 12px;
+}
+
+.btn-lg {
+  padding: var(--space-3) var(--space-6);
+  font-size: 13px;
+}
+
+.btn-primary {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--color-text-2);
+  border: 1px solid var(--color-line-2);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-3);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+/* Panel */
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line-2);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.panel-title {
+  margin: 0 0 var(--space-3);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-sm);
+}
+
+.badge-default {
+  background: var(--color-surface-2);
+  color: var(--color-text-2);
+}
+
+.badge-accent {
+  background: var(--color-accent-dim);
+  color: var(--color-accent);
+}
+
+.badge-muted {
+  background: var(--color-line-2);
+  color: var(--color-text-3);
+}
+
+/* Divider */
+.divider {
+  border: none;
+  height: 1px;
+  background: var(--color-line);
+  margin: var(--space-4) 0;
+}
