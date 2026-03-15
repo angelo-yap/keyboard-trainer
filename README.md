@@ -24,4 +24,7 @@ A hardware-software integrated typing trainer that tracks hand and finger placem
 - **Custom QMK Firmware** (LED Control)
 - **OpenCV and MediaPipe** (Computer vision for finger detection)
 
+To run the program:
 
+```bash
+npm run electron:dev
