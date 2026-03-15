@@ -46,7 +46,7 @@ export function useTyping({
   const [pressedKey, setPressedKey] = useState("");
   const [combo, setCombo] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const pressTimer = useRef<ReturnType<typeof setTimeout>>();
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const startTimeRef = useRef<number | null>(null);
  
   // Keep latest text in a ref so handleKeyDown always sees the current value,
@@ -108,7 +108,17 @@ export function useTyping({
       pressTimer.current = setTimeout(() => setPressedKey(""), 120);
  
       if (e.key === "Backspace") {
-        setTyped((t) => t.slice(0, -1));
+        setTyped((t) => {
+          if (!t.length) return t;
+          const removedIndex = t.length - 1;
+          if (errorsRef.current.has(removedIndex)) {
+            const nextErrors = new Set(errorsRef.current);
+            nextErrors.delete(removedIndex);
+            errorsRef.current = nextErrors;
+            setErrors(nextErrors);
+          }
+          return t.slice(0, -1);
+        });
         return;
       }
  

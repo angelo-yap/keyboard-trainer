@@ -71,7 +71,14 @@ export interface SessionRecorder {
     correct: boolean;
   }) => void;
   tick: () => void;             /* call every 3 s on a setInterval */
-  finish: () => SessionReport;
+  finish: (coreMetrics?: {
+    wpm?: number;
+    rawWpm?: number;
+    accuracy?: number;
+    correctChars?: number;
+    errorChars?: number;
+    totalChars?: number;
+  }) => SessionReport;
   getliveWpm: () => number;     /* for the topbar display during session */
   getLiveAccuracy: () => number;
 }
@@ -162,7 +169,14 @@ export function createSessionRecorder(params: {
   }
  
   /* ── finish ─────────────────────────────────────────────────────── */
-  function finish(): SessionReport {
+  function finish(coreMetrics?: {
+    wpm?: number;
+    rawWpm?: number;
+    accuracy?: number;
+    correctChars?: number;
+    errorChars?: number;
+    totalChars?: number;
+  }): SessionReport {
     const endPerf = performance.now();
     const durationSeconds =
       startPerf === null ? 0 : roundTo((endPerf - startPerf) / 1000, 1);
@@ -176,15 +190,22 @@ export function createSessionRecorder(params: {
     const errorChars   = events.filter(e => !e.correct).length;
     const totalChars   = events.length;
  
-    const wpm = elapsedMinutes > 0
+    const computedWpm = elapsedMinutes > 0
       ? Math.round(correctChars / CHARS_PER_WORD / elapsedMinutes)
       : 0;
-    const rawWpm = elapsedMinutes > 0
+    const computedRawWpm = elapsedMinutes > 0
       ? Math.round(totalChars / CHARS_PER_WORD / elapsedMinutes)
       : 0;
-    const accuracy = totalChars > 0
+    const computedAccuracy = totalChars > 0
       ? Math.round((correctChars / totalChars) * 100)
       : 100;
+
+    const finalCorrectChars = coreMetrics?.correctChars ?? correctChars;
+    const finalErrorChars = coreMetrics?.errorChars ?? errorChars;
+    const finalTotalChars = coreMetrics?.totalChars ?? totalChars;
+    const wpm = coreMetrics?.wpm ?? computedWpm;
+    const rawWpm = coreMetrics?.rawWpm ?? computedRawWpm;
+    const accuracy = coreMetrics?.accuracy ?? computedAccuracy;
  
     /* ── Consistency ─────────────────────────────────────────────────
        Std-deviation of WPM snapshots, normalised to 0–100.
@@ -272,9 +293,9 @@ export function createSessionRecorder(params: {
       wpm,
       rawWpm,
       accuracy,
-      correctChars,
-      errorChars,
-      totalChars,
+      correctChars: finalCorrectChars,
+      errorChars: finalErrorChars,
+      totalChars: finalTotalChars,
       consistency,
       wpmSnapshots:  snapshots,
       keyStats,

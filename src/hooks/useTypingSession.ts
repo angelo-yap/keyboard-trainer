@@ -44,17 +44,28 @@ export function useTypingSession({
 }: UseTypingSessionOptions) {
   const sessionRef = useRef<SessionState | null>(null);
   const lastCorrectTimeRef = useRef<number | null>(null);
-  const wpmIntervalRef = useRef<ReturnType<typeof setInterval>>();
+  const wpmIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const recorderRef = useRef<ReturnType<typeof createSessionRecorder> | null>(null);
-  const tickIntervalRef = useRef<ReturnType<typeof setInterval>>();
+  const tickIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const [report, setReport] = useState<SessionReport | null>(null);
  
-  const finishRecorder = useCallback(() => {
+  const finishRecorder = useCallback((finalStats?: TypingStats) => {
     const rec = recorderRef.current;
     if (!rec) return null;
     recorderRef.current = null;
     clearInterval(tickIntervalRef.current);
-    const r = rec.finish();
+    const r = rec.finish(
+      finalStats
+        ? {
+            wpm: finalStats.wpm,
+            rawWpm: finalStats.rawWpm,
+            accuracy: finalStats.accuracy,
+            correctChars: Math.max(0, finalStats.chars - finalStats.errors),
+            errorChars: finalStats.errors,
+            totalChars: finalStats.chars,
+          }
+        : undefined
+    );
     sessionHistoryStore.save(r);
     setReport(r);
     return r;
@@ -114,7 +125,7 @@ export function useTypingSession({
       // session will end the moment the text buffer runs out mid-test.
       if (!onComplete) return;
  
-      finishRecorder();
+      finishRecorder(stats);
       if (sessionRef.current) {
         const endedAt = Date.now();
         sessionRef.current = endSession(sessionRef.current, endedAt);
@@ -167,8 +178,8 @@ export function useTypingSession({
       ? getSessionMetrics(sessionRef.current)
       : null;
  
-  const liveWpm = recorderRef.current?.getliveWpm() ?? 0;
-  const liveAccuracy = recorderRef.current?.getLiveAccuracy() ?? 100;
+  const liveWpm = typing.liveStats.wpm;
+  const liveAccuracy = typing.liveStats.accuracy;
  
   const reset = useCallback(() => {
     sessionRef.current = null;
@@ -182,11 +193,11 @@ export function useTypingSession({
   /** End session early (e.g. for timed tests). Returns finalized session state. */
   const endSessionEarly = useCallback((): SessionState | null => {
     if (!sessionRef.current || sessionRef.current.endedAt) return null;
-    finishRecorder();
+    finishRecorder(typing.liveStats);
     const endedAt = Date.now();
     sessionRef.current = endSession(sessionRef.current, endedAt);
     return sessionRef.current;
-  }, [finishRecorder]);
+  }, [finishRecorder, typing.liveStats]);
  
   return {
     ...typing,

@@ -97,6 +97,11 @@ const WordSegment = memo(
   // Only re-render when the cursor moves into or out of this word
   (prev, next) => {
     if (prev.text !== next.text || prev.startIndex !== next.startIndex) return false;
+
+    // Backward movement (backspace/reset/new rep) can invalidate previously
+    // frozen char states across many words, so force a rerender.
+    if (next.typed.length < prev.typed.length) return false;
+
     const wordEnd = prev.startIndex + prev.text.length;
     const wordStart = prev.startIndex;
     const prevCursorHere =

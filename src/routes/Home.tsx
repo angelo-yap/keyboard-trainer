@@ -20,7 +20,6 @@ import { savePracticeResult } from "../core/storage/progressStore";
 import { recordKeyStats } from "../core/storage/keyStatsStore";
 import { PRACTICE_LESSONS } from "../core/lesson/lessons/practiceLessons";
 import { useTypingSession } from "../hooks/useTypingSession";
-import { getSessionMetrics } from "../core/session/sessionTracker";
 import { getCallout } from "../core/keyboard/getCallout";
 import { TypingDisplay } from "../ui/components/TypingDisplay";
 import { SessionReportCard } from "../ui/components/SessionReport";
@@ -229,12 +228,11 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, settings }) => {
     enabled: !!lesson,
     sessionType: "practice",
     lessonId: lesson ? String(lesson.id) : undefined,
-    onComplete: (_, session) => {
+    onComplete: (stats) => {
       if (lesson) {
-        const metrics = getSessionMetrics(session);
         savePracticeResult(lesson.id, {
-          wpm: metrics.wpm,
-          accuracy: metrics.accuracy,
+          wpm: stats.wpm,
+          accuracy: stats.accuracy,
           date: new Date().toISOString(),
         });
       }

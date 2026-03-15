@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTypingSession } from "../hooks/useTypingSession";
-import { getSessionMetrics } from "../core/session/sessionTracker";
 import { generateTestText, generateWordChunk } from "../core/test/testTextGenerator";
 import { saveTestResult } from "../core/storage/testHistoryStore";
 import { updateStreak } from "../core/storage/streakStore";
@@ -99,6 +98,7 @@ export function Test({ onBack, settings }: TestProps) {
       includePunctuation,
       includeNumbers,
     });
+    startRef.current = null;
     setText(newText);
     setTimeLeft(duration);
     setTimerStarted(false);
@@ -156,7 +156,7 @@ export function Test({ onBack, settings }: TestProps) {
         hasEndedRef.current = true;
         const session = endSessionRef.current?.();
         if (session) {
-          const metrics = getSessionMetrics(session);
+          const metrics = typing.liveStats;
           saveTestResult({
             wpm: metrics.wpm,
             rawWpm: metrics.rawWpm,
@@ -183,6 +183,7 @@ export function Test({ onBack, settings }: TestProps) {
 
   const backToSetup = useCallback(() => {
     clearInterval(timerRef.current);
+    startRef.current = null;
     setTestStatus("setup");
     setTimerStarted(false);
     typingRef.current?.reset();
