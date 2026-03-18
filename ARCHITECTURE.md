@@ -5,8 +5,8 @@
 The app uses a **sidebar + content** layout with tab-based navigation (no router).
 
 - **Splash** — Intro screen, "Get Started" enters the app
-- **Dashboard** — Sidebar (Home, Learn, Practice, WPM Test, Analytics, Settings) + content area
-- **Home** — Hero with stats, mode cards (Learn, Practice, WPM Test), recent tests
+- **Dashboard** — Sidebar (Home, Learn, WPM Test, Analytics, Settings) + content area
+- **Home** — Hero with stats, mode cards (Learn, WPM Test), recent tests, inline practice
 - **Learn** — 10-step guided intro to touch typing with keyboard highlights
 - **Practice** — 12 progressive lessons with live finger highlighting
 - **Test** — WPM test with configurable duration (15/30/60/120s)
@@ -46,25 +46,33 @@ src/
 ├── routes/
 │   ├── Home.tsx
 │   ├── Learn.tsx
-│   ├── Practice.tsx
 │   ├── Test.tsx
 │   ├── Analytics.tsx
 │   └── Settings.tsx
 └── ui/
-    ├── components/
-    │   ├── KeyboardVisual.tsx   # Full keyboard with finger colors
-    │   ├── TypingDisplay.tsx    # Character-by-character typing view
-    │   ├── StatBar.tsx
-    │   ├── ResultsCard.tsx
-    │   ├── Splash.tsx
-    │   ├── Button.tsx
-    │   └── settings/
-    │       ├── Toggle.tsx
-    │       ├── SegmentControl.tsx
-    │       ├── SettingsSection.tsx
-    │       └── SettingRow.tsx
-    └── layout/
-        └── Sidebar.tsx
+    ├── Layout/
+    │   ├── AppLayout.tsx
+    │   ├── LessonShell.tsx
+    │   └── Sidebar.tsx
+    └── components/
+        ├── TypingDisplay.tsx    # Character-by-character typing view
+        ├── SessionReport.tsx    # Post-session report card
+        ├── Splash.tsx
+        ├── Button.tsx
+        ├── keyboard/
+        │   ├── Keyboard.tsx
+        │   ├── KeyboardKey.tsx
+        │   ├── KeyboardRow.tsx
+        │   └── keyboardLayouts.ts
+        ├── CameraPanel.tsx
+        ├── FeedbackBanner.tsx
+        ├── KeyboardView.tsx
+        ├── TrackingStatus.tsx
+        └── settings/
+            ├── Toggle.tsx
+            ├── SegmentControl.tsx
+            ├── SettingsSection.tsx
+            └── SettingRow.tsx
 ```
 
 ## Adding New Content
@@ -77,4 +85,3 @@ src/
 ## Legacy / Future
 
 - `LessonShell`, `KeyboardView`, `CameraPanel`, `FeedbackBanner`, `TrackingStatus` — Placeholders for future camera + hand-tracking integration
-- `ModeCard`, `AppLayout` — From previous game-launcher design; can be reused if switching back to card-based home
