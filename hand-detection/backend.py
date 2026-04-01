@@ -1,9 +1,9 @@
 """
-Typing Checker Backend
-======================
-FastAPI backend that reads typing state from a shared JSON file
-written by typing_checker.py and broadcasts changes via SSE to
-the Electron frontend.
+Typing Checker WebSocket Backend
+=================================
+FastAPI backend that reads typing state from the shared JSON file
+written by typing_checker.py and broadcasts changes to all connected
+WebSocket clients (your Electron/React frontend).
 
 Requirements:
     pip install fastapi uvicorn
@@ -11,41 +11,76 @@ Requirements:
 Run:
     python backend.py
 
-SSE endpoint:
-    GET http://localhost:8000/stream
+WebSocket endpoint:
+    ws://localhost:8000/ws
 
 Health check:
     GET http://localhost:8000/health
+
+Current state snapshot:
+    GET http://localhost:8000/state
 """
 
 import json
 import asyncio
 import os
 import time
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
 
 # ──────────────────────────────────────────────────────────────
 # CONFIG
 # ──────────────────────────────────────────────────────────────
 
-# Path to the shared state file written by typing_checker.py
-# Both files must agree on this path
+# Must match the path in typing_checker.py
 SHARED_STATE_FILE = "typing_state.json"
 
 # How often (seconds) the backend polls the shared file for changes
 POLL_INTERVAL = 0.05  # 50ms = 20 checks per second
 
-app = FastAPI(title="Typing Checker Backend")
+app = FastAPI(title="Typing Checker WebSocket Backend")
 
-# Allow Electron (localhost) to connect
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Tighten this in production
-    allow_methods=["GET"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ──────────────────────────────────────────────────────────────
+# CONNECTION MANAGER
+# Keeps track of all active WebSocket connections so we can
+# broadcast to all of them when the state changes.
+# ──────────────────────────────────────────────────────────────
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        print(f"Client connected. Total connections: {len(self.active_connections)}")
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+        print(f"Client disconnected. Total connections: {len(self.active_connections)}")
+
+    async def broadcast(self, message: dict):
+        """Send a message to all connected clients."""
+        if not self.active_connections:
+            return
+        payload = json.dumps(message)
+        # Iterate over a copy in case a client disconnects mid-broadcast
+        for connection in list(self.active_connections):
+            try:
+                await connection.send_text(payload)
+            except Exception:
+                self.active_connections.remove(connection)
+
+
+manager = ConnectionManager()
+
 
 # ──────────────────────────────────────────────────────────────
 # SHARED STATE READER
@@ -66,7 +101,6 @@ def read_state() -> dict:
         with open(SHARED_STATE_FILE, "r") as f:
             return json.load(f)
     except (json.JSONDecodeError, IOError):
-        # File might be mid-write, return last known good state
         return {
             "verdict": "IDLE",
             "wrong_fingers": [],
@@ -75,13 +109,15 @@ def read_state() -> dict:
 
 
 # ──────────────────────────────────────────────────────────────
-# SSE EVENT GENERATOR
+# BACKGROUND BROADCASTER
+# Runs as a background task on server startup.
+# Polls the shared file and broadcasts to all clients on change.
 # ──────────────────────────────────────────────────────────────
 
-async def event_stream():
+async def broadcast_loop():
     """
-    Async generator that watches the shared state file and yields
-    SSE events only when the verdict or wrong_fingers change.
+    Background task that watches the shared state file and broadcasts
+    to all connected WebSocket clients only when the state changes.
     This implements the Pub/Sub pattern — only broadcast on change.
     """
     last_verdict = None
@@ -92,61 +128,78 @@ async def event_stream():
         current_verdict = state.get("verdict", "IDLE")
         current_wrong_fingers = sorted(state.get("wrong_fingers", []))
 
-        # Only send an event if something changed
+        # Only broadcast if something changed
         if current_verdict != last_verdict or current_wrong_fingers != last_wrong_fingers:
             last_verdict = current_verdict
             last_wrong_fingers = current_wrong_fingers
 
-            payload = json.dumps({
+            await manager.broadcast({
                 "verdict": current_verdict,
                 "wrong_fingers": current_wrong_fingers,
                 "timestamp": state.get("timestamp", time.time()),
             })
 
-            # SSE format: data: <payload>\n\n
-            yield f"data: {payload}\n\n"
-
         await asyncio.sleep(POLL_INTERVAL)
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Start the background broadcaster when the server starts."""
+    asyncio.create_task(broadcast_loop())
+    print("✅ Background broadcaster started.")
 
 
 # ──────────────────────────────────────────────────────────────
 # ROUTES
 # ──────────────────────────────────────────────────────────────
 
-@app.get("/stream")
-async def stream():
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
     """
-    SSE endpoint. Connect from Electron with:
-        const es = new EventSource("http://localhost:8000/stream")
-        es.onmessage = (e) => {
+    WebSocket endpoint. Connect from Electron/React with:
+
+        const ws = new WebSocket("ws://localhost:8000/ws")
+
+        ws.onopen = () => console.log("Connected")
+
+        ws.onmessage = (e) => {
             const data = JSON.parse(e.data)
-            // data.verdict -> "GOOD" | "BAD" | "IDLE"
+            // data.verdict       -> "GOOD" | "BAD" | "IDLE"
             // data.wrong_fingers -> e.g. ["R_INDEX", "L_PINKY"]
+            // data.timestamp     -> Unix timestamp
         }
+
+        ws.onclose = () => console.log("Disconnected")
     """
-    return StreamingResponse(
-        event_stream(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "X-Accel-Buffering": "no",  # Disable nginx buffering if proxied
-            "Connection": "keep-alive",
-        },
-    )
+    await manager.connect(websocket)
+
+    # Send current state immediately on connection
+    # so the client doesn't have to wait for the next change
+    current_state = read_state()
+    await websocket.send_text(json.dumps(current_state))
+
+    try:
+        # Keep the connection alive — we don't expect messages
+        # from the client but we listen anyway for clean disconnects
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
 
 
 @app.get("/health")
 async def health():
-    """Health check — also returns the current state snapshot."""
+    """Health check — returns server status and current state."""
     return {
         "status": "ok",
+        "active_connections": len(manager.active_connections),
         "current_state": read_state(),
     }
 
 
 @app.get("/state")
 async def state():
-    """One-shot current state snapshot (not SSE)."""
+    """One-shot current state snapshot (non-WebSocket)."""
     return read_state()
 
 
@@ -156,9 +209,9 @@ async def state():
 
 if __name__ == "__main__":
     import uvicorn
-    print("=== Typing Checker Backend ===")
-    print(f"Watching state file: {SHARED_STATE_FILE}")
-    print("SSE stream:   http://localhost:8000/stream")
-    print("Health check: http://localhost:8000/health")
-    print("Current state: http://localhost:8000/state\n")
+    print("=== Typing Checker WebSocket Backend ===")
+    print(f"Watching state file : {SHARED_STATE_FILE}")
+    print("WebSocket endpoint  : ws://localhost:8000/ws")
+    print("Health check        : http://localhost:8000/health")
+    print("State snapshot      : http://localhost:8000/state\n")
     uvicorn.run(app, host="0.0.0.0", port=8000)
