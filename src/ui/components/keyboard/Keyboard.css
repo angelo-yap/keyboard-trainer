@@ -50,6 +50,10 @@
     box-shadow 120ms ease;
 }
 
+.kb-key--clickable {
+  cursor: pointer;
+}
+
 .kb-key:hover {
   background: var(--color-surface-3);
   border-color: var(--color-line-2);

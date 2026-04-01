@@ -17,6 +17,7 @@ type KeyboardProps = {
   showFingerHints?: boolean;
   mode?: KeyboardMode;
   className?: string;
+  onKeyClick?: (key: string) => void;
 };
 
 export function Keyboard({
@@ -26,6 +27,7 @@ export function Keyboard({
   showFingerHints = true,
   mode = "test",
   className = "",
+  onKeyClick,
 }: KeyboardProps) {
   // Own internal pressedKey state — updated by window keydown/keyup.
   // This means the parent (Test) never re-renders when a key is pressed.
@@ -88,6 +90,7 @@ export function Keyboard({
             pressedKey={pressedKey}
             showFingerHints={showFingerHints}
             mode={mode}
+            onKeyClick={onKeyClick}
           />
         ))}
       </div>

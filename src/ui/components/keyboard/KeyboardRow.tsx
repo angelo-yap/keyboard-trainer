@@ -13,6 +13,7 @@ type KeyboardRowProps = {
   pressedKey?: string;
   showFingerHints?: boolean;
   mode: "lesson" | "test";
+  onKeyClick?: (key: string) => void;
 };
 
 function getCharForKey(def: KeyDef): string | null {
@@ -40,6 +41,7 @@ export const KeyboardRow = memo(function KeyboardRow({
   pressedKey,
   showFingerHints,
   mode,
+  onKeyClick,
 }: KeyboardRowProps) {
   const hl = highlightKey?.toLowerCase();
 
@@ -52,7 +54,7 @@ export const KeyboardRow = memo(function KeyboardRow({
         const ch = getCharForKey(def);
         const pk = pressedKey?.toLowerCase();
         const isHighlighted =
-          !!ch && (ch === hl || (highlightKeys && highlightKeys.has(ch)));
+          !!ch && (ch === hl || (highlightKeys ? highlightKeys.has(ch) : false));
         const isPressed =
           (!!ch && ch === pk) ||
           (def.key === " " && pressedKey === " ") ||
@@ -71,6 +73,7 @@ export const KeyboardRow = memo(function KeyboardRow({
             showFingerHint={!!fingerColor}
             fingerColor={fingerColor ?? undefined}
             mode={mode}
+            onClick={onKeyClick ? () => onKeyClick(def.key) : undefined}
           />
         );
       })}

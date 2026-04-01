@@ -7,6 +7,7 @@ import { Test } from "./routes/Test";
 import { Analytics } from "./routes/Analytics";
 import { Settings } from "./routes/Settings";
 import { getSettings, saveSettings } from "./core/storage/settingsStore";
+import { syncKeyboardBacklightPreference } from "./core/keyboard/keyboardLedBridge";
 import { getPersonalBest } from "./core/storage/testHistoryStore";
 import {
   isFirstLaunch,
@@ -28,6 +29,10 @@ export function App() {
 
   const settings = useMemo(() => getSettings(), [settingsVersion]);
   const personalBest = getPersonalBest();
+
+  useEffect(() => {
+    void syncKeyboardBacklightPreference();
+  }, [settings.keyboardBacklightColor]);
 
   /* Ctrl+K / Cmd+K toggles keyboard visibility */
   useEffect(() => {
