@@ -27,6 +27,8 @@ import {
   type LearnStep,
 } from "../core/lesson/learnSteps";
 import { getLearnProgress, saveLearnProgress } from "../core/storage/progressStore";
+import { resetKeyboardLed, sendKeyboardLedForKeys } from "../core/keyboard/keyboardLedBridge";
+import { getGuidanceKeysForChar } from "../core/keyboard/keyNormalization";
 
 /* ── Props ────────────────────────────────────────────────────────────── */
 
@@ -117,6 +119,7 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
   );
   const [drill, setDrill] = useState<DrillState>(makeFreshDrillState());
   const [lastKey, setLastKey] = useState<string>("");
+  const lastGuidedKeyRef = useRef<string | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const step = LEARN_STEPS[stepIndex];
@@ -126,10 +129,51 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
   useEffect(() => {
     setDrill(makeFreshDrillState());
     setLastKey("");
+    lastGuidedKeyRef.current = null;
     if (step.drill.type !== "none") {
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [stepIndex]);
+
+  const guidedTargetKeys = useMemo(() => {
+    if (step.drill.type === "keys") {
+      const keys = step.drill.keys ?? [];
+      const required = step.drill.requiredReps ?? 1;
+      const nextPending = keys.find((k) => (drill.keyHits[k] ?? 0) < required) ?? keys[0] ?? "";
+      return getGuidanceKeysForChar(nextPending);
+    }
+
+    if (step.drill.type === "sequence") {
+      const sequence = step.drill.sequence ?? "";
+      const nextChar = sequence.charAt(drill.typed.length);
+      return getGuidanceKeysForChar(nextChar);
+    }
+
+    return [];
+  }, [step, drill]);
+
+  const guidedKeySignature = guidedTargetKeys.join("+");
+
+  useEffect(() => {
+    if (step.drill.type === "none" || step.drill.type === "hold") {
+      lastGuidedKeyRef.current = null;
+      void resetKeyboardLed();
+      return;
+    }
+
+    if (guidedTargetKeys.length === 0 || guidedKeySignature === lastGuidedKeyRef.current) {
+      return;
+    }
+
+    lastGuidedKeyRef.current = guidedKeySignature;
+    void sendKeyboardLedForKeys(guidedTargetKeys);
+  }, [step.drill.type, guidedTargetKeys, guidedKeySignature]);
+
+  useEffect(() => {
+    return () => {
+      void resetKeyboardLed();
+    };
+  }, []);
 
   /* ── Navigation ────────────────────────────────────────────────────── */
   const handleContinue = useCallback(() => {
@@ -281,7 +325,7 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
             <div className="lesson-stage-keyboard-wrap">
               <Keyboard
                 layoutType={settings?.keyboardLayout ?? "mac"}
-                highlightKeys={step.highlight}
+                highlightKeys={[...step.highlight, ...guidedTargetKeys]}
                 pressedKey={lastKey}
                 showFingerHints={settings?.showFingerHints !== false}
                 mode="lesson"

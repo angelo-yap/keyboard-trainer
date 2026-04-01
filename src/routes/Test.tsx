@@ -8,6 +8,8 @@ import { TypingDisplay } from "../ui/components/TypingDisplay";
 import { SessionReportCard } from "../ui/components/SessionReport";
 import { Button } from "../ui/components/Button";
 import type { Settings } from "../core/storage/settingsStore";
+import { resetKeyboardLed, sendKeyboardLedForKeys } from "../core/keyboard/keyboardLedBridge";
+import { getGuidanceKeysForChar } from "../core/keyboard/keyNormalization";
 import "../ui/Layout/LessonStage.css";
 import "./Test.css";
 
@@ -38,13 +40,14 @@ export function Test({ onBack, settings }: TestProps) {
   const [timerStarted, setTimerStarted] = useState(false);
   const [textTransitioning, setTextTransitioning] = useState(false);
 
-  const timerRef = useRef<ReturnType<typeof setInterval>>();
+  const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const endSessionRef = useRef<() => import("../core/session/sessionTypes").SessionState | null>(null);
   const hasEndedRef = useRef(false);
   const startRef = useRef<number | null>(null);
   const prevSettingsRef = useRef({ duration, includePunctuation, includeNumbers });
   const typingRef = useRef<{ reset: () => void } | null>(null);
   const refillingRef = useRef(false);
+  const lastGuidedKeyRef = useRef<string | null>(null);
 
   // Keep options in refs so refill callback doesn't go stale
   const includePunctuationRef = useRef(includePunctuation);
@@ -134,6 +137,26 @@ export function Test({ onBack, settings }: TestProps) {
       return cleanup;
     }
   }, [testStatus, text, duration, includePunctuation, includeNumbers, regenerateTest]);
+
+  const currentTargetChar = testStatus === "active" ? text.charAt(typing.typed.length) : "";
+  const guidedTargetKeys = getGuidanceKeysForChar(currentTargetChar);
+  const guidedKeySignature = guidedTargetKeys.join("+");
+
+  // Drive hardware guidance from the current target character, not from typed key events.
+  useEffect(() => {
+    if (testStatus !== "active") {
+      lastGuidedKeyRef.current = null;
+      void resetKeyboardLed();
+      return;
+    }
+
+    if (guidedTargetKeys.length === 0 || guidedKeySignature === lastGuidedKeyRef.current) {
+      return;
+    }
+
+    lastGuidedKeyRef.current = guidedKeySignature;
+    void sendKeyboardLedForKeys(guidedTargetKeys);
+  }, [testStatus, guidedTargetKeys, guidedKeySignature]);
 
   /* Timer starts on first keystroke */
   useEffect(() => {
@@ -345,7 +368,9 @@ export function Test({ onBack, settings }: TestProps) {
       <div className="lesson-stage-body" onClick={typing.focus}>
         <input
           ref={typing.inputRef}
-          onKeyDown={typing.handleKeyDown}
+          onKeyDown={(e) => {
+            typing.handleKeyDown(e);
+          }}
           className="test-hidden-input"
           readOnly
         />
@@ -371,7 +396,7 @@ export function Test({ onBack, settings }: TestProps) {
             <div className="lesson-stage-keyboard-wrap">
               <Keyboard
                 layoutType={settings?.keyboardLayout ?? "mac"}
-                highlightKey=""
+                highlightKeys={guidedTargetKeys}
                 showFingerHints={false}
                 mode="test"
               />

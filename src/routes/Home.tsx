@@ -21,6 +21,8 @@ import { recordKeyStats } from "../core/storage/keyStatsStore";
 import { PRACTICE_LESSONS } from "../core/lesson/lessons/practiceLessons";
 import { useTypingSession } from "../hooks/useTypingSession";
 import { getCallout } from "../core/keyboard/getCallout";
+import { resetKeyboardLed, sendKeyboardLedForKeys } from "../core/keyboard/keyboardLedBridge";
+import { getGuidanceKeysForChar } from "../core/keyboard/keyNormalization";
 import { TypingDisplay } from "../ui/components/TypingDisplay";
 import { SessionReportCard } from "../ui/components/SessionReport";
 import { Keyboard } from "../ui/components/keyboard";
@@ -209,16 +211,17 @@ const HandCue: React.FC<{
 
 export const Home: React.FC<HomeProps> = ({ onTabChange, settings }) => {
   const [lessonId, setLessonId] = useState<number | null>(null);
+  const lastGuidedKeyRef = useRef<string | null>(null);
 
-  const lessons = useMemo(() => getLessonSummaries(), []);
-  const weakKeys = useMemo(() => getWeakKeys(), []);
-  const fingerMastery = useMemo(() => getFingerMastery(), []);
-  const { message: coachMessage, detail: coachDetail } = useMemo(() => getCoachMessage(), []);
-  const avgWpm = useMemo(() => getAverageWpm(), []);
-  const accuracy = useMemo(() => getAverageAccuracy(), []);
-  const wpmDelta = useMemo(() => getWpmDeltaThisWeek(), []);
-  const accuracyDelta = useMemo(() => getAccuracyDeltaThisWeek(), []);
-  const streak = useMemo(() => getStreak(), []);
+  const lessons = getLessonSummaries();
+  const weakKeys = getWeakKeys();
+  const fingerMastery = getFingerMastery();
+  const { message: coachMessage, detail: coachDetail } = getCoachMessage();
+  const avgWpm = getAverageWpm();
+  const accuracy = getAverageAccuracy();
+  const wpmDelta = getWpmDeltaThisWeek();
+  const accuracyDelta = getAccuracyDeltaThisWeek();
+  const streak = getStreak();
 
   const lesson = PRACTICE_LESSONS.find((l) => l.id === lessonId);
   const text = lesson ? buildText(lesson) : "";
@@ -242,6 +245,7 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, settings }) => {
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (!lesson || typing.report) return;
+
       const idx = typing.typed.length;
       const expected = text[idx];
       const isCorrect = e.key === expected;
@@ -252,6 +256,25 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, settings }) => {
     },
     [lesson, text, typing]
   );
+
+  const nextTargetChar = lesson ? text.charAt(typing.typed.length) : "";
+  const guidedTargetKeys = getGuidanceKeysForChar(nextTargetChar);
+  const guidedKeySignature = guidedTargetKeys.join("+");
+
+  useEffect(() => {
+    if (!lesson || typing.report) {
+      lastGuidedKeyRef.current = null;
+      void resetKeyboardLed();
+      return;
+    }
+
+    if (guidedTargetKeys.length === 0 || guidedKeySignature === lastGuidedKeyRef.current) {
+      return;
+    }
+
+    lastGuidedKeyRef.current = guidedKeySignature;
+    void sendKeyboardLedForKeys(guidedTargetKeys);
+  }, [lesson, typing.report, guidedTargetKeys, guidedKeySignature]);
 
   const dayLabel =
     streak.count > 0
@@ -301,7 +324,7 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, settings }) => {
 
   /* ── Practice session view ─────────────────────────────────────────── */
   if (lesson) {
-    const callout = typing.currentChar ? getCallout(typing.currentChar) : null;
+    const callout = nextTargetChar ? getCallout(nextTargetChar) : null;
     return (
       <PracticeSessionView
         lessonNumber={lesson.id}
@@ -316,6 +339,7 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, settings }) => {
           pressedKey: typing.pressedKey,
         }}
         callout={callout}
+        guidedKeys={guidedTargetKeys}
         settings={settings}
         onKeyDown={handleKeyDown}
         onBack={exitSession}
@@ -465,6 +489,7 @@ interface PracticeSessionViewProps {
     pressedKey?: string;
   };
   callout: ReturnType<typeof getCallout>;
+  guidedKeys: string[];
   settings?: Settings;
   onKeyDown: (e: React.KeyboardEvent) => void;
   onBack: () => void;
@@ -476,6 +501,7 @@ function PracticeSessionView({
   lessonName,
   typing,
   callout,
+  guidedKeys,
   settings,
   onKeyDown,
   onBack,
@@ -563,7 +589,7 @@ function PracticeSessionView({
           <div className="practice-keyboard-wrap">
             <Keyboard
               layoutType={settings?.keyboardLayout ?? "mac"}
-              highlightKey={callout?.key ?? ""}
+              highlightKeys={guidedKeys}
               pressedKey={typing.pressedKey ?? ""}
               showFingerHints={settings?.showFingerHints !== false}
               mode="lesson"

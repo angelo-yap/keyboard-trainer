@@ -12,6 +12,7 @@ type KeyboardKeyProps = {
   showFingerHint?: boolean;
   fingerColor?: string;
   mode: "lesson" | "test";
+  onClick?: () => void;
 };
 
 export const KeyboardKey = memo(function KeyboardKey({
@@ -24,6 +25,7 @@ export const KeyboardKey = memo(function KeyboardKey({
   showFingerHint,
   fingerColor,
   mode,
+  onClick,
 }: KeyboardKeyProps) {
   const width = def.key === " "
     ? unitSize * def.width + gap * (def.width - 1)
@@ -37,6 +39,7 @@ export const KeyboardKey = memo(function KeyboardKey({
   if (isHighlighted) className += " kb-key--highlighted";
   if (isPressed) className += " kb-key--pressed";
   if (isHome) className += " kb-key--home";
+  if (onClick) className += " kb-key--clickable";
 
   const style: React.CSSProperties = {
     width: `${width}px`,
@@ -50,7 +53,23 @@ export const KeyboardKey = memo(function KeyboardKey({
   }
 
   return (
-    <div className={className} style={style}>
+    <div
+      className={className}
+      style={style}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={
+        onClick
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
+    >
       {displayLabel}
       {isHome && !isHighlighted && !isPressed && <span className="kb-key__home-dot" />}
     </div>

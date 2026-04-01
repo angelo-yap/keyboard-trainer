@@ -13,7 +13,17 @@ export type Settings = {
   caretStyle: "block" | "line" | "underline";
   smoothCaret: boolean;
   fontSize: "sm" | "md" | "lg";
+  keyboardBacklightOff: boolean;
+  keyboardLitKeyOff: boolean;
+  keyboardBacklightColor: string;
+  keyboardLitKeyColor: string;
 };
+
+function normalizeHexColor(value: unknown, fallback: string): string {
+  if (typeof value !== "string") return fallback;
+  const normalized = value.trim();
+  return /^#[0-9a-fA-F]{6}$/.test(normalized) ? normalized.toUpperCase() : fallback;
+}
 
 const DEFAULT_SETTINGS: Settings = {
   testDuration: 60,
@@ -26,10 +36,20 @@ const DEFAULT_SETTINGS: Settings = {
   caretStyle: "block",
   smoothCaret: true,
   fontSize: "md",
+  keyboardBacklightOff: false,
+  keyboardLitKeyOff: false,
+  keyboardBacklightColor: "#FF0000",
+  keyboardLitKeyColor: "#FFFFFF",
 };
 
 export function getSettings(): Settings {
-  return { ...DEFAULT_SETTINGS, ...getLS("kt_settings", {}) };
+  const raw = getLS("kt_settings", {}) as Partial<Settings>;
+  return {
+    ...DEFAULT_SETTINGS,
+    ...raw,
+    keyboardBacklightColor: normalizeHexColor(raw.keyboardBacklightColor, DEFAULT_SETTINGS.keyboardBacklightColor),
+    keyboardLitKeyColor: normalizeHexColor(raw.keyboardLitKeyColor, DEFAULT_SETTINGS.keyboardLitKeyColor),
+  };
 }
 
 export function saveSettings(partial: Partial<Settings>): void {
