@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "main": "electron/main.cjs",
+  "main": "electron/main.mjs",
   "scripts": {
     "electron:dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:start": "electron .",
@@ -13,6 +13,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "node-hid": "^3.3.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
@@ -31,4 +32,3 @@
     "wait-on": "^9.0.4"
   }
 }
-
