@@ -1,0 +1,135 @@
+.sidebar {
+  width: 240px;
+  background: rgba(255, 255, 255, 0.035);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 4px;
+}
+
+.sidebar-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 160, 60, 0.95), rgba(200, 90, 20, 0.6));
+  box-shadow: 0 6px 20px rgba(255, 140, 50, 0.25);
+  flex-shrink: 0;
+}
+
+.sidebar-brand-name {
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: -0.3px;
+}
+
+.sidebar-brand-accent {
+  color: #ff8c32;
+}
+
+.sidebar-brand-tagline {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.38);
+  margin-top: 1px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-tab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  text-align: left;
+  transition: all 0.12s;
+}
+
+.sidebar-tab:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sidebar-tab-active {
+  background: rgba(255, 140, 50, 0.18);
+  border-color: rgba(255, 140, 50, 0.3);
+  color: #ff8c32;
+  font-weight: 700;
+  box-shadow: 0 4px 20px rgba(255, 140, 50, 0.08);
+}
+
+.sidebar-tab-icon {
+  font-size: 16px;
+  width: 22px;
+  text-align: center;
+}
+
+.sidebar-badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255, 140, 50, 0.7);
+  background: rgba(255, 140, 50, 0.12);
+  padding: 2px 6px;
+  border-radius: 99px;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-streak {
+  padding: 8px 12px;
+  background: rgba(255, 140, 50, 0.1);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 140, 50, 0.2);
+  font-size: 13px;
+  color: #ff8c32;
+  font-weight: 700;
+}
+
+.sidebar-best {
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+  display: flex;
+  justify-content: space-between;
+}
+
+.sidebar-best-value {
+  color: #ff8c32;
+  font-weight: 800;
+}
+
+.sidebar-version {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.2);
+  padding-left: 2px;
+}

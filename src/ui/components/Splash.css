@@ -1,0 +1,95 @@
+.splash {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse 120% 80% at 50% 30%, #1c1208 0%, #0d0b07 40%, #070707 100%);
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+.splash-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 40%, rgba(255, 140, 50, 0.07), transparent);
+  pointer-events: none;
+}
+
+.splash-content {
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.splash-keyboard {
+  width: 480px;
+  height: 130px;
+  margin: 0 auto 28px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 14px;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.splash-key {
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.splash-scan {
+  position: absolute;
+  top: -40%;
+  left: -25%;
+  width: 38%;
+  height: 200%;
+  background: linear-gradient(90deg, transparent, rgba(255, 140, 50, 0.18), transparent);
+  transform: rotate(12deg);
+  animation: splashScan 2.6s ease-in-out infinite;
+}
+
+.splash-title {
+  font-size: 52px;
+  font-weight: 900;
+  margin: 0 0 10px;
+  letter-spacing: -1.5px;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.splash-accent {
+  color: #ff8c32;
+}
+
+.splash-subtitle {
+  color: rgba(255, 255, 255, 0.45);
+  margin: 0 0 32px;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+}
+
+.splash-cta {
+  padding: 13px 36px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 140, 50, 0.6);
+  background: rgba(255, 140, 50, 0.88);
+  color: #111;
+  font-weight: 900;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 0 40px rgba(255, 140, 50, 0.25), 0 4px 20px rgba(0, 0, 0, 0.4);
+  transition: all 0.15s;
+  letter-spacing: 0.3px;
+}
+
+.splash-cta:hover {
+  background: rgba(255, 160, 70, 0.95);
+  transform: scale(1.03);
+}

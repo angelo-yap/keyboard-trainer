@@ -1,0 +1,344 @@
+/* ─── Settings — matches Home/Practice design language ────────────────── */
+
+.settings-page {
+  max-width: min(600px, 100%);
+  margin: 0 auto;
+  padding: var(--page-padding);
+}
+
+@media (max-width: 600px) {
+  .settings-page {
+    padding: var(--space-4);
+  }
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.settings-title {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--color-text);
+}
+
+.settings-view-switch {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.settings-view-btn {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line-2);
+  background: var(--color-surface-2);
+  color: var(--color-text-3);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.settings-view-btn:hover {
+  color: var(--color-text-2);
+  border-color: var(--color-line-3);
+}
+
+.settings-view-btn.active {
+  background: var(--color-accent-dim);
+  border-color: var(--color-accent-border);
+  color: var(--color-accent);
+}
+
+.settings-debug-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.settings-debug-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.settings-debug-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-3);
+}
+
+.settings-debug-value {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-2);
+  text-align: right;
+}
+
+.settings-debug-value.ok {
+  color: var(--color-correct);
+}
+
+.settings-debug-value.err {
+  color: var(--color-error);
+}
+
+.settings-debug-error,
+.settings-debug-note {
+  margin-top: var(--space-1);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-line);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.settings-debug-error {
+  color: var(--color-error);
+}
+
+.settings-debug-note {
+  color: var(--color-text-3);
+}
+
+.settings-debug-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.settings-debug-special-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.settings-debug-special-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-1);
+}
+
+@media (max-width: 640px) {
+  .settings-debug-special-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.settings-debug-special-btn {
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-line-2);
+  background: var(--color-surface-2);
+  color: var(--color-text-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.settings-debug-special-btn:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent-border);
+  background: var(--color-accent-dim);
+}
+
+.settings-debug-input-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-3);
+}
+
+.settings-debug-input {
+  width: 100%;
+  max-width: 220px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line-2);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.settings-debug-input:focus {
+  outline: none;
+  border-color: var(--color-accent-border);
+  box-shadow: 0 0 0 2px var(--color-accent-dim);
+}
+
+.settings-debug-actions {
+  margin-top: var(--space-2);
+}
+
+.settings-debug-reset-btn {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line-2);
+  background: var(--color-surface-2);
+  color: var(--color-text-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.settings-debug-reset-btn:hover {
+  color: var(--color-text);
+  border-color: var(--color-line-3);
+  background: var(--color-surface-3);
+}
+
+.settings-debug-keyboard-wrap {
+  width: 100%;
+  margin-bottom: var(--space-4);
+  display: flex;
+  justify-content: center;
+  container-type: inline-size;
+  container-name: kb;
+}
+
+.settings-debug-alpha-grid {
+  display: grid;
+  grid-template-columns: repeat(13, minmax(0, 1fr));
+  gap: var(--space-1);
+}
+
+@media (max-width: 640px) {
+  .settings-debug-alpha-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+
+.settings-debug-alpha-btn {
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-line-2);
+  background: var(--color-surface-2);
+  color: var(--color-text-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.settings-debug-alpha-btn:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent-border);
+  background: var(--color-accent-dim);
+}
+
+.settings-color-input-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+}
+
+.settings-color-input {
+  width: 30px;
+  height: 24px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.settings-color-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.settings-color-code {
+  min-width: 74px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-2);
+}
+
+.settings-lighting-actions {
+  margin-top: var(--space-2);
+}
+
+.settings-lighting-note {
+  margin-top: var(--space-2);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-text-3);
+}
+
+.settings-reset-lighting-btn {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-line-2);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  color: var(--color-text-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.settings-reset-lighting-btn:hover {
+  color: var(--color-text);
+  border-color: var(--color-line-3);
+  background: var(--color-surface-3);
+}
+
+.settings-storage-badge {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line);
+}
+
+.settings-clear-btn {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-error-border);
+  background: var(--color-error-dim);
+  color: var(--color-error);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.settings-clear-btn:hover {
+  border-color: var(--color-error);
+  background: rgba(192, 96, 96, 0.18);
+}
+
+.settings-clear-btn.cleared {
+  background: var(--color-correct-dim);
+  border-color: var(--color-correct-border);
+  color: var(--color-correct);
+}
+
+.settings-about {
+  font-size: 13px;
+  color: var(--color-text-2);
+  line-height: 1.7;
+}
+
+.settings-about-note {
+  margin-top: var(--space-2);
+  color: var(--color-text-3);
+}

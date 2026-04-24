@@ -1,0 +1,87 @@
+/* ─── LessonStage — shared layout for Learn and Test ─────────────────────
+   Grid: topbar | body (flexible) | optional footer
+   Same vertical balance, spacing, centered content, keyboard region.
+   ──────────────────────────────────────────────────────────────────── */
+
+.lesson-stage-root {
+  flex: 1;
+  display: grid;
+  grid-template-rows: 44px 1fr;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.lesson-stage-root--with-footer {
+  grid-template-rows: 44px 1fr auto;
+}
+
+.lesson-stage-root--with-timer {
+  grid-template-rows: 44px 3px 1fr;
+}
+
+.lesson-stage-topbar {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-6);
+  gap: var(--space-5);
+  border-bottom: 1px solid var(--color-line);
+  flex-shrink: 0;
+}
+
+.lesson-stage-topbar__back {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-3);
+  transition: color var(--transition-fast);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.lesson-stage-topbar__back:hover {
+  color: var(--color-text-2);
+}
+
+.lesson-stage-body {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: var(--space-6) var(--page-padding);
+  gap: var(--space-6);
+  justify-content: center;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-2) transparent;
+}
+
+.lesson-stage-content-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  align-items: center;
+  width: 100%;
+  max-width: min(600px, 95vw);
+  margin: 0 auto;
+}
+
+.lesson-stage-keyboard-wrap {
+  width: 100%;
+  max-width: min(720px, 95vw);
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  container-type: inline-size;
+  container-name: kb;
+}
+
+.lesson-stage-keyboard-wrap .kb-root {
+  transform-origin: center top;
+}
+
+@media (max-width: 600px) {
+  .lesson-stage-body {
+    padding: var(--space-4) var(--space-4);
+    gap: var(--space-5);
+  }
+}

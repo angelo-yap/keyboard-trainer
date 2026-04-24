@@ -1,0 +1,32 @@
+/* ─── SegmentControl — matches Test duration / Analytics tabs style ───── */
+
+.segment-control {
+  display: flex;
+  gap: var(--space-1);
+  background: var(--color-surface);
+  padding: var(--space-1);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-line-2);
+}
+
+.segment-control-btn {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  color: var(--color-text-3);
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-medium);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.segment-control-btn:hover {
+  color: var(--color-text-2);
+}
+
+.segment-control-btn.active {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
