@@ -1,6 +1,7 @@
 import { getLS, setLS } from "./localStorage";
 
 export type KeyboardLayoutType = "mac" | "windows";
+export type CaseMode = "lowercase" | "uppercase" | "mixed";
 
 export type Settings = {
   testDuration: number;
@@ -19,6 +20,7 @@ export type Settings = {
   keyboardLitKeyColor: string;
   handTrackerCameraIndex: number;
   handTrackerFlipHandedness: boolean;
+  caseMode: CaseMode;
 };
 
 function normalizeHexColor(value: unknown, fallback: string): string {
@@ -35,6 +37,12 @@ function normalizeCameraIndex(value: unknown, fallback: number): number {
     return Number.parseInt(value.trim(), 10);
   }
   return fallback;
+}
+
+function normalizeCaseMode(value: unknown, fallback: CaseMode): CaseMode {
+  return value === "lowercase" || value === "uppercase" || value === "mixed"
+    ? value
+    : fallback;
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -54,6 +62,7 @@ const DEFAULT_SETTINGS: Settings = {
   keyboardLitKeyColor: "#FFFFFF",
   handTrackerCameraIndex: 0,
   handTrackerFlipHandedness: false,
+  caseMode: "lowercase",
 };
 
 export function getSettings(): Settings {
@@ -64,6 +73,7 @@ export function getSettings(): Settings {
     keyboardBacklightColor: normalizeHexColor(raw.keyboardBacklightColor, DEFAULT_SETTINGS.keyboardBacklightColor),
     keyboardLitKeyColor: normalizeHexColor(raw.keyboardLitKeyColor, DEFAULT_SETTINGS.keyboardLitKeyColor),
     handTrackerCameraIndex: normalizeCameraIndex(raw.handTrackerCameraIndex, DEFAULT_SETTINGS.handTrackerCameraIndex),
+    caseMode: normalizeCaseMode(raw.caseMode, DEFAULT_SETTINGS.caseMode),
   };
 }
 

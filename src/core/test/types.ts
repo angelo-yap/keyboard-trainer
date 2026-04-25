@@ -1,15 +1,18 @@
 import type { WeakKeyStat } from "../storage/keyStatsStore";
+import type { CaseMode } from "../storage/settingsStore";
 
 export type TestMode = "standard" | "adaptive";
 
 export type ClassicWordsGeneratorOptions = {
   includePunctuation: boolean;
   includeNumbers: boolean;
+  caseMode: CaseMode;
 };
 
 export type AdaptiveWeakLetterGeneratorOptions = {
   includePunctuation: boolean;
   includeNumbers: boolean;
+  caseMode: CaseMode;
   adaptiveTargets?: WeakKeyStat[];
 };
 
