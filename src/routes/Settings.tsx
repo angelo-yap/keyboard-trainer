@@ -755,6 +755,12 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
                 Camera integration placeholder ready — connect MediaPipe Hands when
                 hardware is available.
               </div>
+              <div className="settings-about-credit">
+                <div className="settings-about-credit__label">Created By</div>
+                <div className="settings-about-credit__names">
+                  Javier Deng · Jake Sacilotto · Angelo Yap · Tony Wu
+                </div>
+              </div>
             </div>
           </SettingsSection>
         </>
