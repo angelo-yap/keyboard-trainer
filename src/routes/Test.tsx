@@ -11,6 +11,7 @@ import type { Settings } from "../core/storage/settingsStore";
 import { resetKeyboardLed, sendKeyboardLedForKeys } from "../core/keyboard/keyboardLedBridge";
 import { getGuidanceKeysForChar } from "../core/keyboard/keyNormalization";
 import { FeedbackBanner } from "../ui/components/FeedbackBanner";
+import { CameraPanel } from "../ui/components/CameraPanel";
 import "../ui/Layout/LessonStage.css";
 import "./Test.css";
 import React from "react";
@@ -41,6 +42,7 @@ export function Test({ onBack, settings }: TestProps) {
   const [timeLeft, setTimeLeft] = useState(duration);
   const [timerStarted, setTimerStarted] = useState(false);
   const [textTransitioning, setTextTransitioning] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
   // server hand tracking data
   const [verdict, setVerdict] = useState<"GOOD" | "BAD" | "IDLE" | "">("");
   const [wrongFingers, setWrongFingers] = useState<string[]>([]);
@@ -382,6 +384,14 @@ export function Test({ onBack, settings }: TestProps) {
           >
             new
           </button>
+          <button
+            type="button"
+            className={`test-topbar-badge ${showCamera ? "on" : "off"}`}
+            onClick={() => setShowCamera((v) => !v)}
+            title="Toggle camera panel"
+          >
+            cam
+          </button>
         </div>
         <div className={`test-topbar-timer test-topbar-timer--${timerClass}`}>
           {timerStarted ? timeLeft : duration}s
@@ -436,6 +446,8 @@ export function Test({ onBack, settings }: TestProps) {
               />
             </div>
           )}
+
+          {showCamera && <CameraPanel active={testStatus === "active"} />}
         </div>
       </div>
     </div>

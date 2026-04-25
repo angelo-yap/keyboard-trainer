@@ -29,6 +29,8 @@ import {
 import { getLearnProgress, saveLearnProgress } from "../core/storage/progressStore";
 import { resetKeyboardLed, sendKeyboardLedForKeys } from "../core/keyboard/keyboardLedBridge";
 import { getGuidanceKeysForChar } from "../core/keyboard/keyNormalization";
+import { FeedbackBanner } from "../ui/components/FeedbackBanner";
+import { CameraPanel } from "../ui/components/CameraPanel";
 
 /* ── Props ────────────────────────────────────────────────────────────── */
 
@@ -119,6 +121,9 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
   );
   const [drill, setDrill] = useState<DrillState>(makeFreshDrillState());
   const [lastKey, setLastKey] = useState<string>("");
+  const [verdict, setVerdict] = useState<"GOOD" | "BAD" | "IDLE" | "">("");
+  const [wrongFingers, setWrongFingers] = useState<string[]>([]);
+  const [showCamera, setShowCamera] = useState(false);
   const lastGuidedKeyRef = useRef<string | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -173,6 +178,24 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
     return () => {
       void resetKeyboardLed();
     };
+  }, []);
+
+  // Hand-tracking: connect while Learn is mounted, disconnect on exit
+  useEffect(() => {
+    const ws = new WebSocket("ws://localhost:8000/ws");
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data) as {
+        verdict: "GOOD" | "BAD" | "IDLE";
+        wrong_fingers: string[];
+      };
+      setVerdict(data.verdict);
+      setWrongFingers(data.wrong_fingers);
+    };
+    ws.onerror = () => {
+      setVerdict("");
+      setWrongFingers([]);
+    };
+    return () => ws.close();
   }, []);
 
   /* ── Navigation ────────────────────────────────────────────────────── */
@@ -296,6 +319,14 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
         <span className="learn-topbar__label mono-label">
           {stepIndex + 1} / {TOTAL_STEPS}
         </span>
+        <button
+          type="button"
+          className={`test-topbar-badge ${showCamera ? "on" : "off"}`}
+          onClick={() => setShowCamera((v) => !v)}
+          title="Toggle camera panel"
+        >
+          cam
+        </button>
       </div>
 
       <div
@@ -385,6 +416,10 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
               <div className="learn-drill__complete">ready to continue</div>
             )}
           </div>
+
+          <FeedbackBanner verdict={verdict} wrongFingers={wrongFingers} />
+
+          {showCamera && <CameraPanel active={true} />}
         </div>
       </div>
 

@@ -2,12 +2,52 @@ import { app, BrowserWindow, Menu, ipcMain } from "electron";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { spawn } from "node:child_process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
 
 const isDev = !app.isPackaged;
+
+// ── Python backend (FastAPI + hand tracker) ───────────────────────────────────
+
+let backendProcess = null;
+
+function startBackend() {
+  const backendDir = path.join(__dirname, "../hand-detection");
+  const pythonCmd = process.env.PYTHON_PATH || "python";
+
+  backendProcess = spawn(pythonCmd, ["backend.py"], {
+    cwd: backendDir,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  backendProcess.stdout.on("data", (data) => {
+    process.stdout.write(`[backend] ${data}`);
+  });
+
+  backendProcess.stderr.on("data", (data) => {
+    process.stderr.write(`[backend] ${data}`);
+  });
+
+  backendProcess.on("error", (err) => {
+    console.error(`[backend] Failed to start: ${err.message}`);
+    console.error(`[backend] Make sure Python is on PATH or set PYTHON_PATH env var.`);
+  });
+
+  backendProcess.on("exit", (code, signal) => {
+    if (code !== null) console.log(`[backend] Exited with code ${code}`);
+    if (signal !== null) console.log(`[backend] Killed by signal ${signal}`);
+    backendProcess = null;
+  });
+}
+
+function stopBackend() {
+  if (!backendProcess) return;
+  backendProcess.kill();
+  backendProcess = null;
+}
 const QMK_VENDOR_ID = 0x3434;
 const QMK_RAW_USAGE_PAGE = 0xff60;
 const QMK_RAW_USAGE = 0x61;
@@ -767,6 +807,7 @@ app.whenReady().then(() => {
   } else {
     Menu.setApplicationMenu(null);
   }
+  startBackend();
   createWindow();
   resetKeyboardIdleTimer();
 
@@ -776,6 +817,7 @@ app.whenReady().then(() => {
 });
 
 app.on("before-quit", () => {
+  stopBackend();
   if (keyboardIdleTimer) {
     clearTimeout(keyboardIdleTimer);
     keyboardIdleTimer = null;
