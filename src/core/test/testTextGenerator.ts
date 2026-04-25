@@ -1,74 +1,94 @@
-/**
- * Generates typing test text with optional punctuation and numbers.
- * Used by the Test page.
- */
+import { getTestGenerator } from "./registry";
+import type {
+  TestGeneratorValidation,
+  TestMode,
+  TestModeConfig,
+  TestModeOptionsMap,
+} from "./types";
 
-import { shuffle } from "../../lib/shuffle";
-import { TOP_500 } from "../../data/topWords";
+export type {
+  AdaptiveWeakLetterGeneratorOptions,
+  ClassicWordsGeneratorOptions,
+  TestGenerator,
+  TestMode,
+  TestModeConfig,
+  TestModeOptionsMap,
+} from "./types";
 
-const PUNCTUATION = [".", ",", "!", "?", ";", ":", "'"];
-const NUMBERS = "0123456789";
-
-/** Estimate words needed for duration at ~50 WPM average */
-function wordsForDuration(seconds: number): number {
-  const minutes = seconds / 60;
-  return Math.ceil(minutes * 55);
-}
-
-export type TestTextOptions = {
+export type TestTextOptions = TestModeConfig & {
   durationSeconds: number;
-  includePunctuation: boolean;
-  includeNumbers: boolean;
 };
 
-/**
- * Build a chunk of words as a string (no trailing space).
- * Each chunk is independently shuffled so repetition is minimised.
- */
-export function generateWordChunk(
-  wordCount: number,
-  includePunctuation: boolean,
-  includeNumbers: boolean
-): string {
-  // Cycle through the word pool with shuffled passes to avoid repetition
-  const pool = shuffle([...TOP_500]);
-  const words: string[] = [];
-  while (words.length < wordCount) {
-    words.push(...pool.slice(0, wordCount - words.length));
-    if (words.length < wordCount) pool.push(...shuffle([...TOP_500]));
+export type TestChunkOptions = TestModeConfig & {
+  wordCount: number;
+};
+
+type TestGeneratorConfig<M extends TestMode> = {
+  mode: M;
+  options: TestModeOptionsMap[M];
+};
+
+function withValidatedGenerator<M extends TestMode, TResult>(
+  config: TestGeneratorConfig<M>,
+  onValid: (input: {
+    generator: ReturnType<typeof getTestGenerator<M>>;
+    options: TestModeOptionsMap[M];
+  }) => TResult,
+  onInvalid: (reason: string) => TResult
+): TResult {
+  const generator = getTestGenerator(config.mode);
+  const validation = generator.validateOptions(config.options);
+
+  if (!validation.valid) {
+    return onInvalid(validation.reason);
   }
 
-  const result: string[] = [];
-
-  for (let i = 0; i < words.length; i++) {
-    let word = words[i];
-
-    if (includeNumbers && Math.random() < 0.08) {
-      const numLen = 1 + Math.floor(Math.random() * 3);
-      let num = "";
-      for (let j = 0; j < numLen; j++) {
-        num += NUMBERS[Math.floor(Math.random() * NUMBERS.length)];
-      }
-      word = num;
-    }
-
-    result.push(word);
-
-    if (i < words.length - 1) {
-      if (includePunctuation && Math.random() < 0.15) {
-        result.push(PUNCTUATION[Math.floor(Math.random() * PUNCTUATION.length)]);
-      }
-      result.push(" ");
-    }
-  }
-
-  return result.join("");
+  return onValid({
+    generator,
+    options: validation.options,
+  });
 }
 
-export function generateTestText(options: TestTextOptions): string {
-  const { durationSeconds, includePunctuation, includeNumbers } = options;
-  // Generate a large initial buffer — enough for even the fastest typist
-  // at 200 WPM for the full duration, with a comfortable extra margin.
-  const wordCount = Math.max(wordsForDuration(durationSeconds) * 2, 80);
-  return generateWordChunk(wordCount, includePunctuation, includeNumbers);
+export function validateTestModeConfig(
+  config: TestModeConfig
+): TestGeneratorValidation<TestModeConfig> {
+  return withValidatedGenerator(
+    config,
+    ({ options }) => ({
+      valid: true,
+      options: {
+        mode: config.mode,
+        options,
+      } as TestModeConfig,
+    }),
+    (reason) => ({ valid: false, reason })
+  );
+}
+
+function throwValidationError(reason: string): never {
+  throw new Error(reason);
+}
+
+export function generateWordChunk(input: TestChunkOptions): string {
+  return withValidatedGenerator(
+    input,
+    ({ generator, options }) =>
+      generator.generateChunk({
+        wordCount: input.wordCount,
+        options,
+      }),
+    throwValidationError
+  );
+}
+
+export function generateTestText(input: TestTextOptions): string {
+  return withValidatedGenerator(
+    input,
+    ({ generator, options }) =>
+      generator.generateInitialText({
+        durationSeconds: input.durationSeconds,
+        options,
+      }),
+    throwValidationError
+  );
 }

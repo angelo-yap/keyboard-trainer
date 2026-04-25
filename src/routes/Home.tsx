@@ -37,6 +37,7 @@ interface WeakKey {
 
 interface HomeProps {
   onTabChange: (tab: "learn" | "test" | "analytics" | "settings") => void;
+  onStartAdaptiveTest: () => void;
   settings?: Settings;
 }
 
@@ -209,7 +210,7 @@ const HandCue: React.FC<{
 
 /* ── Main component ──────────────────────────────────────────────────── */
 
-export const Home: React.FC<HomeProps> = ({ onTabChange, settings }) => {
+export const Home: React.FC<HomeProps> = ({ onTabChange, onStartAdaptiveTest, settings }) => {
   const [lessonId, setLessonId] = useState<number | null>(null);
   const lastGuidedKeyRef = useRef<string | null>(null);
 
@@ -393,6 +394,24 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, settings }) => {
             </button>
           </div>
         )}
+
+        <div className="home-resume home-resume--adaptive">
+          <div className="home-resume__left">
+            <div className="home-resume__label mono-label">test mode</div>
+            <div className="home-resume__name">
+              Adaptive <em>weak-letter training</em>
+            </div>
+            <div className="home-resume__meta">
+              Focuses future test text on the keys you miss most often.
+            </div>
+          </div>
+          <button
+            className="home-resume__btn"
+            onClick={onStartAdaptiveTest}
+          >
+            start adaptive
+          </button>
+        </div>
 
         <div className="home-lessons">
           <div className="mono-label home-section-label">all lessons</div>

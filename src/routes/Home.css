@@ -102,6 +102,15 @@
   gap: var(--space-5);
 }
 
+.home-resume--adaptive {
+  background: var(--color-accent-dim);
+  border-color: var(--color-accent-border);
+}
+
+.home-resume--adaptive .home-resume__name em {
+  color: var(--color-accent-dark);
+}
+
 @media (max-width: 500px) {
   .home-resume {
     flex-direction: column;
