@@ -1,9 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTypingSession } from "../hooks/useTypingSession";
-import { generateTestText, generateWordChunk } from "../core/test/testTextGenerator";
+import { getWeakLetterTargets } from "../core/storage/keyStatsStore";
+import {
+  generateTestText,
+  generateWordChunk,
+  validateTestModeConfig,
+  type AdaptiveWeakLetterGeneratorOptions,
+  type ClassicWordsGeneratorOptions,
+  type TestMode,
+  type TestModeConfig,
+} from "../core/test/testTextGenerator";
 import { saveTestResult } from "../core/storage/testHistoryStore";
 import { updateStreak } from "../core/storage/streakStore";
-import { getWeakLetterTargets } from "../core/storage/keyStatsStore";
 import { Keyboard } from "../ui/components/keyboard";
 import { TypingDisplay } from "../ui/components/TypingDisplay";
 import { SessionReportCard } from "../ui/components/SessionReport";
@@ -15,10 +23,8 @@ import { FeedbackBanner } from "../ui/components/FeedbackBanner";
 import { CameraPanel } from "../ui/components/CameraPanel";
 import "../ui/Layout/LessonStage.css";
 import "./Test.css";
-import React from "react";
 
 type TestStatus = "setup" | "active" | "finished";
-type TestMode = "standard" | "adaptive";
 
 type TestProps = {
   onBack: () => void;
@@ -40,8 +46,15 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
   const [testStatus, setTestStatus] = useState<TestStatus>("setup");
   const [mode, setMode] = useState<TestMode>(initialMode);
   const [duration, setDuration] = useState(settings?.testDuration || 60);
-  const [includePunctuation, setIncludePunctuation] = useState(false);
-  const [includeNumbers, setIncludeNumbers] = useState(false);
+  const [standardOptions, setStandardOptions] = useState<ClassicWordsGeneratorOptions>({
+    includePunctuation: false,
+    includeNumbers: false,
+  });
+  const [adaptiveOptions, setAdaptiveOptions] = useState<AdaptiveWeakLetterGeneratorOptions>({
+    includePunctuation: false,
+    includeNumbers: false,
+    adaptiveTargets: [],
+  });
   const [text, setText] = useState("");
   const [timeLeft, setTimeLeft] = useState(duration);
   const [timerStarted, setTimerStarted] = useState(false);
@@ -61,23 +74,71 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
   const endSessionRef = useRef<() => import("../core/session/sessionTypes").SessionState | null>(null);
   const hasEndedRef = useRef(false);
   const startRef = useRef<number | null>(null);
-  const prevSettingsRef = useRef({ duration, includePunctuation, includeNumbers });
+  const prevSettingsRef = useRef({
+    duration,
+    mode,
+    includePunctuation: false,
+    includeNumbers: false,
+  });
   const adaptiveTargetsRef = useRef(getWeakLetterTargets(5));
+  const modeConfigRef = useRef<TestModeConfig>({
+    mode: initialMode,
+    options:
+      initialMode === "adaptive"
+        ? {
+            includePunctuation: false,
+            includeNumbers: false,
+            adaptiveTargets: adaptiveTargetsRef.current,
+          }
+        : {
+            includePunctuation: false,
+            includeNumbers: false,
+          },
+  });
   const typingRef = useRef<{ reset: () => void } | null>(null);
   const refillingRef = useRef(false);
   const lastGuidedKeyRef = useRef<string | null>(null);
 
-  // Keep options in refs so refill callback doesn't go stale
-  const modeRef = useRef(mode);
-  const includePunctuationRef = useRef(includePunctuation);
-  const includeNumbersRef = useRef(includeNumbers);
-  modeRef.current = mode;
-  includePunctuationRef.current = includePunctuation;
-  includeNumbersRef.current = includeNumbers;
-
   // Keep current text length in a ref so refill can check without stale closures
   const textLengthRef = useRef(0);
   textLengthRef.current = text.length;
+
+  const getCurrentOptions = useCallback(
+    (selectedMode: TestMode) =>
+      selectedMode === "adaptive"
+        ? adaptiveOptions
+        : standardOptions,
+    [adaptiveOptions, standardOptions]
+  );
+
+  const createModeConfig = useCallback(
+    (
+      selectedMode: TestMode,
+      adaptiveTargets: ReturnType<typeof getWeakLetterTargets> = adaptiveTargetsRef.current
+    ): TestModeConfig =>
+      selectedMode === "adaptive"
+        ? {
+            mode: "adaptive",
+            options: {
+              ...adaptiveOptions,
+              adaptiveTargets,
+            },
+          }
+        : {
+            mode: "standard",
+            options: standardOptions,
+          },
+    [adaptiveOptions, standardOptions]
+  );
+
+  const validateModeConfig = useCallback((config: TestModeConfig) => {
+    const validation = validateTestModeConfig(config);
+    return validation.valid ? validation.options : null;
+  }, []);
+
+  const includePunctuation = getCurrentOptions(mode).includePunctuation;
+  const includeNumbers = getCurrentOptions(mode).includeNumbers;
+  modeConfigRef.current = createModeConfig(mode);
 
   const maybeRefill = useCallback((typedLength: number) => {
     const remaining = textLengthRef.current - typedLength;
@@ -86,13 +147,10 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
 
     refillingRef.current = true;
 
-    const chunk = generateWordChunk(
-      REFILL_WORD_COUNT,
-      includePunctuationRef.current,
-      includeNumbersRef.current,
-      modeRef.current,
-      adaptiveTargetsRef.current,
-    );
+    const chunk = generateWordChunk({
+      wordCount: REFILL_WORD_COUNT,
+      ...modeConfigRef.current,
+    });
 
     setText((prev) => `${prev} ${chunk}`);
 
@@ -117,20 +175,17 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
   typingRef.current = typing;
 
   /* Centralized: generate new test from current settings and reset session */
-  const generateAndLoadTest = useCallback(() => {
+  const generateAndLoadTest = useCallback((config: TestModeConfig = modeConfigRef.current) => {
     const newText = generateTestText({
       durationSeconds: duration,
-      includePunctuation,
-      includeNumbers,
-      mode,
-      adaptiveTargets: adaptiveTargetsRef.current,
+      ...config,
     });
     startRef.current = null;
     setText(newText);
     setTimeLeft(duration);
     setTimerStarted(false);
     typingRef.current?.reset();
-  }, [duration, includePunctuation, includeNumbers, mode]);
+  }, [duration]);
 
   /* Regenerate during active test — used by settings change and manual new test */
   const regenerateTest = useCallback(() => {
@@ -153,14 +208,21 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
     const prev = prevSettingsRef.current;
     const changed =
       prev.duration !== duration ||
+      prev.mode !== mode ||
       prev.includePunctuation !== includePunctuation ||
       prev.includeNumbers !== includeNumbers;
-    prevSettingsRef.current = { duration, includePunctuation, includeNumbers };
+    prevSettingsRef.current = {
+      duration,
+      mode,
+      includePunctuation,
+      includeNumbers,
+    };
     if (changed) {
+      modeConfigRef.current = createModeConfig(mode);
       const cleanup = regenerateTest();
       return cleanup;
     }
-  }, [testStatus, text, duration, includePunctuation, includeNumbers, regenerateTest]);
+  }, [testStatus, text, duration, mode, includePunctuation, includeNumbers, createModeConfig, regenerateTest]);
 
   const currentTargetChar = testStatus === "active" ? text.charAt(typing.typed.length) : "";
   const guidedTargetKeys = getGuidanceKeysForChar(currentTargetChar);
@@ -187,7 +249,7 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
     if (testStatus !== "active" || !typing.startTime || timerStarted) return;
     startRef.current = Date.now();
     setTimerStarted(true);
-    setTimeLeft(duration);  
+    setTimeLeft(duration);
   }, [testStatus, typing.startTime, timerStarted, duration]);
 
   // Hand-tracking: connect while the test is active, reset verdict on teardown
@@ -250,11 +312,21 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
 
   const startTest = useCallback(() => {
     hasEndedRef.current = false;
-    prevSettingsRef.current = { duration, includePunctuation, includeNumbers };
-    adaptiveTargetsRef.current = mode === "adaptive" ? getWeakLetterTargets(5) : [];
-    generateAndLoadTest();
+    const nextAdaptiveTargets = mode === "adaptive" ? getWeakLetterTargets(5) : [];
+    adaptiveTargetsRef.current = nextAdaptiveTargets;
+    const nextConfig = createModeConfig(mode, nextAdaptiveTargets);
+    const validatedConfig = validateModeConfig(nextConfig);
+    if (!validatedConfig) return;
+    modeConfigRef.current = validatedConfig;
+    prevSettingsRef.current = {
+      duration,
+      mode,
+      includePunctuation: validatedConfig.options.includePunctuation,
+      includeNumbers: validatedConfig.options.includeNumbers,
+    };
+    generateAndLoadTest(validatedConfig);
     setTestStatus("active");
-  }, [duration, includePunctuation, includeNumbers, mode, generateAndLoadTest]);
+  }, [createModeConfig, duration, generateAndLoadTest, mode, validateModeConfig]);
 
   const backToSetup = useCallback(() => {
     clearInterval(timerRef.current);
@@ -266,22 +338,54 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
 
   const handleNewTest = useCallback(() => {
     if (testStatus !== "active") return;
-    adaptiveTargetsRef.current = mode === "adaptive" ? getWeakLetterTargets(5) : [];
+    const nextAdaptiveTargets = mode === "adaptive" ? getWeakLetterTargets(5) : [];
+    adaptiveTargetsRef.current = nextAdaptiveTargets;
+    const nextConfig = createModeConfig(mode, nextAdaptiveTargets);
+    const validatedConfig = validateModeConfig(nextConfig);
+    if (!validatedConfig) return;
+    modeConfigRef.current = validatedConfig;
     regenerateTest();
-  }, [mode, testStatus, regenerateTest]);
+  }, [createModeConfig, mode, testStatus, regenerateTest, validateModeConfig]);
 
   const retryWithSameSettings = useCallback(() => {
     hasEndedRef.current = false;
-    adaptiveTargetsRef.current = mode === "adaptive" ? getWeakLetterTargets(5) : [];
-    generateAndLoadTest();
+    const nextAdaptiveTargets = mode === "adaptive" ? getWeakLetterTargets(5) : [];
+    adaptiveTargetsRef.current = nextAdaptiveTargets;
+    const nextConfig = createModeConfig(mode, nextAdaptiveTargets);
+    const validatedConfig = validateModeConfig(nextConfig);
+    if (!validatedConfig) return;
+    modeConfigRef.current = validatedConfig;
+    generateAndLoadTest(validatedConfig);
     setTestStatus("active");
-  }, [mode, generateAndLoadTest]);
+  }, [createModeConfig, generateAndLoadTest, mode, validateModeConfig]);
 
   const cycleDuration = useCallback(() => {
     const idx = DURATION_OPTIONS.indexOf(duration as (typeof DURATION_OPTIONS)[number]);
     const next = DURATION_OPTIONS[(idx + 1) % DURATION_OPTIONS.length];
     setDuration(next);
   }, [duration]);
+
+  const updateCurrentWordOptions = useCallback(
+    (
+      updater: (
+        current: ClassicWordsGeneratorOptions | AdaptiveWeakLetterGeneratorOptions
+      ) => ClassicWordsGeneratorOptions | AdaptiveWeakLetterGeneratorOptions
+    ) => {
+      if (mode === "adaptive") {
+        setAdaptiveOptions((current) => ({
+          ...current,
+          ...(updater(current) as AdaptiveWeakLetterGeneratorOptions),
+        }));
+        return;
+      }
+
+      setStandardOptions((current) => ({
+        ...current,
+        ...(updater(current) as ClassicWordsGeneratorOptions),
+      }));
+    },
+    [mode]
+  );
 
   /* ── Finished: show results ─────────────────────────────────────────── */
   if (testStatus === "finished" && typing.report) {
@@ -357,14 +461,24 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
               <button
                 type="button"
                 className={`test-setup-toggle ${includePunctuation ? "active" : ""}`}
-                onClick={() => setIncludePunctuation((p) => !p)}
+                onClick={() =>
+                  updateCurrentWordOptions((current) => ({
+                    ...current,
+                    includePunctuation: !current.includePunctuation,
+                  }))
+                }
               >
                 Punctuation
               </button>
               <button
                 type="button"
                 className={`test-setup-toggle ${includeNumbers ? "active" : ""}`}
-                onClick={() => setIncludeNumbers((n) => !n)}
+                onClick={() =>
+                  updateCurrentWordOptions((current) => ({
+                    ...current,
+                    includeNumbers: !current.includeNumbers,
+                  }))
+                }
               >
                 Numbers
               </button>
@@ -414,14 +528,24 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
           <button
             type="button"
             className={`test-topbar-badge ${includePunctuation ? "on" : "off"}`}
-            onClick={() => setIncludePunctuation((p) => !p)}
+            onClick={() =>
+              updateCurrentWordOptions((current) => ({
+                ...current,
+                includePunctuation: !current.includePunctuation,
+              }))
+            }
           >
             punct
           </button>
           <button
             type="button"
             className={`test-topbar-badge ${includeNumbers ? "on" : "off"}`}
-            onClick={() => setIncludeNumbers((n) => !n)}
+            onClick={() =>
+              updateCurrentWordOptions((current) => ({
+                ...current,
+                includeNumbers: !current.includeNumbers,
+              }))
+            }
           >
             nums
           </button>
