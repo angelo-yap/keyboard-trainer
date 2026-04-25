@@ -38,7 +38,8 @@ function buildFallbackPracticeWord(letter: string): string {
 
 function chooseWeightedWeakLetter(targets: NonNullable<AdaptiveWeakLetterGeneratorOptions["adaptiveTargets"]>): string {
   const weightedPool = targets.flatMap((target) => {
-    const weight = Math.max(1, Math.round((100 - target.accuracy) / 4) + Math.min(target.errors, 4));
+    const score = target.score ?? target.accuracy;
+    const weight = Math.max(1, Math.round((100 - score) / 4) + Math.min(target.errors, 4));
     return Array.from({ length: weight }, () => target.key);
   });
   return randomItem(weightedPool);

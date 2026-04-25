@@ -45,6 +45,7 @@ export function useTypingSession({
 }: UseTypingSessionOptions) {
   const sessionRef = useRef<SessionState | null>(null);
   const lastCorrectTimeRef = useRef<number | null>(null);
+  const previousKeyTimeRef = useRef<number | null>(null);
   const wpmIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const recorderRef = useRef<ReturnType<typeof createSessionRecorder> | null>(null);
   const tickIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
@@ -100,8 +101,10 @@ export function useTypingSession({
         expected: event.expectedChar.toLowerCase(),
         correct: event.correct,
       });
+      const previousKeyTime = previousKeyTimeRef.current;
+      const latencyMs = previousKeyTime != null ? event.time - previousKeyTime : null;
       if (event.expectedChar.trim().length > 0) {
-        recordKeyStats(event.expectedChar, !event.correct);
+        recordKeyStats(event.expectedChar, !event.correct, latencyMs);
       }
       const lastCorrect = lastCorrectTimeRef.current;
       sessionRef.current = recordKeystroke(
@@ -118,6 +121,7 @@ export function useTypingSession({
       if (event.correct) {
         lastCorrectTimeRef.current = event.time;
       }
+      previousKeyTimeRef.current = event.time;
     },
     [sessionType, lessonId]
   );
@@ -172,6 +176,7 @@ export function useTypingSession({
   useEffect(() => {
     sessionRef.current = null;
     lastCorrectTimeRef.current = null;
+    previousKeyTimeRef.current = null;
     recorderRef.current = null;
     clearInterval(tickIntervalRef.current);
     setReport(null);
@@ -188,6 +193,7 @@ export function useTypingSession({
   const reset = useCallback(() => {
     sessionRef.current = null;
     lastCorrectTimeRef.current = null;
+    previousKeyTimeRef.current = null;
     recorderRef.current = null;
     clearInterval(tickIntervalRef.current);
     setReport(null);

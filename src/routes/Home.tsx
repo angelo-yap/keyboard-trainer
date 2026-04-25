@@ -33,6 +33,8 @@ import type { Settings } from "../core/storage/settingsStore";
 interface WeakKey {
   key: string;
   accuracy: number;
+  score: number;
+  avgLatencyMs: number | null;
 }
 
 interface HomeProps {
@@ -473,10 +475,10 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, onStartAdaptiveTest, se
                   <div className="home-weak-row__track">
                     <div
                       className="home-weak-row__fill"
-                      style={{ width: `${wk.accuracy}%` }}
+                      style={{ width: `${wk.score}%` }}
                     />
                   </div>
-                  <span className="home-weak-row__pct">{wk.accuracy}%</span>
+                  <span className="home-weak-row__pct">{wk.score}%</span>
                 </div>
               ))}
             </div>
