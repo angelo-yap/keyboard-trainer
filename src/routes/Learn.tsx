@@ -284,7 +284,7 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
         return;
       }
 
-      if (restartArmed && e.key === "Enter") {
+      if (restartArmed && (e.key === " " || e.code === "Space")) {
         e.preventDefault();
         restartCurrentDrill();
         return;
@@ -517,7 +517,7 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
               <div className="test-restart-overlay" aria-live="polite" aria-label="Restart lesson confirmation">
                 <div className="test-restart-overlay__icon" aria-hidden="true">↻</div>
                 <div className="test-restart-overlay__body">
-                  <div>press enter to restart</div>
+                  <div>press space to restart</div>
                   <div>click on the screen to resume</div>
                 </div>
               </div>

@@ -457,7 +457,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
         return;
       }
 
-      if (restartArmed && e.key === "Enter") {
+      if (restartArmed && (e.key === " " || e.code === "Space")) {
         e.preventDefault();
         clearRestartArm();
         handleNewTest();
@@ -723,7 +723,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
               <div className="test-restart-overlay" aria-live="polite" aria-label="Restart test confirmation">
                 <div className="test-restart-overlay__icon" aria-hidden="true">↻</div>
                 <div className="test-restart-overlay__body">
-                  <div>press enter to restart</div>
+                  <div>press space to restart</div>
                   <div>click on the screen to resume</div>
                 </div>
               </div>
