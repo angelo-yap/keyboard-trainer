@@ -15,7 +15,12 @@ _latest_frame: bytes | None = None
 
 # ── Thread-safe state ─────────────────────────────────────────────────────────
 _state_lock = threading.Lock()
-_current_state: dict = {"verdict": "IDLE", "wrong_fingers": [], "timestamp": 0.0}
+_current_state: dict = {
+    "verdict": "IDLE",
+    "wrong_fingers": [],
+    "finger_positions": [],
+    "timestamp": 0.0,
+}
 
 # ── Calibrator reference (set when run() is active) ───────────────────────────
 _calib_lock = threading.Lock()
@@ -224,10 +229,11 @@ def _create_hand_tracker():
 
 SHARED_STATE_FILE = "typing_state.json"
 
-def write_state(verdict: str, wrong_fingers: list):
+def write_state(verdict: str, wrong_fingers: list, finger_positions: list | None = None):
     state = {
         "verdict": verdict,
         "wrong_fingers": wrong_fingers,
+        "finger_positions": finger_positions or [],
         "timestamp": time.time(),
     }
     try:
@@ -614,7 +620,15 @@ def run(headless: bool = False):
                                 if zone_name:
                                     active_touches.append((finger_label, zone_name, correct_fingers))
                                     correct = finger_label in correct_fingers
-                                    finger_positions.append((finger_label, px, py, correct))
+                                    finger_positions.append({
+                                        "label": finger_label,
+                                        "x": fx,
+                                        "y": fy,
+                                        "px": px,
+                                        "py": py,
+                                        "correct": correct,
+                                        "zone": zone_name,
+                                    })
             else:
                 mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
                 timestamp_ms = int(time.time() * 1000)
@@ -659,9 +673,21 @@ def run(headless: bool = False):
                             if zone_name:
                                 active_touches.append((finger_label, zone_name, correct_fingers))
                                 correct = finger_label in correct_fingers
-                                finger_positions.append((finger_label, px, py, correct))
+                                finger_positions.append({
+                                    "label": finger_label,
+                                    "x": fx,
+                                    "y": fy,
+                                    "px": px,
+                                    "py": py,
+                                    "correct": correct,
+                                    "zone": zone_name,
+                                })
 
-        for (finger_label, px, py, correct) in finger_positions:
+        for finger in finger_positions:
+            finger_label = finger["label"]
+            px = finger["px"]
+            py = finger["py"]
+            correct = finger["correct"]
             color = (0, 255, 80) if correct else (0, 60, 255)
             cv2.circle(frame, (px, py), 14, color, -1)
             cv2.circle(frame, (px, py), 14, (255, 255, 255), 2)
@@ -681,14 +707,27 @@ def run(headless: bool = False):
         )
 
         sorted_wrong = sorted(wrong_fingers)
+        state_fingers = [
+            {
+                "label": finger["label"],
+                "x": round(float(finger["x"]), 4),
+                "y": round(float(finger["y"]), 4),
+                "correct": bool(finger["correct"]),
+                "zone": finger["zone"],
+            }
+            for finger in finger_positions
+            if finger["label"] != "UNKNOWN"
+        ]
+        state_timestamp = time.time()
+        with _state_lock:
+            _current_state = {
+                "verdict": smoothed,
+                "wrong_fingers": sorted_wrong,
+                "finger_positions": state_fingers,
+                "timestamp": state_timestamp,
+            }
         if smoothed != last_written_verdict or sorted_wrong != last_written_wrong:
-            write_state(smoothed, sorted_wrong)
-            with _state_lock:
-                _current_state = {
-                    "verdict": smoothed,
-                    "wrong_fingers": sorted_wrong,
-                    "timestamp": time.time(),
-                }
+            write_state(smoothed, sorted_wrong, state_fingers)
             last_written_verdict = smoothed
             last_written_wrong = sorted_wrong
 
@@ -741,7 +780,14 @@ def run(headless: bool = False):
                 verdict_history.clear()
                 print("Calibration reset.")
 
-    write_state("IDLE", [])
+    write_state("IDLE", [], [])
+    with _state_lock:
+        _current_state = {
+            "verdict": "IDLE",
+            "wrong_fingers": [],
+            "finger_positions": [],
+            "timestamp": time.time(),
+        }
     if cap is not None:
         cap.release()
     with _camera_source_lock:

@@ -13,7 +13,7 @@ import {
 } from "../core/test/testTextGenerator";
 import { saveTestResult } from "../core/storage/testHistoryStore";
 import { updateStreak } from "../core/storage/streakStore";
-import { Keyboard } from "../ui/components/keyboard";
+import { Keyboard, type KeyboardFingerMarker } from "../ui/components/keyboard";
 import { TypingDisplay } from "../ui/components/TypingDisplay";
 import { SessionReportCard } from "../ui/components/SessionReport";
 import { Button } from "../ui/components/Button";
@@ -89,6 +89,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
   // server hand tracking data
   const [verdict, setVerdict] = useState<"GOOD" | "BAD" | "IDLE" | "">("");
   const [wrongFingers, setWrongFingers] = useState<string[]>([]);
+  const [fingerMarkers, setFingerMarkers] = useState<KeyboardFingerMarker[]>([]);
 
   useEffect(() => {
     if (testStatus === "setup") {
@@ -264,6 +265,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     if (testStatus !== "active") {
       setVerdict("");
       setWrongFingers([]);
+      setFingerMarkers([]);
       return;
     }
 
@@ -273,14 +275,24 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
       const data = JSON.parse(event.data) as {
         verdict: "GOOD" | "BAD" | "IDLE";
         wrong_fingers: string[];
+        finger_positions?: KeyboardFingerMarker[];
       };
       setVerdict(data.verdict);
       setWrongFingers(data.wrong_fingers);
+      setFingerMarkers(
+        (data.finger_positions ?? []).filter(
+          (finger) =>
+            typeof finger.label === "string" &&
+            Number.isFinite(finger.x) &&
+            Number.isFinite(finger.y),
+        ),
+      );
     };
 
     ws.onerror = () => {
       setVerdict("");
       setWrongFingers([]);
+      setFingerMarkers([]);
     };
 
     return () => ws.close();
@@ -739,6 +751,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
                 highlightKeys={guidedTargetKeys}
                 showFingerHints={false}
                 mode="test"
+                fingerMarkers={fingerMarkers}
               />
             </div>
           )}

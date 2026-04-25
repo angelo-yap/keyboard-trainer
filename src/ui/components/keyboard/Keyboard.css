@@ -15,6 +15,7 @@
 }
 
 .kb-inner {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -22,6 +23,49 @@
   background: var(--color-surface);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-line-2);
+}
+
+.kb-finger-overlay {
+  position: absolute;
+  inset: var(--space-3) var(--space-4);
+  pointer-events: none;
+  z-index: 4;
+}
+
+.kb-finger-marker {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+  background: color-mix(in srgb, var(--color-correct) 82%, transparent);
+  border: 2px solid rgba(255, 255, 255, 0.88);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--color-correct) 22%, transparent),
+    0 8px 18px rgba(0, 0, 0, 0.28);
+  color: var(--color-bg);
+  transition:
+    left 90ms linear,
+    top 90ms linear,
+    background 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.kb-finger-marker--wrong {
+  background: color-mix(in srgb, var(--color-error) 88%, transparent);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--color-error) 24%, transparent),
+    0 8px 18px rgba(0, 0, 0, 0.28);
+}
+
+.kb-finger-marker__label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
 }
 
 .kb-row {

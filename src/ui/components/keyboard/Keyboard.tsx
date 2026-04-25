@@ -6,8 +6,17 @@ import "./Keyboard.css";
 const UNIT_SIZE = 36;
 const GAP = 4;
 const MAX_WIDTH = 720;
+const FINGER_MARKER_X_OFFSET = 0.04;
 
 export type KeyboardMode = "lesson" | "test";
+
+export type KeyboardFingerMarker = {
+  label: string;
+  x: number;
+  y: number;
+  correct?: boolean;
+  zone?: string;
+};
 
 type KeyboardProps = {
   layoutType?: LayoutType;
@@ -17,8 +26,24 @@ type KeyboardProps = {
   showFingerHints?: boolean;
   mode?: KeyboardMode;
   className?: string;
+  fingerMarkers?: KeyboardFingerMarker[];
   onKeyClick?: (key: string) => void;
 };
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+function getShortFingerLabel(label: string): string {
+  return label
+    .replace("L_", "L.")
+    .replace("R_", "R.")
+    .replace("INDEX", "I")
+    .replace("MIDDLE", "M")
+    .replace("RING", "R")
+    .replace("PINKY", "P")
+    .replace("THUMB", "T");
+}
 
 export function Keyboard({
   layoutType = "mac",
@@ -27,6 +52,7 @@ export function Keyboard({
   showFingerHints = true,
   mode = "test",
   className = "",
+  fingerMarkers = [],
   onKeyClick,
 }: KeyboardProps) {
   // Own internal pressedKey state — updated by window keydown/keyup.
@@ -93,6 +119,31 @@ export function Keyboard({
             onKeyClick={onKeyClick}
           />
         ))}
+        {fingerMarkers.length > 0 && (
+          <div className="kb-finger-overlay" aria-hidden="true">
+            {fingerMarkers.map((finger, index) => {
+              const x = clamp01(finger.x + FINGER_MARKER_X_OFFSET);
+              const y = clamp01(finger.y);
+              const label = getShortFingerLabel(finger.label);
+
+              return (
+                <div
+                  key={`${finger.label}-${index}`}
+                  className={`kb-finger-marker${
+                    finger.correct === false ? " kb-finger-marker--wrong" : ""
+                  }`}
+                  style={{
+                    left: `${x * 100}%`,
+                    top: `${y * 100}%`,
+                  }}
+                  title={`${finger.label}${finger.zone ? ` · ${finger.zone}` : ""}`}
+                >
+                  <span className="kb-finger-marker__label">{label}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
