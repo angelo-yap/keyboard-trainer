@@ -114,3 +114,5 @@ hand-detection/typing_state.json
 *.njsproj
 *.sln
 *.sw?
+
+hand-detection/typing_state.json

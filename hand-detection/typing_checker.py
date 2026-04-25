@@ -112,7 +112,13 @@ FINGER_LABEL_MAP = {
     ("Right", "PINKY"):  "R_PINKY",
 }
 
-ROW_STAGGER = [-0.02, 0.01, 0.02, 0.05, 0.10]
+ROW_STAGGER = [
+    -0.02,  # Number row (top)
+    0.01,   # QWERTY row
+    0.02,   # ASDF row (home row)
+    0.05,   # ZXCV row
+    0.10,   # Spacebar row (heavily centered)
+]
 ROW_Y = [0.0, 0.20, 0.42, 0.63, SPACEBAR_Y_FRAC, 1.0]
 
 
@@ -162,8 +168,20 @@ class KeyboardCalibrator:
 
         for (x0, x1, zone_name, _) in KEYBOARD_ZONES:
             color = ZONE_COLORS.get(zone_name, (128, 128, 128))
-            left_pts = [kb_to_img(x0 + ROW_STAGGER[i], ROW_Y[i]) for i in range(5)]
-            right_pts = [kb_to_img(x1 + ROW_STAGGER[4 - i], ROW_Y[4 - i]) for i in range(5)]
+            left_pts = [
+                kb_to_img(x0 + ROW_STAGGER[0], ROW_Y[0]),
+                kb_to_img(x0 + ROW_STAGGER[1], ROW_Y[1]),
+                kb_to_img(x0 + ROW_STAGGER[2], ROW_Y[2]),
+                kb_to_img(x0 + ROW_STAGGER[3], ROW_Y[3]),
+                kb_to_img(x0 + ROW_STAGGER[4], ROW_Y[4]),
+            ]
+            right_pts = [
+                kb_to_img(x1 + ROW_STAGGER[4], ROW_Y[4]),
+                kb_to_img(x1 + ROW_STAGGER[3], ROW_Y[3]),
+                kb_to_img(x1 + ROW_STAGGER[2], ROW_Y[2]),
+                kb_to_img(x1 + ROW_STAGGER[1], ROW_Y[1]),
+                kb_to_img(x1 + ROW_STAGGER[0], ROW_Y[0]),
+            ]
             pts = np.array(left_pts + right_pts, dtype=np.int32)
             cv2.fillPoly(overlay, [pts], color)
 
