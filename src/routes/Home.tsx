@@ -5,6 +5,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import "./Home.css";
+import "./Test.css";
 import { getLessonSummaries } from "../core/lesson/homeData";
 import { getFingerMastery } from "../core/lesson/fingerMastery";
 import { getCoachMessage } from "../core/lesson/coachMessage";
@@ -527,15 +528,54 @@ function PracticeSessionView({
   onRestart,
 }: PracticeSessionViewProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [restartArmed, setRestartArmed] = useState(false);
+  const [capsLockOn, setCapsLockOn] = useState(false);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
   const focusInput = useCallback(() => inputRef.current?.focus(), []);
+  const clearRestartArm = useCallback(() => setRestartArmed(false), []);
+  const armRestart = useCallback(() => setRestartArmed(true), []);
+
+  const handleTypingAreaClick = useCallback(() => {
+    if (restartArmed) {
+      clearRestartArm();
+    }
+    focusInput();
+  }, [clearRestartArm, focusInput, restartArmed]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      setCapsLockOn(e.getModifierState("CapsLock"));
+
+      if (e.key === "Tab") {
+        e.preventDefault();
+        armRestart();
+        return;
+      }
+
+      if (restartArmed && e.key === "Escape") {
+        e.preventDefault();
+        clearRestartArm();
+        focusInput();
+        return;
+      }
+
+      if (restartArmed && e.key === "Enter") {
+        e.preventDefault();
+        clearRestartArm();
+        onRestart();
+        return;
+      }
+
+      if (restartArmed) {
+        e.preventDefault();
+        clearRestartArm();
+        return;
+      }
+
       if (e.key === "Escape") {
         e.preventDefault();
         onBack();
@@ -543,11 +583,11 @@ function PracticeSessionView({
       }
       onKeyDown(e);
     },
-    [onBack, onKeyDown]
+    [armRestart, clearRestartArm, focusInput, onBack, onKeyDown, onRestart, restartArmed]
   );
 
   return (
-    <div className="practice-root" onClick={focusInput}>
+    <div className="practice-root" onClick={handleTypingAreaClick}>
       <input
         ref={inputRef}
         className="practice-capture-input"
@@ -569,12 +609,33 @@ function PracticeSessionView({
         </span>
       </div>
       <div className="practice-body">
+        <div className="test-meta-row practice-meta-row" aria-live="polite">
+          {!restartArmed && (
+            <div className="test-restart-hint mono-label">
+              tab to restart
+            </div>
+          )}
+          {capsLockOn && <div className="test-caps-indicator mono-label">Caps Lock on</div>}
+        </div>
         <div className="practice-cue-label mono-label">type what you see</div>
-        <TypingDisplay
-          target={typing.target}
-          typed={typing.typed}
-          className="practice-text-display"
-        />
+        <div className={`test-typing-stage practice-typing-stage${restartArmed ? " test-typing-stage--armed" : ""}`}>
+          <div className="test-typing-wrap practice-typing-wrap">
+            <TypingDisplay
+              target={typing.target}
+              typed={typing.typed}
+              className="practice-text-display"
+            />
+          </div>
+          {restartArmed && (
+            <div className="test-restart-overlay" aria-live="polite" aria-label="Restart lesson confirmation">
+              <div className="test-restart-overlay__icon" aria-hidden="true">↻</div>
+              <div className="test-restart-overlay__body">
+                <div>press enter to restart</div>
+                <div>click on the screen to resume</div>
+              </div>
+            </div>
+          )}
+        </div>
         <div className="practice-callout">
           {callout ? (
             <>

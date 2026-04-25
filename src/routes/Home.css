@@ -594,20 +594,42 @@
 }
 
 .practice-body {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--space-6) var(--page-padding);
+  padding: calc(var(--space-6) + var(--space-7)) var(--page-padding) var(--space-6);
   gap: var(--space-6);
   overflow: hidden;
 }
 
 @media (max-width: 600px) {
   .practice-body {
-    padding: var(--space-4) var(--space-4);
+    padding: calc(var(--space-4) + var(--space-6)) var(--space-4) var(--space-4);
     gap: var(--space-5);
   }
+}
+
+.practice-meta-row {
+  width: min(680px, 95vw);
+  max-width: 100%;
+  align-self: center;
+  margin-top: 0;
+
+  position: relative;
+  top: 40px;
+  z-index: 10;
+}
+
+.practice-typing-stage {
+  width: 100%;
+  max-width: min(680px, 95vw);
+}
+
+.practice-typing-wrap {
+  width: 100%;
+  max-width: none;
 }
 
 .practice-text-display {

@@ -83,6 +83,8 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
   const [timerStarted, setTimerStarted] = useState(false);
   const [textTransitioning, setTextTransitioning] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+  const [restartArmed, setRestartArmed] = useState(false);
+  const [capsLockOn, setCapsLockOn] = useState(false);
   // server hand tracking data
   const [verdict, setVerdict] = useState<"GOOD" | "BAD" | "IDLE" | "">("");
   const [wrongFingers, setWrongFingers] = useState<string[]>([]);
@@ -97,6 +99,8 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
   const endSessionRef = useRef<() => import("../core/session/sessionTypes").SessionState | null>(null);
   const hasEndedRef = useRef(false);
   const startRef = useRef<number | null>(null);
+  const pauseStartedAtRef = useRef<number | null>(null);
+  const pausedDurationMsRef = useRef(0);
   const prevSettingsRef = useRef({
     duration,
     mode,
@@ -110,7 +114,6 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
   const typingRef = useRef<{ reset: () => void } | null>(null);
   const refillingRef = useRef(false);
   const lastGuidedKeyRef = useRef<string | null>(null);
-
   // Keep current text length in a ref so refill can check without stale closures
   const textLengthRef = useRef(0);
   textLengthRef.current = text.length;
@@ -177,6 +180,8 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
       ...config,
     });
     startRef.current = null;
+    pauseStartedAtRef.current = null;
+    pausedDurationMsRef.current = 0;
     setText(newText);
     setTimeLeft(duration);
     setTimerStarted(false);
@@ -280,7 +285,8 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
     if (testStatus !== "active") return;
     const interval = setInterval(() => {
       if (!startRef.current) return;
-      const elapsed = (Date.now() - startRef.current) / 1000;
+      if (pauseStartedAtRef.current) return;
+      const elapsed = (Date.now() - startRef.current - pausedDurationMsRef.current) / 1000;
       const remaining = Math.max(0, duration - elapsed);
       setTimeLeft(Math.ceil(remaining));
       if (remaining <= 0 && !hasEndedRef.current) {
@@ -327,6 +333,8 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
   const backToSetup = useCallback(() => {
     clearInterval(timerRef.current);
     startRef.current = null;
+    pauseStartedAtRef.current = null;
+    pausedDurationMsRef.current = 0;
     setTestStatus("setup");
     setTimerStarted(false);
     typingRef.current?.reset();
@@ -342,6 +350,21 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
     modeConfigRef.current = validatedConfig;
     regenerateTest();
   }, [createModeConfig, mode, testStatus, regenerateTest, validateModeConfig]);
+
+  const clearRestartArm = useCallback(() => {
+    if (pauseStartedAtRef.current) {
+      pausedDurationMsRef.current += Date.now() - pauseStartedAtRef.current;
+      pauseStartedAtRef.current = null;
+    }
+    setRestartArmed(false);
+  }, []);
+
+  const armRestart = useCallback(() => {
+    if (timerStarted && startRef.current && !pauseStartedAtRef.current) {
+      pauseStartedAtRef.current = Date.now();
+    }
+    setRestartArmed(true);
+  }, [timerStarted]);
 
   const retryWithSameSettings = useCallback(() => {
     hasEndedRef.current = false;
@@ -377,6 +400,57 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
     },
     [mode]
   );
+
+  useEffect(() => {
+    if (testStatus !== "active") {
+      clearRestartArm();
+      setCapsLockOn(false);
+    }
+  }, [clearRestartArm, testStatus]);
+
+  const handleActiveInputKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      setCapsLockOn(e.getModifierState("CapsLock"));
+
+      if (e.key === "Tab") {
+        e.preventDefault();
+        armRestart();
+        return;
+      }
+
+      if (restartArmed && e.key === "Escape") {
+        e.preventDefault();
+        clearRestartArm();
+        return;
+      }
+
+      if (restartArmed && e.key === "Enter") {
+        e.preventDefault();
+        clearRestartArm();
+        handleNewTest();
+        return;
+      }
+
+      if (restartArmed) {
+        e.preventDefault();
+        clearRestartArm();
+        return;
+      }
+
+      typing.handleKeyDown(e);
+    },
+    [armRestart, clearRestartArm, handleNewTest, restartArmed, typing]
+  );
+
+  const handleTypingAreaClick = useCallback(() => {
+    if (restartArmed) {
+      clearRestartArm();
+      typing.focus();
+      return;
+    }
+
+    typing.focus();
+  }, [clearRestartArm, restartArmed, typing]);
 
   /* ── Finished: show results ─────────────────────────────────────────── */
   if (testStatus === "finished" && typing.report) {
@@ -571,31 +645,48 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
         />
       </div>
 
-      <div className="lesson-stage-body" onClick={typing.focus}>
+      <div className="lesson-stage-body" onClick={handleTypingAreaClick}>
         <input
           ref={typing.inputRef}
-          onKeyDown={(e) => {
-            typing.handleKeyDown(e);
-          }}
+          onKeyDown={handleActiveInputKeyDown}
           className="test-hidden-input"
           readOnly
         />
 
         <div className="lesson-stage-content-col">
+          <div className="test-meta-row" aria-live="polite">
+            {!restartArmed && (
+              <div className="test-restart-hint mono-label">
+                tab to restart
+              </div>
+            )}
+            {capsLockOn && <div className="test-caps-indicator mono-label">Caps Lock on</div>}
+          </div>
           {!timerStarted && (
             <div className="test-idle-hint mono-label">
               Start typing — timer begins on first keypress
             </div>
           )}
 
-          <div
-            className={`test-typing-wrap${textTransitioning ? " test-typing-wrap--transitioning" : ""}`}
-          >
-            <TypingDisplay
-              target={text}
-              typed={typing.typed}
-              mode="viewport"
-            />
+          <div className={`test-typing-stage${restartArmed ? " test-typing-stage--armed" : ""}`}>
+            <div
+              className={`test-typing-wrap${textTransitioning ? " test-typing-wrap--transitioning" : ""}`}
+            >
+              <TypingDisplay
+                target={text}
+                typed={typing.typed}
+                mode="viewport"
+              />
+            </div>
+            {restartArmed && (
+              <div className="test-restart-overlay" aria-live="polite" aria-label="Restart test confirmation">
+                <div className="test-restart-overlay__icon" aria-hidden="true">↻</div>
+                <div className="test-restart-overlay__body">
+                  <div>press enter to restart</div>
+                  <div>click on the screen to resume</div>
+                </div>
+              </div>
+            )}
           </div>
 
           <FeedbackBanner verdict={verdict} wrongFingers={wrongFingers} />
