@@ -1,0 +1,157 @@
+.camera-panel {
+  border: 1px solid var(--color-line-2);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-surface);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+.camera-panel--floating {
+  position: fixed;
+  top: 100px;
+  right: 16px;
+  width: 480px;
+  z-index: 200;
+}
+
+.camera-panel--embedded {
+  width: 100%;
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.camera-panel-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-line-2);
+  background: var(--color-surface-2);
+}
+
+.camera-panel-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.camera-panel-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.camera-panel-dot--on {
+  background: var(--color-accent);
+}
+
+.camera-panel-dot--off {
+  background: var(--color-text-3);
+}
+
+.camera-panel-hint {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-3);
+  text-align: center;
+}
+
+.camera-panel-actions {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.camera-panel-btn {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-line-2);
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-text-3);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.camera-panel-btn:hover {
+  color: var(--color-text-2);
+  border-color: var(--color-line-3);
+}
+
+.camera-panel-btn--cancel {
+  color: var(--color-accent);
+  border-color: var(--color-accent-border);
+}
+
+.camera-panel-btn--reset {
+  color: var(--color-error);
+  border-color: color-mix(in srgb, var(--color-error) 30%, transparent);
+}
+
+.camera-panel-view {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--color-surface-2);
+  overflow: hidden;
+}
+
+.camera-panel-view--calibrating {
+  cursor: crosshair;
+}
+
+.camera-panel-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  user-select: none;
+}
+
+.camera-panel-corner-dot {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  border: 2px solid #fff;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+}
+
+.camera-panel-offline {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text-3);
+}
+
+@media (max-width: 640px) {
+  .camera-panel--floating {
+    top: auto;
+    right: var(--space-3);
+    bottom: var(--space-3);
+    left: var(--space-3);
+    width: auto;
+  }
+
+  .camera-panel-header {
+    flex-wrap: wrap;
+  }
+}

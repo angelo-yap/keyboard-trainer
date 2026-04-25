@@ -1,4 +1,4 @@
-import { getAccuracy } from "../storage/keyStatsStore";
+import { getKeyScore } from "../storage/keyStatsStore";
 
 export type FingerState = "mastered" | "learning" | "weak" | "unlocked";
 
@@ -26,7 +26,7 @@ const FINGER_KEYS: Record<keyof FingerMastery, string[]> = {
 
 function fingerState(keys: string[]): FingerState {
   const stats = keys
-    .map((k) => getAccuracy(k))
+    .map((k) => getKeyScore(k))
     .filter((v): v is number => v != null);
   if (stats.length === 0) return "unlocked";
   const avg = stats.reduce((a, b) => a + b, 0) / stats.length;

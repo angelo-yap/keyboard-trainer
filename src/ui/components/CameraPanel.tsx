@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import "./CameraPanel.css";
 
 const CAMERA_W = 1280;
 const CAMERA_H = 720;
@@ -7,23 +8,55 @@ const CORNER_LABELS = ["Top-Left", "Top-Right", "Bottom-Right", "Bottom-Left"];
 type CalibMode = "idle" | "collecting" | "done";
 
 type CameraPanelProps = {
-  active: boolean;
+  active?: boolean;
+  reloadSignal?: number;
+  showCalibrationControls?: boolean;
+  variant?: "floating" | "embedded";
 };
 
-export function CameraPanel({ active }: CameraPanelProps) {
+export function CameraPanel({
+  active = true,
+  reloadSignal = 0,
+  showCalibrationControls = false,
+  variant = "floating",
+}: CameraPanelProps) {
   const [calibMode, setCalibMode] = useState<CalibMode>("idle");
   const [corners, setCorners] = useState<[number, number][]>([]);
   const [calibrated, setCalibrated] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [videoNonce, setVideoNonce] = useState(0);
+  const [frameSize, setFrameSize] = useState({ width: CAMERA_W, height: CAMERA_H });
+  const retryTimeoutRef = useRef<number | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     if (!active) return;
     fetch("http://localhost:8000/info")
       .then((r) => r.json())
-      .then((d) => setCalibrated(d.calibrated ?? false))
+      .then((d) => {
+        setCalibrated(d.calibrated ?? false);
+        if (Number.isFinite(d.frame_width) && Number.isFinite(d.frame_height)) {
+          setFrameSize({ width: d.frame_width, height: d.frame_height });
+        }
+      })
       .catch(() => {});
   }, [active]);
+
+  useEffect(() => {
+    if (!active) {
+      setConnected(false);
+      return;
+    }
+    setVideoNonce((value) => value + 1);
+  }, [active, reloadSignal]);
+
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current !== null) {
+        window.clearTimeout(retryTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const startCalib = useCallback(() => {
     if (calibMode === "collecting") {
@@ -47,8 +80,8 @@ export function CameraPanel({ active }: CameraPanelProps) {
     (e: React.MouseEvent<HTMLImageElement>) => {
       if (calibMode !== "collecting") return;
       const rect = e.currentTarget.getBoundingClientRect();
-      const x = Math.round((e.clientX - rect.left) * (CAMERA_W / rect.width));
-      const y = Math.round((e.clientY - rect.top) * (CAMERA_H / rect.height));
+      const x = Math.round((e.clientX - rect.left) * (frameSize.width / rect.width));
+      const y = Math.round((e.clientY - rect.top) * (frameSize.height / rect.height));
 
       setCorners((prev) => {
         const next: [number, number][] = [...prev, [x, y]];
@@ -58,7 +91,11 @@ export function CameraPanel({ active }: CameraPanelProps) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ corners: next }),
           })
-            .then(() => {
+            .then(async (response) => {
+              const payload = (await response.json()) as { ok?: boolean; error?: string };
+              if (!response.ok || !payload.ok) {
+                throw new Error(payload.error || "Calibration failed.");
+              }
               setCalibrated(true);
               setCalibMode("done");
             })
@@ -67,8 +104,27 @@ export function CameraPanel({ active }: CameraPanelProps) {
         return next;
       });
     },
-    [calibMode],
+    [calibMode, frameSize.height, frameSize.width],
   );
+
+  const handleImageError = useCallback(() => {
+    setConnected(false);
+    if (!active || retryTimeoutRef.current !== null) {
+      return;
+    }
+    retryTimeoutRef.current = window.setTimeout(() => {
+      retryTimeoutRef.current = null;
+      setVideoNonce((value) => value + 1);
+    }, 1500);
+  }, [active]);
+
+  const handleImageLoad = useCallback(() => {
+    setConnected(true);
+    if (retryTimeoutRef.current !== null) {
+      window.clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+  }, []);
 
   const hintText =
     calibMode === "collecting"
@@ -78,7 +134,7 @@ export function CameraPanel({ active }: CameraPanelProps) {
       : "Not calibrated";
 
   return (
-    <div className="camera-panel">
+    <div className={`camera-panel camera-panel--${variant}`}>
       <div className="camera-panel-header">
         <span className="camera-panel-title">
           <span
@@ -89,26 +145,28 @@ export function CameraPanel({ active }: CameraPanelProps) {
           Hand Camera
         </span>
         <span className="camera-panel-hint">{hintText}</span>
-        <div className="camera-panel-actions">
-          <button
-            type="button"
-            className={`camera-panel-btn ${
-              calibMode === "collecting" ? "camera-panel-btn--cancel" : ""
-            }`}
-            onClick={startCalib}
-          >
-            {calibMode === "collecting" ? "Cancel" : "Calibrate"}
-          </button>
-          {calibrated && calibMode !== "collecting" && (
+        {showCalibrationControls && (
+          <div className="camera-panel-actions">
             <button
               type="button"
-              className="camera-panel-btn camera-panel-btn--reset"
-              onClick={handleReset}
+              className={`camera-panel-btn ${
+                calibMode === "collecting" ? "camera-panel-btn--cancel" : ""
+              }`}
+              onClick={startCalib}
             >
-              Reset
+              {calibMode === "collecting" ? "Cancel" : "Calibrate"}
             </button>
-          )}
-        </div>
+            {calibrated && calibMode !== "collecting" && (
+              <button
+                type="button"
+                className="camera-panel-btn camera-panel-btn--reset"
+                onClick={handleReset}
+              >
+                Reset
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <div
@@ -120,12 +178,12 @@ export function CameraPanel({ active }: CameraPanelProps) {
           <>
             <img
               ref={imgRef}
-              src="http://localhost:8000/video"
+              src={`http://localhost:8000/video?stream=${videoNonce}`}
               className="camera-panel-img"
               alt="Hand tracking feed"
               draggable={false}
-              onLoad={() => setConnected(true)}
-              onError={() => setConnected(false)}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
               onClick={handleImageClick}
             />
             {calibMode === "collecting" &&
@@ -134,8 +192,8 @@ export function CameraPanel({ active }: CameraPanelProps) {
                   key={i}
                   className="camera-panel-corner-dot"
                   style={{
-                    left: `${(x / CAMERA_W) * 100}%`,
-                    top: `${(y / CAMERA_H) * 100}%`,
+                    left: `${(x / frameSize.width) * 100}%`,
+                    top: `${(y / frameSize.height) * 100}%`,
                   }}
                 />
               ))}

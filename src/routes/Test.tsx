@@ -29,6 +29,7 @@ type TestStatus = "setup" | "active" | "finished";
 
 type TestProps = {
   onBack: () => void;
+  onStatsChange?: () => void;
   settings: Settings;
   initialMode?: TestMode;
 };
@@ -73,7 +74,7 @@ const MODE_CONFIG_BUILDERS: {
   }),
 };
 
-export function Test({ onBack, settings, initialMode = "standard" }: TestProps) {
+export function Test({ onBack, onStatsChange, settings, initialMode = "standard" }: TestProps) {
   const [testStatus, setTestStatus] = useState<TestStatus>("setup");
   const [mode, setMode] = useState<TestMode>(initialMode);
   const [duration, setDuration] = useState(settings?.testDuration || 60);
@@ -169,6 +170,11 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
       maybeRefill(typedLength);
     },
   });
+  const latestStatsRef = useRef(typing.liveStats);
+
+  useEffect(() => {
+    latestStatsRef.current = typing.liveStats;
+  }, [typing.liveStats]);
 
   endSessionRef.current = typing.endSessionEarly;
   typingRef.current = typing;
@@ -294,7 +300,7 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
         hasEndedRef.current = true;
         const session = endSessionRef.current?.();
         if (session) {
-          const metrics = typing.liveStats;
+          const metrics = latestStatsRef.current;
           saveTestResult({
             wpm: metrics.wpm,
             rawWpm: metrics.rawWpm,
@@ -305,12 +311,13 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
             date: new Date().toISOString(),
           });
           updateStreak();
+          onStatsChange?.();
         }
         setTestStatus("finished");
       }
     }, 100);
     return () => clearInterval(interval);
-  }, [testStatus, duration]);
+  }, [testStatus, duration, onStatsChange]);
 
   const startTest = useCallback(() => {
     hasEndedRef.current = false;
@@ -408,9 +415,35 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
     }
   }, [clearRestartArm, testStatus]);
 
+  const syncCapsLockState = useCallback(
+    (event: Pick<KeyboardEvent, "getModifierState"> | React.KeyboardEvent<HTMLInputElement>) => {
+      setCapsLockOn(event.getModifierState("CapsLock"));
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (testStatus !== "active") return;
+
+    const onKeyboardEvent = (event: KeyboardEvent) => {
+      syncCapsLockState(event);
+    };
+    const onWindowBlur = () => setCapsLockOn(false);
+
+    window.addEventListener("keydown", onKeyboardEvent);
+    window.addEventListener("keyup", onKeyboardEvent);
+    window.addEventListener("blur", onWindowBlur);
+
+    return () => {
+      window.removeEventListener("keydown", onKeyboardEvent);
+      window.removeEventListener("keyup", onKeyboardEvent);
+      window.removeEventListener("blur", onWindowBlur);
+    };
+  }, [syncCapsLockState, testStatus]);
+
   const handleActiveInputKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      setCapsLockOn(e.getModifierState("CapsLock"));
+      syncCapsLockState(e);
 
       if (e.key === "Tab") {
         e.preventDefault();
@@ -439,7 +472,14 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
 
       typing.handleKeyDown(e);
     },
-    [armRestart, clearRestartArm, handleNewTest, restartArmed, typing]
+    [armRestart, clearRestartArm, handleNewTest, restartArmed, syncCapsLockState, typing]
+  );
+
+  const handleActiveInputKeyUp = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      syncCapsLockState(e);
+    },
+    [syncCapsLockState],
   );
 
   const handleTypingAreaClick = useCallback(() => {
@@ -649,6 +689,7 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
         <input
           ref={typing.inputRef}
           onKeyDown={handleActiveInputKeyDown}
+          onKeyUp={handleActiveInputKeyUp}
           className="test-hidden-input"
           readOnly
         />

@@ -235,6 +235,30 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
   const clearRestartArm = useCallback(() => setRestartArmed(false), []);
   const armRestart = useCallback(() => setRestartArmed(true), []);
 
+  const syncCapsLockState = useCallback(
+    (event: Pick<KeyboardEvent, "getModifierState"> | React.KeyboardEvent<HTMLInputElement>) => {
+      setCapsLockOn(event.getModifierState("CapsLock"));
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const onKeyboardEvent = (event: KeyboardEvent) => {
+      syncCapsLockState(event);
+    };
+    const onWindowBlur = () => setCapsLockOn(false);
+
+    window.addEventListener("keydown", onKeyboardEvent);
+    window.addEventListener("keyup", onKeyboardEvent);
+    window.addEventListener("blur", onWindowBlur);
+
+    return () => {
+      window.removeEventListener("keydown", onKeyboardEvent);
+      window.removeEventListener("keyup", onKeyboardEvent);
+      window.removeEventListener("blur", onWindowBlur);
+    };
+  }, [syncCapsLockState]);
+
   const restartCurrentDrill = useCallback(() => {
     setDrill(makeFreshDrillState());
     setLastKey("");
@@ -245,7 +269,7 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
   /* ── Key handler ───────────────────────────────────────────────────── */
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      setCapsLockOn(e.getModifierState("CapsLock"));
+      syncCapsLockState(e);
 
       if (e.key === "Tab") {
         e.preventDefault();
@@ -331,7 +355,14 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
         });
       }
     },
-    [armRestart, clearRestartArm, restartArmed, restartCurrentDrill, step],
+    [armRestart, clearRestartArm, restartArmed, restartCurrentDrill, step, syncCapsLockState],
+  );
+
+  const handleKeyUp = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      syncCapsLockState(e);
+    },
+    [syncCapsLockState],
   );
 
   const handleLearnBodyClick = useCallback(() => {
@@ -389,6 +420,7 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
           ref={inputRef}
           className="learn-capture-input"
           onKeyDown={handleKeyDown}
+          onKeyUp={handleKeyUp}
           readOnly
           tabIndex={0}
         />

@@ -95,6 +95,7 @@ export function App() {
             onBack={() => setTab("home")}
             settings={settings}
             initialMode={testEntryMode}
+            onStatsChange={() => setSettingsVersion((v) => v + 1)}
           />
         );
       case "analytics":

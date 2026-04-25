@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { getTestHistory } from "../core/storage/testHistoryStore";
 import { getPracticeProgress } from "../core/storage/progressStore";
-import { getKeyStats } from "../core/storage/keyStatsStore";
+import { getAverageLatency, getKeyScore, getKeyStats } from "../core/storage/keyStatsStore";
 import { getStreak } from "../core/storage/streakStore";
 import { PRACTICE_LESSONS } from "../core/lesson/lessons/practiceLessons";
 import { Button } from "../ui/components/Button";
@@ -33,11 +33,13 @@ export function Analytics({ onBack }: AnalyticsProps) {
     .map(([k, v]) => ({
       key: k,
       accuracy: Math.round(((v.attempts - v.errors) / v.attempts) * 100),
+      score: getKeyScore(k) ?? Math.round(((v.attempts - v.errors) / v.attempts) * 100),
+      avgLatencyMs: getAverageLatency(k),
       attempts: v.attempts,
       errors: v.errors,
     }))
     .filter((k) => k.attempts >= 3)
-    .sort((a, b) => a.accuracy - b.accuracy);
+    .sort((a, b) => a.score - b.score);
 
   const worstKeys = keyList.slice(0, 8);
   const bestKeys = keyList.slice(-8).reverse();
@@ -264,20 +266,22 @@ function KeyGrid({
   keys,
   variant,
 }: {
-  keys: { key: string; accuracy: number; attempts: number }[];
+  keys: { key: string; accuracy: number; score: number; avgLatencyMs: number | null; attempts: number }[];
   variant: "weak" | "strong";
 }) {
   return (
     <div className="key-grid">
-      {keys.map(({ key, accuracy, attempts }) => (
+      {keys.map(({ key, accuracy, score, avgLatencyMs, attempts }) => (
         <div
           key={key}
           className={`key-grid-item key-grid-item--${variant}`}
-          title={`${attempts} attempts`}
+          title={`${attempts} attempts · ${accuracy}% accuracy${
+            avgLatencyMs != null ? ` · ${avgLatencyMs}ms avg` : ""
+          }`}
         >
           <div className="key-grid-key">{key.toUpperCase()}</div>
           <div className="key-grid-acc">
-            {accuracy}%
+            {score}%
           </div>
         </div>
       ))}

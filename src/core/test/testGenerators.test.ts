@@ -40,7 +40,7 @@ describe("test generators", () => {
       options: {
         includePunctuation: false,
         includeNumbers: false,
-        adaptiveTargets: [{ key: "q", accuracy: 40, attempts: 10, errors: 6 }],
+        adaptiveTargets: [{ key: "q", accuracy: 40, attempts: 10, errors: 6, avgLatencyMs: null, score: 40 }],
       },
     });
 
