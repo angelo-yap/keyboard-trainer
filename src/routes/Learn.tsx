@@ -32,6 +32,7 @@ import { resetKeyboardLed, sendKeyboardLedForKeys } from "../core/keyboard/keybo
 import { getGuidanceKeysForChar } from "../core/keyboard/keyNormalization";
 import { FeedbackBanner } from "../ui/components/FeedbackBanner";
 import { CameraPanel } from "../ui/components/CameraPanel";
+import { formatKeyLabel } from "../core/text/formatChar";
 
 /* ── Props ────────────────────────────────────────────────────────────── */
 
@@ -471,7 +472,7 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
                           key={k}
                           className={`learn-drill__key-target${done ? " learn-drill__key-target--done" : ""}`}
                         >
-                          <span className="learn-drill__key-target-key">{k}</span>
+                          <span className="learn-drill__key-target-key">{formatKeyLabel(k)}</span>
                           <div className="learn-drill__key-pips">
                             {Array.from({ length: required }, (_, i) => (
                               <div

@@ -4,6 +4,7 @@ import { getPracticeProgress } from "../core/storage/progressStore";
 import { getAverageLatency, getKeyScore, getKeyStats } from "../core/storage/keyStatsStore";
 import { getStreak } from "../core/storage/streakStore";
 import { PRACTICE_LESSONS } from "../core/lesson/lessons/practiceLessons";
+import { formatKeyLabel } from "../core/text/formatChar";
 import { Button } from "../ui/components/Button";
 import "./Analytics.css";
 
@@ -279,7 +280,7 @@ function KeyGrid({
             avgLatencyMs != null ? ` · ${avgLatencyMs}ms avg` : ""
           }`}
         >
-          <div className="key-grid-key">{key.toUpperCase()}</div>
+          <div className="key-grid-key">{formatKeyLabel(key).toUpperCase()}</div>
           <div className="key-grid-acc">
             {score}%
           </div>

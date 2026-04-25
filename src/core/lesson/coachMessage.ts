@@ -1,4 +1,5 @@
 import { getWeakKeys } from "../storage/keyStatsStore";
+import { formatKeyLabel } from "../text/formatChar";
 
 export function getCoachMessage(): { message: string; detail: string } {
   const weakKeys = getWeakKeys().slice(0, 3);
@@ -10,7 +11,9 @@ export function getCoachMessage(): { message: string; detail: string } {
     };
   }
 
-  const keyList = weakKeys.map((w) => `"${w.key}"`).join(", ");
+  const keyList = weakKeys
+    .map((w) => `"${formatKeyLabel(w?.key)}"`)
+    .join(", ");
   return {
     message: `You've been building a real habit. Keep an eye on ${keyList} — consistency there will unlock the next level.`,
     detail:
