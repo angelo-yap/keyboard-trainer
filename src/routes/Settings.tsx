@@ -9,6 +9,7 @@ import { SettingRow } from "../ui/components/settings/SettingRow";
 import { Toggle } from "../ui/components/settings/Toggle";
 import { SegmentControl } from "../ui/components/settings/SegmentControl";
 import { CameraPanel } from "../ui/components/CameraPanel";
+import { formatKeyLabel } from "../core/text/formatChar";
 import "./Settings.css";
 
 type SettingsProps = {
@@ -145,7 +146,7 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
   };
 
   const handleHidTestKey = async (key: string) => {
-    const printable = key.length === 1 ? key.toUpperCase() : key;
+    const printable = formatKeyLabel(key.length === 1 ? key.toUpperCase() : key);
     setLastClickedKey(printable);
     setUnsupportedKey("");
 
@@ -172,7 +173,7 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
     }
 
     if (next.length > 0) {
-      setUnsupportedKey(next);
+      setUnsupportedKey(formatKeyLabel(next));
     }
   };
 
@@ -516,6 +517,17 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
                 ]}
                 value={settings.testDuration}
                 onChange={(v) => update("testDuration", v)}
+              />
+            </SettingRow>
+            <SettingRow label="Case Mode" desc="Default letter casing for generated test text">
+              <SegmentControl
+                options={[
+                  ["lowercase", "Lowercase"],
+                  ["uppercase", "Uppercase"],
+                  ["mixed", "Mixed"],
+                ]}
+                value={settings.caseMode}
+                onChange={(v) => update("caseMode", v as SettingsType["caseMode"])}
               />
             </SettingRow>
           </SettingsSection>

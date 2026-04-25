@@ -11,11 +11,16 @@ export const classicWordsGenerator: TestGenerator<ClassicWordsGeneratorOptions> 
       return { valid: false, reason: "Classic generator requires includeNumbers to be a boolean." };
     }
 
+    if (!["lowercase", "uppercase", "mixed"].includes(options.caseMode)) {
+      return { valid: false, reason: "Classic generator requires caseMode to be lowercase, uppercase, or mixed." };
+    }
+
     return {
       valid: true,
       options: {
         includePunctuation: options.includePunctuation,
         includeNumbers: options.includeNumbers,
+        caseMode: options.caseMode,
       },
     };
   },
@@ -23,11 +28,11 @@ export const classicWordsGenerator: TestGenerator<ClassicWordsGeneratorOptions> 
   generateInitialText({ durationSeconds, options }) {
     const wordCount = Math.max(wordsForDuration(durationSeconds) * 2, 80);
     const words = buildClassicWordList(wordCount);
-    return buildWordString(words, options.includePunctuation, options.includeNumbers);
+    return buildWordString(words, options.includePunctuation, options.includeNumbers, options.caseMode);
   },
 
   generateChunk({ wordCount, options }) {
     const words = buildClassicWordList(wordCount);
-    return buildWordString(words, options.includePunctuation, options.includeNumbers);
+    return buildWordString(words, options.includePunctuation, options.includeNumbers, options.caseMode);
   },
 };

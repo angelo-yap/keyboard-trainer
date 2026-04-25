@@ -105,6 +105,10 @@ export const adaptiveWeakLetterGenerator: TestGenerator<AdaptiveWeakLetterGenera
       return { valid: false, reason: "Adaptive generator requires includeNumbers to be a boolean." };
     }
 
+    if (!["lowercase", "uppercase", "mixed"].includes(options.caseMode)) {
+      return { valid: false, reason: "Adaptive generator requires caseMode to be lowercase, uppercase, or mixed." };
+    }
+
     if (options.adaptiveTargets != null && !Array.isArray(options.adaptiveTargets)) {
       return { valid: false, reason: "Adaptive generator requires adaptiveTargets to be an array when provided." };
     }
@@ -128,6 +132,7 @@ export const adaptiveWeakLetterGenerator: TestGenerator<AdaptiveWeakLetterGenera
       options: {
         includePunctuation: options.includePunctuation,
         includeNumbers: options.includeNumbers,
+        caseMode: options.caseMode,
         adaptiveTargets,
       },
     };
@@ -144,7 +149,7 @@ export const adaptiveWeakLetterGenerator: TestGenerator<AdaptiveWeakLetterGenera
       });
     }
 
-    return buildWordString(adaptiveWords, options.includePunctuation, options.includeNumbers);
+    return buildWordString(adaptiveWords, options.includePunctuation, options.includeNumbers, options.caseMode);
   },
 
   generateChunk({ wordCount, options }) {
@@ -157,6 +162,6 @@ export const adaptiveWeakLetterGenerator: TestGenerator<AdaptiveWeakLetterGenera
       });
     }
 
-    return buildWordString(adaptiveWords, options.includePunctuation, options.includeNumbers);
+    return buildWordString(adaptiveWords, options.includePunctuation, options.includeNumbers, options.caseMode);
   },
 };
