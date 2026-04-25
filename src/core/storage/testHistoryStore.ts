@@ -17,9 +17,9 @@ export function getTestHistory(): TestResult[] {
 
 export function saveTestResult(result: TestResult): TestResult[] {
   const history = getTestHistory();
-  history.unshift({ ...result, date: new Date().toISOString() });
-  setLS("kt_tests", history.slice(0, 100));
-  return history;
+  const next = [{ ...result, date: new Date().toISOString() }, ...history].slice(0, 100);
+  setLS("kt_tests", next);
+  return next;
 }
 
 export function getPersonalBest(): number | null {

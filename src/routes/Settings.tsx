@@ -8,6 +8,7 @@ import { SettingsSection } from "../ui/components/settings/SettingsSection";
 import { SettingRow } from "../ui/components/settings/SettingRow";
 import { Toggle } from "../ui/components/settings/Toggle";
 import { SegmentControl } from "../ui/components/settings/SegmentControl";
+import { CameraPanel } from "../ui/components/CameraPanel";
 import "./Settings.css";
 
 type SettingsProps = {
@@ -27,6 +28,7 @@ export function Settings({ onBack, onSettingsChange }: SettingsProps) {
   const [cameraSourceInput, setCameraSourceInput] = useState<string>(() => String(getSettings().handTrackerCameraIndex));
   const [cameraSourceStatus, setCameraSourceStatus] = useState<"idle" | "saving" | "ok" | "error">("idle");
   const [cameraSourceMessage, setCameraSourceMessage] = useState<string>("");
+  const [cameraStreamVersion, setCameraStreamVersion] = useState(0);
   const [handednessFlipStatus, setHandednessFlipStatus] = useState<"idle" | "saving" | "ok" | "error">("idle");
   const [handednessFlipMessage, setHandednessFlipMessage] = useState<string>("");
   const previousViewRef = useRef<"general" | "hid">(view);
@@ -203,6 +205,7 @@ export function Settings({ onBack, onSettingsChange }: SettingsProps) {
       const nextSource = payload.source ?? parsed;
       setCameraSourceInput(String(nextSource));
       persistCameraSource(nextSource);
+      setCameraStreamVersion((version) => version + 1);
       setCameraSourceStatus("ok");
       setCameraSourceMessage(`Hand tracker now using camera index ${nextSource}.`);
     } catch (error) {
@@ -629,6 +632,14 @@ export function Settings({ onBack, onSettingsChange }: SettingsProps) {
               {handednessFlipMessage}
             </div>
           )}
+          <div className="settings-camera-calibration">
+            <CameraPanel
+              active={true}
+              reloadSignal={cameraStreamVersion}
+              showCalibrationControls={true}
+              variant="embedded"
+            />
+          </div>
           </SettingsSection>
 
           <SettingsSection title="Keyboard Lighting">

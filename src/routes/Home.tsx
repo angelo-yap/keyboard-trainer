@@ -18,7 +18,6 @@ import {
 } from "../core/storage/testHistoryStore";
 import { getStreak } from "../core/storage/streakStore";
 import { savePracticeResult } from "../core/storage/progressStore";
-import { recordKeyStats } from "../core/storage/keyStatsStore";
 import { PRACTICE_LESSONS } from "../core/lesson/lessons/practiceLessons";
 import { useTypingSession } from "../hooks/useTypingSession";
 import { getCallout } from "../core/keyboard/getCallout";
@@ -248,15 +247,9 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, onStartAdaptiveTest, se
     (e: React.KeyboardEvent) => {
       if (!lesson || typing.report) return;
 
-      const idx = typing.typed.length;
-      const expected = text[idx];
-      const isCorrect = e.key === expected;
-      if (e.key !== "Backspace" && expected && e.key.length === 1) {
-        recordKeyStats(e.key, !isCorrect);
-      }
       typing.handleKeyDown(e);
     },
-    [lesson, text, typing]
+    [lesson, typing]
   );
 
   const nextTargetChar = lesson ? text.charAt(typing.typed.length) : "";

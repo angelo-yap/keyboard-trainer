@@ -12,6 +12,7 @@ import {
 import { createSessionRecorder } from "../core/session/sessionMetrics";
 import type { SessionReport } from "../core/session/sessionMetrics";
 import { sessionHistoryStore } from "../core/storage/sessionHistoryStore";
+import { recordKeyStats } from "../core/storage/keyStatsStore";
  
 export type { SessionState } from "../core/session/sessionTypes";
 export type { SessionMetrics } from "../core/session/sessionTypes";
@@ -99,6 +100,9 @@ export function useTypingSession({
         expected: event.expectedChar.toLowerCase(),
         correct: event.correct,
       });
+      if (event.expectedChar.trim().length > 0) {
+        recordKeyStats(event.expectedChar, !event.correct);
+      }
       const lastCorrect = lastCorrectTimeRef.current;
       sessionRef.current = recordKeystroke(
         sessionRef.current,
