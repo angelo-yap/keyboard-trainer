@@ -24,7 +24,6 @@ _calibrator_ref: "KeyboardCalibrator | None" = None
 # ── Camera source selection ───────────────────────────────────────────────────
 CAMERA_CONFIG_FILE = "camera_config.json"
 DEFAULT_CAMERA_SOURCE = 0
-DEFAULT_FLIP_HANDEDNESS = False
 _camera_source_lock = threading.Lock()
 
 MODEL_ENV_VAR = "MP_HAND_LANDMARKER_MODEL"
@@ -39,46 +38,31 @@ DEFAULT_TASK_MODEL_PATH = os.path.join(
 )
 
 
-def _read_tracker_config_from_disk() -> dict:
-    config = {
-        "source": DEFAULT_CAMERA_SOURCE,
-        "flip_handedness": DEFAULT_FLIP_HANDEDNESS,
-    }
-
+def _read_camera_source_from_disk() -> int:
     if not os.path.exists(CAMERA_CONFIG_FILE):
-        return config
+        return DEFAULT_CAMERA_SOURCE
     try:
         with open(CAMERA_CONFIG_FILE, "r") as f:
             payload = json.load(f)
-
         source = payload.get("source", DEFAULT_CAMERA_SOURCE)
         if isinstance(source, int) and source >= 0:
-            config["source"] = source
-
-        flip_handedness = payload.get("flip_handedness", DEFAULT_FLIP_HANDEDNESS)
-        if isinstance(flip_handedness, bool):
-            config["flip_handedness"] = flip_handedness
+            return source
     except (OSError, json.JSONDecodeError):
         pass
-    return config
+    return DEFAULT_CAMERA_SOURCE
 
 
-def _write_tracker_config_to_disk(source: int, flip_handedness: bool):
+def _write_camera_source_to_disk(source: int):
     try:
         tmp = CAMERA_CONFIG_FILE + ".tmp"
         with open(tmp, "w") as f:
-            json.dump({
-                "source": source,
-                "flip_handedness": flip_handedness,
-            }, f)
+            json.dump({"source": source}, f)
         os.replace(tmp, CAMERA_CONFIG_FILE)
     except OSError as e:
         print(f"[WARN] Could not persist camera source: {e}")
 
 
-_tracker_config = _read_tracker_config_from_disk()
-_requested_camera_source = int(_tracker_config.get("source", DEFAULT_CAMERA_SOURCE))
-_flip_handedness = bool(_tracker_config.get("flip_handedness", DEFAULT_FLIP_HANDEDNESS))
+_requested_camera_source = _read_camera_source_from_disk()
 _active_camera_source: int | None = None
 
 # ── Public API ────────────────────────────────────────────────────────────────
@@ -120,24 +104,9 @@ def set_camera_source(source: int) -> bool:
     if not isinstance(source, int) or source < 0:
         return False
     with _camera_source_lock:
-        global _requested_camera_source, _flip_handedness
+        global _requested_camera_source
         _requested_camera_source = source
-        _write_tracker_config_to_disk(_requested_camera_source, _flip_handedness)
-    return True
-
-
-def get_flip_handedness() -> bool:
-    with _camera_source_lock:
-        return _flip_handedness
-
-
-def set_flip_handedness(flip_handedness: bool) -> bool:
-    if not isinstance(flip_handedness, bool):
-        return False
-    with _camera_source_lock:
-        global _requested_camera_source, _flip_handedness
-        _flip_handedness = flip_handedness
-        _write_tracker_config_to_disk(_requested_camera_source, _flip_handedness)
+    _write_camera_source_to_disk(source)
     return True
 
 
@@ -146,7 +115,6 @@ def get_camera_status() -> dict:
         return {
             "requested_source": _requested_camera_source,
             "active_source": _active_camera_source,
-            "flip_handedness": _flip_handedness,
         }
 
 
@@ -333,10 +301,7 @@ class KeyboardCalibrator:
 
     def draw_overlay(self, frame):
         if self.is_ready():
-            try:
-                self._draw_zones(frame)
-            except cv2.error:
-                return
+            self._draw_zones(frame)
         elif len(self.corners) >= 2:
             for i in range(len(self.corners) - 1):
                 cv2.line(frame, self.corners[i], self.corners[i + 1], (0, 255, 255), 2)
@@ -569,7 +534,6 @@ def run(headless: bool = False):
 
         active_touches = []
         finger_positions = []
-        flip_handedness = get_flip_handedness()
 
         if calibrator.is_ready():
             if tracker_kind == "legacy":
@@ -581,9 +545,7 @@ def run(headless: bool = False):
                         raw_label = "Unknown"
                         if hand_info.classification:
                             raw_label = hand_info.classification[0].label
-                        hand_label = raw_label
-                        if flip_handedness and raw_label in ("Left", "Right"):
-                            hand_label = "Right" if raw_label == "Left" else "Left"
+                        hand_label = "Right" if raw_label == "Left" else "Left"
 
                         if legacy_drawer is not None and legacy_hands_module is not None:
                             legacy_drawer.draw_landmarks(
@@ -633,9 +595,8 @@ def run(headless: bool = False):
                             or "Unknown"
                         )
 
-                    hand_label = raw_label
-                    if flip_handedness and raw_label in ("Left", "Right"):
-                        hand_label = "Right" if raw_label == "Left" else "Left"
+                    # Keep same handedness inversion behavior used for mirrored video.
+                    hand_label = "Right" if raw_label == "Left" else "Left"
 
                     for finger_name, tip_idx in [
                         ("THUMB", 4), ("INDEX", 8), ("MIDDLE", 12),

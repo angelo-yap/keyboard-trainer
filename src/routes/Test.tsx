@@ -408,9 +408,35 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
     }
   }, [clearRestartArm, testStatus]);
 
+  const syncCapsLockState = useCallback(
+    (event: Pick<KeyboardEvent, "getModifierState"> | React.KeyboardEvent<HTMLInputElement>) => {
+      setCapsLockOn(event.getModifierState("CapsLock"));
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (testStatus !== "active") return;
+
+    const onKeyboardEvent = (event: KeyboardEvent) => {
+      syncCapsLockState(event);
+    };
+    const onWindowBlur = () => setCapsLockOn(false);
+
+    window.addEventListener("keydown", onKeyboardEvent);
+    window.addEventListener("keyup", onKeyboardEvent);
+    window.addEventListener("blur", onWindowBlur);
+
+    return () => {
+      window.removeEventListener("keydown", onKeyboardEvent);
+      window.removeEventListener("keyup", onKeyboardEvent);
+      window.removeEventListener("blur", onWindowBlur);
+    };
+  }, [syncCapsLockState, testStatus]);
+
   const handleActiveInputKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      setCapsLockOn(e.getModifierState("CapsLock"));
+      syncCapsLockState(e);
 
       if (e.key === "Tab") {
         e.preventDefault();
@@ -439,7 +465,14 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
 
       typing.handleKeyDown(e);
     },
-    [armRestart, clearRestartArm, handleNewTest, restartArmed, typing]
+    [armRestart, clearRestartArm, handleNewTest, restartArmed, syncCapsLockState, typing]
+  );
+
+  const handleActiveInputKeyUp = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      syncCapsLockState(e);
+    },
+    [syncCapsLockState],
   );
 
   const handleTypingAreaClick = useCallback(() => {
@@ -649,6 +682,7 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
         <input
           ref={typing.inputRef}
           onKeyDown={handleActiveInputKeyDown}
+          onKeyUp={handleActiveInputKeyUp}
           className="test-hidden-input"
           readOnly
         />

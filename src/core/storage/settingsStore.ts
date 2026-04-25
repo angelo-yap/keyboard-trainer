@@ -17,12 +17,24 @@ export type Settings = {
   keyboardLitKeyOff: boolean;
   keyboardBacklightColor: string;
   keyboardLitKeyColor: string;
+  handTrackerCameraIndex: number;
+  handTrackerFlipHandedness: boolean;
 };
 
 function normalizeHexColor(value: unknown, fallback: string): string {
   if (typeof value !== "string") return fallback;
   const normalized = value.trim();
   return /^#[0-9a-fA-F]{6}$/.test(normalized) ? normalized.toUpperCase() : fallback;
+}
+
+function normalizeCameraIndex(value: unknown, fallback: number): number {
+  if (typeof value === "number" && Number.isInteger(value) && value >= 0) {
+    return value;
+  }
+  if (typeof value === "string" && /^\d+$/.test(value.trim())) {
+    return Number.parseInt(value.trim(), 10);
+  }
+  return fallback;
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -40,6 +52,8 @@ const DEFAULT_SETTINGS: Settings = {
   keyboardLitKeyOff: false,
   keyboardBacklightColor: "#FF0000",
   keyboardLitKeyColor: "#FFFFFF",
+  handTrackerCameraIndex: 0,
+  handTrackerFlipHandedness: false,
 };
 
 export function getSettings(): Settings {
@@ -49,6 +63,7 @@ export function getSettings(): Settings {
     ...raw,
     keyboardBacklightColor: normalizeHexColor(raw.keyboardBacklightColor, DEFAULT_SETTINGS.keyboardBacklightColor),
     keyboardLitKeyColor: normalizeHexColor(raw.keyboardLitKeyColor, DEFAULT_SETTINGS.keyboardLitKeyColor),
+    handTrackerCameraIndex: normalizeCameraIndex(raw.handTrackerCameraIndex, DEFAULT_SETTINGS.handTrackerCameraIndex),
   };
 }
 

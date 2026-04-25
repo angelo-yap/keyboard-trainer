@@ -1,8 +1,10 @@
 import json
 import asyncio
 import os
+import sys
 import time
 import threading
+from contextlib import asynccontextmanager, suppress
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -18,7 +20,39 @@ except ImportError:
 SHARED_STATE_FILE = "typing_state.json"
 POLL_INTERVAL = 0.05
 
-app = FastAPI(title="Typing Checker Backend")
+broadcast_task: asyncio.Task | None = None
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    global broadcast_task
+
+    if _tracker_available:
+        if sys.platform == "darwin":
+            _checker.prime_camera_access()
+        t = threading.Thread(
+            target=_checker.run,
+            kwargs={"headless": True},
+            daemon=True,
+        )
+        t.start()
+        print("[OK] Hand tracker started (headless).")
+    else:
+        print("[WARN] typing_checker not available - falling back to state file.")
+
+    broadcast_task = asyncio.create_task(broadcast_loop())
+    print("[OK] Broadcast loop started.")
+
+    try:
+        yield
+    finally:
+        if broadcast_task:
+            broadcast_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await broadcast_task
+            broadcast_task = None
+
+app = FastAPI(title="Typing Checker Backend", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -94,23 +128,6 @@ async def broadcast_loop():
         await asyncio.sleep(POLL_INTERVAL)
 
 
-@app.on_event("startup")
-async def startup_event():
-    if _tracker_available:
-        t = threading.Thread(
-            target=_checker.run,
-            kwargs={"headless": True},
-            daemon=True,
-        )
-        t.start()
-        print("[OK] Hand tracker started (headless).")
-    else:
-        print("[WARN] typing_checker not available - falling back to state file.")
-
-    asyncio.create_task(broadcast_loop())
-    print("[OK] Broadcast loop started.")
-
-
 # ── WebSocket ─────────────────────────────────────────────────────────────────
 
 @app.websocket("/ws")
@@ -169,15 +186,87 @@ async def calibrate_reset():
     return {"ok": True}
 
 
+@app.get("/camera/source")
+async def camera_source_get():
+    if not _tracker_available:
+        return {"ok": False, "error": "Tracker not running"}
+    status = _checker.get_camera_status()
+    return {
+        "ok": True,
+        "source": status.get("requested_source", 0),
+        "active_source": status.get("active_source"),
+    }
+
+
+@app.post("/camera/source")
+async def camera_source_set(body: dict):
+    source_raw = body.get("source")
+    try:
+        source = int(source_raw)
+    except (TypeError, ValueError):
+        return {"ok": False, "error": "Camera source must be an integer."}
+
+    if source < 0:
+        return {"ok": False, "error": "Camera source must be >= 0."}
+    if not _tracker_available:
+        return {"ok": False, "error": "Tracker not running"}
+
+    updated = _checker.set_camera_source(source)
+    if not updated:
+        return {"ok": False, "error": "Failed to set camera source."}
+
+    status = _checker.get_camera_status()
+    return {
+        "ok": True,
+        "source": status.get("requested_source", source),
+        "active_source": status.get("active_source"),
+    }
+
+
+@app.get("/handedness/flip")
+async def handedness_flip_get():
+    if not _tracker_available:
+        return {"ok": False, "error": "Tracker not running"}
+    return {
+        "ok": True,
+        "flip_handedness": _checker.get_flip_handedness(),
+    }
+
+
+@app.post("/handedness/flip")
+async def handedness_flip_set(body: dict):
+    flip_raw = body.get("flip_handedness")
+    if not isinstance(flip_raw, bool):
+        return {"ok": False, "error": "flip_handedness must be a boolean."}
+    if not _tracker_available:
+        return {"ok": False, "error": "Tracker not running"}
+
+    updated = _checker.set_flip_handedness(flip_raw)
+    if not updated:
+        return {"ok": False, "error": "Failed to set handedness flip option."}
+
+    return {
+        "ok": True,
+        "flip_handedness": _checker.get_flip_handedness(),
+    }
+
+
 # ── Info / health ─────────────────────────────────────────────────────────────
 
 @app.get("/info")
 async def info():
+    camera_status = _checker.get_camera_status() if _tracker_available else {
+        "requested_source": 0,
+        "active_source": None,
+    }
     return {
         "tracker_available": _tracker_available,
         "calibrated": _checker.is_calibrated() if _tracker_available else False,
         "frame_width": 1280,
         "frame_height": 720,
+        "camera_source": camera_status.get("requested_source", 0),
+        "camera_active_source": camera_status.get("active_source"),
+        "flip_handedness": camera_status.get("flip_handedness", False),
     }
 
 

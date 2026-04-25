@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSettings, saveSettings, type Settings as SettingsType } from "../core/storage/settingsStore";
 import { clearAdaptiveTrainingData, clearAllData } from "../core/storage/clearData";
 import { getLastKeyboardLedEvent, resetKeyboardLed, sendKeyboardLedForKey, subscribeKeyboardLedDebug, syncKeyboardBacklightPreference, type KeyboardLedDebugEvent } from "../core/keyboard/keyboardLedBridge";
@@ -24,6 +24,11 @@ export function Settings({ onBack, onSettingsChange }: SettingsProps) {
   const [typedTestLetter, setTypedTestLetter] = useState<string>("");
   const [unsupportedKey, setUnsupportedKey] = useState<string>("");
   const [ledDebug, setLedDebug] = useState<KeyboardLedDebugEvent | null>(() => getLastKeyboardLedEvent());
+  const [cameraSourceInput, setCameraSourceInput] = useState<string>(() => String(getSettings().handTrackerCameraIndex));
+  const [cameraSourceStatus, setCameraSourceStatus] = useState<"idle" | "saving" | "ok" | "error">("idle");
+  const [cameraSourceMessage, setCameraSourceMessage] = useState<string>("");
+  const [handednessFlipStatus, setHandednessFlipStatus] = useState<"idle" | "saving" | "ok" | "error">("idle");
+  const [handednessFlipMessage, setHandednessFlipMessage] = useState<string>("");
   const previousViewRef = useRef<"general" | "hid">(view);
 
   const alphabet = useMemo(() => "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""), []);
@@ -45,6 +50,45 @@ export function Settings({ onBack, onSettingsChange }: SettingsProps) {
     "keyboardBacklightOff",
     "keyboardLitKeyOff",
   ]);
+
+  const parseCameraSourceInput = useCallback((value: string): number | null => {
+    const normalized = value.trim();
+    if (!/^\d+$/.test(normalized)) {
+      return null;
+    }
+    const parsed = Number.parseInt(normalized, 10);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+  }, []);
+
+  const persistCameraSource = useCallback(
+    (source: number) => {
+      setSettings((prev) => {
+        if (prev.handTrackerCameraIndex === source) {
+          return prev;
+        }
+        const next = { ...prev, handTrackerCameraIndex: source };
+        saveSettings(next);
+        onSettingsChange?.();
+        return next;
+      });
+    },
+    [onSettingsChange],
+  );
+
+  const persistHandednessFlip = useCallback(
+    (flip: boolean) => {
+      setSettings((prev) => {
+        if (prev.handTrackerFlipHandedness === flip) {
+          return prev;
+        }
+        const next = { ...prev, handTrackerFlipHandedness: flip };
+        saveSettings(next);
+        onSettingsChange?.();
+        return next;
+      });
+    },
+    [onSettingsChange],
+  );
 
   const resetLightingDefaults = () => {
     const next = {
@@ -128,11 +172,132 @@ export function Settings({ onBack, onSettingsChange }: SettingsProps) {
     }
   };
 
+  const applyCameraSource = useCallback(async () => {
+    const parsed = parseCameraSourceInput(cameraSourceInput);
+    if (parsed === null) {
+      setCameraSourceStatus("error");
+      setCameraSourceMessage("Enter a valid webcam index (0, 1, 2, ...).");
+      return;
+    }
+
+    setCameraSourceStatus("saving");
+    setCameraSourceMessage("");
+
+    try {
+      const response = await fetch("http://localhost:8000/camera/source", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source: parsed }),
+      });
+
+      const payload = (await response.json()) as {
+        ok?: boolean;
+        error?: string;
+        source?: number;
+      };
+
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || "Failed to update camera source.");
+      }
+
+      const nextSource = payload.source ?? parsed;
+      setCameraSourceInput(String(nextSource));
+      persistCameraSource(nextSource);
+      setCameraSourceStatus("ok");
+      setCameraSourceMessage(`Hand tracker now using camera index ${nextSource}.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to update camera source.";
+      setCameraSourceStatus("error");
+      setCameraSourceMessage(message);
+    }
+  }, [cameraSourceInput, parseCameraSourceInput, persistCameraSource]);
+
+  const applyHandednessFlip = useCallback(
+    async (flipHandedness: boolean) => {
+      persistHandednessFlip(flipHandedness);
+      setHandednessFlipStatus("saving");
+      setHandednessFlipMessage("");
+
+      try {
+        const response = await fetch("http://localhost:8000/handedness/flip", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ flip_handedness: flipHandedness }),
+        });
+
+        const payload = (await response.json()) as {
+          ok?: boolean;
+          error?: string;
+          flip_handedness?: boolean;
+        };
+
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error || "Failed to update handedness flip option.");
+        }
+
+        const nextFlip = payload.flip_handedness ?? flipHandedness;
+        persistHandednessFlip(nextFlip);
+        setHandednessFlipStatus("ok");
+        setHandednessFlipMessage(
+          nextFlip
+            ? "Handedness labels are now flipped."
+            : "Handedness labels now follow MediaPipe output.",
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to update handedness flip option.";
+        setHandednessFlipStatus("error");
+        setHandednessFlipMessage(message);
+      }
+    },
+    [persistHandednessFlip],
+  );
+
   useEffect(() => {
     return subscribeKeyboardLedDebug((event) => {
       setLedDebug(event);
     });
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch("http://localhost:8000/camera/source")
+      .then((response) => response.json())
+      .then((payload: { source?: number; ok?: boolean }) => {
+        if (cancelled || payload.ok !== true || typeof payload.source !== "number") {
+          return;
+        }
+        setCameraSourceInput(String(payload.source));
+        persistCameraSource(payload.source);
+      })
+      .catch(() => {
+        // Backend may be offline while app boots; keep local setting in that case.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [persistCameraSource]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch("http://localhost:8000/handedness/flip")
+      .then((response) => response.json())
+      .then((payload: { ok?: boolean; flip_handedness?: boolean }) => {
+        if (cancelled || payload.ok !== true || typeof payload.flip_handedness !== "boolean") {
+          return;
+        }
+        persistHandednessFlip(payload.flip_handedness);
+      })
+      .catch(() => {
+        // Backend may be offline while app boots; keep local setting in that case.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [persistHandednessFlip]);
 
   useEffect(() => {
     const previousView = previousViewRef.current;
@@ -223,6 +388,45 @@ export function Settings({ onBack, onSettingsChange }: SettingsProps) {
                 </button>
               </div>
             </div>
+          </SettingsSection>
+
+          <SettingsSection title="Hand Tracker Debug">
+            <SettingRow
+              label="Webcam Input Index"
+              desc="Select which camera index the hand tracker should use."
+            >
+              <div className="settings-tracker-input-wrap">
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  className="settings-tracker-input"
+                  value={cameraSourceInput}
+                  onChange={(event) => {
+                    setCameraSourceInput(event.target.value);
+                    setCameraSourceStatus("idle");
+                    setCameraSourceMessage("");
+                  }}
+                />
+                <button
+                  type="button"
+                  className="settings-tracker-apply-btn"
+                  disabled={cameraSourceStatus === "saving"}
+                  onClick={() => {
+                    void applyCameraSource();
+                  }}
+                >
+                  {cameraSourceStatus === "saving" ? "Applying..." : "Apply"}
+                </button>
+              </div>
+            </SettingRow>
+            {cameraSourceMessage && (
+              <div
+                className={`settings-tracker-status settings-tracker-status--${cameraSourceStatus}`}
+              >
+                {cameraSourceMessage}
+              </div>
+            )}
           </SettingsSection>
 
           <SettingsSection title="Click To Test">
@@ -365,6 +569,66 @@ export function Settings({ onBack, onSettingsChange }: SettingsProps) {
                 onChange={(v) => update("caretStyle", v as SettingsType["caretStyle"])}
               />
             </SettingRow>
+          </SettingsSection>
+
+          <SettingsSection title="Hand Tracker">
+            <SettingRow
+              label="Webcam Input Index"
+              desc="Use 0 for default camera, 1+ for external/secondary webcams."
+            >
+              <div className="settings-tracker-input-wrap">
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  className="settings-tracker-input"
+                  value={cameraSourceInput}
+                  onChange={(event) => {
+                    setCameraSourceInput(event.target.value);
+                    setCameraSourceStatus("idle");
+                    setCameraSourceMessage("");
+                  }}
+                />
+                <button
+                  type="button"
+                  className="settings-tracker-apply-btn"
+                  disabled={cameraSourceStatus === "saving"}
+                  onClick={() => {
+                    void applyCameraSource();
+                  }}
+                >
+                  {cameraSourceStatus === "saving" ? "Applying..." : "Apply"}
+                </button>
+              </div>
+            </SettingRow>
+            {cameraSourceMessage && (
+              <div
+                className={`settings-tracker-status settings-tracker-status--${cameraSourceStatus}`}
+              >
+                {cameraSourceMessage}
+              </div>
+            )}
+          <SettingRow
+            label="Flip Hands"
+            desc="Use if left and right hands are being swapped in camera calibration."
+          >
+            <div className="flip-camera">
+              <Toggle
+                value={settings.handTrackerFlipHandedness ?? false}
+                onChange={(v) => {
+                  void applyHandednessFlip(v);
+                }}
+              />
+            </div>
+          </SettingRow>
+
+          {handednessFlipMessage && (
+            <div
+              className={`settings-tracker-status settings-tracker-status--${handednessFlipStatus}`}
+            >
+              {handednessFlipMessage}
+            </div>
+          )}
           </SettingsSection>
 
           <SettingsSection title="Keyboard Lighting">
