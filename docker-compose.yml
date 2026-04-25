@@ -1,0 +1,16 @@
+services:
+  backend:
+    build:
+      context: ./hand-detection
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+    # ── Camera passthrough ────────────────────────────────────────────────────
+    # macOS / Windows: Docker Desktop cannot pass webcam devices through to the
+    # container. Hand-tracking will be unavailable but the rest of the API works.
+    # Run the backend natively if you need live camera: `python hand-detection/backend.py`
+    #
+    # Linux only — uncomment to enable camera in the container:
+    # devices:
+    #   - /dev/video0:/dev/video0

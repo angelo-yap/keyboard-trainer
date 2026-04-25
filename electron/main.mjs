@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
+import net from "node:net";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,7 +15,21 @@ const isDev = !app.isPackaged;
 
 let backendProcess = null;
 
-function startBackend() {
+function isPortBound(port) {
+  return new Promise((resolve) => {
+    const probe = net.createConnection({ port, host: "127.0.0.1" });
+    probe.once("connect", () => { probe.destroy(); resolve(true); });
+    probe.once("error",   () => resolve(false));
+  });
+}
+
+async function startBackend() {
+  const alreadyRunning = await isPortBound(8000);
+  if (alreadyRunning) {
+    console.log("[backend] Port 8000 already in use — skipping Python spawn (Docker mode)");
+    return;
+  }
+
   const backendDir = path.join(__dirname, "../hand-detection");
   const pythonCmd = process.env.PYTHON_PATH || "python";
 
@@ -796,7 +811,7 @@ function createWindow() {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   if (process.platform === "darwin") {
     Menu.setApplicationMenu(
       Menu.buildFromTemplate([
@@ -807,7 +822,7 @@ app.whenReady().then(() => {
   } else {
     Menu.setApplicationMenu(null);
   }
-  startBackend();
+  await startBackend();
   createWindow();
   resetKeyboardIdleTimer();
 

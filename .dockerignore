@@ -1,0 +1,6 @@
+node_modules/
+.webpack/
+dist/
+.git/
+hand-detection/__pycache__/
+hand-detection/typing_state.json

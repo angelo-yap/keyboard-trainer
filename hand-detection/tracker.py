@@ -31,6 +31,7 @@ Thumbs are used for Space bar only.
 import cv2
 import mediapipe as mp
 import numpy as np
+import sys
 import time
 
 # ──────────────────────────────────────────────────────────────
@@ -274,8 +275,10 @@ def main():
     print("3. Press 'r' to reset calibration.")
     print("4. Press 'q' to quit.\n")
 
-    # 2 is the index of the UVC Camera
-    cap = cv2.VideoCapture(0, cv2.CAP_MSMF)
+    if sys.platform == "win32":
+        cap = cv2.VideoCapture(0, cv2.CAP_MSMF)
+    else:
+        cap = cv2.VideoCapture(0)
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)

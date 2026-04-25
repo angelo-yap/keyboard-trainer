@@ -4,6 +4,7 @@ import numpy as np
 import time
 import json
 import os
+import sys
 import threading
 
 # ── Thread-safe frame buffer ──────────────────────────────────────────────────
@@ -237,7 +238,10 @@ def classify_typing(active_touches):
 def run(headless: bool = False):
     global _calibrator_ref, _latest_frame, _current_state
 
-    cap = cv2.VideoCapture(0, cv2.CAP_MSMF)
+    if sys.platform == "win32":
+        cap = cv2.VideoCapture(0, cv2.CAP_MSMF)
+    else:
+        cap = cv2.VideoCapture(0)
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
