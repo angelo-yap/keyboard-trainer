@@ -17,6 +17,7 @@ import React, {
 } from "react";
 import "../ui/Layout/LessonStage.css";
 import "./Learn.css";
+import "./Test.css";
 import { TypingDisplay } from "../ui/components/TypingDisplay";
 import { Keyboard } from "../ui/components/keyboard";
 import type { Settings } from "../core/storage/settingsStore";
@@ -121,6 +122,8 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
   );
   const [drill, setDrill] = useState<DrillState>(makeFreshDrillState());
   const [lastKey, setLastKey] = useState<string>("");
+  const [restartArmed, setRestartArmed] = useState(false);
+  const [capsLockOn, setCapsLockOn] = useState(false);
   const [verdict, setVerdict] = useState<"GOOD" | "BAD" | "IDLE" | "">("");
   const [wrongFingers, setWrongFingers] = useState<string[]>([]);
   const [showCamera, setShowCamera] = useState(false);
@@ -129,11 +132,15 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const step = LEARN_STEPS[stepIndex];
   const drillDone = useMemo(() => evaluateDrill(step, drill), [step, drill]);
+  const isTypingDrill =
+    step.drill.type === "keys" || step.drill.type === "sequence";
 
   /* Focus input whenever step changes */
   useEffect(() => {
     setDrill(makeFreshDrillState());
     setLastKey("");
+    setRestartArmed(false);
+    setCapsLockOn(false);
     lastGuidedKeyRef.current = null;
     if (step.drill.type !== "none") {
       setTimeout(() => inputRef.current?.focus(), 50);
@@ -216,17 +223,55 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Enter") return;
+      if (restartArmed) return;
       if (!drillDone) return;
       e.preventDefault();
       handleContinue();
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [drillDone, handleContinue]);
+  }, [drillDone, handleContinue, restartArmed]);
+
+  const clearRestartArm = useCallback(() => setRestartArmed(false), []);
+  const armRestart = useCallback(() => setRestartArmed(true), []);
+
+  const restartCurrentDrill = useCallback(() => {
+    setDrill(makeFreshDrillState());
+    setLastKey("");
+    setRestartArmed(false);
+    inputRef.current?.focus();
+  }, []);
 
   /* ── Key handler ───────────────────────────────────────────────────── */
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
+      setCapsLockOn(e.getModifierState("CapsLock"));
+
+      if (e.key === "Tab") {
+        e.preventDefault();
+        armRestart();
+        return;
+      }
+
+      if (restartArmed && e.key === "Escape") {
+        e.preventDefault();
+        clearRestartArm();
+        inputRef.current?.focus();
+        return;
+      }
+
+      if (restartArmed && e.key === "Enter") {
+        e.preventDefault();
+        restartCurrentDrill();
+        return;
+      }
+
+      if (restartArmed) {
+        e.preventDefault();
+        clearRestartArm();
+        return;
+      }
+
       if (step.drill.type === "none" || step.drill.type === "hold") return;
 
       const key = e.key === " " ? " " : e.key.toLowerCase();
@@ -286,8 +331,15 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
         });
       }
     },
-    [step],
+    [armRestart, clearRestartArm, restartArmed, restartCurrentDrill, step],
   );
+
+  const handleLearnBodyClick = useCallback(() => {
+    if (restartArmed) {
+      clearRestartArm();
+    }
+    inputRef.current?.focus();
+  }, [clearRestartArm, restartArmed]);
 
   const handleBack = useCallback(() => {
     if (stepIndex === 0) {
@@ -331,7 +383,7 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
 
       <div
         className={`learn-body${step.splitLayout ? " learn-body--split" : ""}`}
-        onClick={() => inputRef.current?.focus()}
+        onClick={handleLearnBodyClick}
       >
         <input
           ref={inputRef}
@@ -352,6 +404,16 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
         </div>
 
         <div className="learn-drill-col">
+          {isTypingDrill && (
+            <div className="test-meta-row learn-meta-row" aria-live="polite">
+              {!restartArmed && (
+                <div className="test-restart-hint mono-label">
+                  tab to restart
+                </div>
+              )}
+              {capsLockOn && <div className="test-caps-indicator mono-label">Caps Lock on</div>}
+            </div>
+          )}
           {settings?.showKeyboard !== false && (
             <div className="lesson-stage-keyboard-wrap">
               <Keyboard
@@ -364,56 +426,69 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
             </div>
           )}
 
-          <div className="learn-drill">
-            {step.drill.type === "keys" && (
-              <div className="learn-drill__keys">
-                {keysDrillKeys.map((k) => {
-                  const hits = drill.keyHits[k] ?? 0;
-                  const done = hits >= required;
-                  return (
-                    <div
-                      key={k}
-                      className={`learn-drill__key-target${done ? " learn-drill__key-target--done" : ""}`}
-                    >
-                      <span className="learn-drill__key-target-key">{k}</span>
-                      <div className="learn-drill__key-pips">
-                        {Array.from({ length: required }, (_, i) => (
-                          <div
-                            key={i}
-                            className={`learn-drill__key-pip${i < hits ? " learn-drill__key-pip--filled" : ""}`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {step.drill.type === "sequence" && (
-              <div className="learn-drill__sequence">
-                <TypingDisplay
-                  target={step.drill.sequence ?? ""}
-                  typed={drill.typed}
-                  showCursor={true}
-                  className="learn-typing-display"
-                />
-                {(step.drill.requiredReps ?? 1) > 1 && (
-                  <div className="learn-drill__rep-count">
-                    {drill.repsCompleted} / {step.drill.requiredReps} complete
+          <div className={`test-typing-stage learn-typing-stage${restartArmed ? " test-typing-stage--armed" : ""}`}>
+            <div className="test-typing-wrap learn-typing-wrap">
+              <div className="learn-drill">
+                {step.drill.type === "keys" && (
+                  <div className="learn-drill__keys">
+                    {keysDrillKeys.map((k) => {
+                      const hits = drill.keyHits[k] ?? 0;
+                      const done = hits >= required;
+                      return (
+                        <div
+                          key={k}
+                          className={`learn-drill__key-target${done ? " learn-drill__key-target--done" : ""}`}
+                        >
+                          <span className="learn-drill__key-target-key">{k}</span>
+                          <div className="learn-drill__key-pips">
+                            {Array.from({ length: required }, (_, i) => (
+                              <div
+                                key={i}
+                                className={`learn-drill__key-pip${i < hits ? " learn-drill__key-pip--filled" : ""}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
-              </div>
-            )}
 
-            {step.drill.hint && (
-              <div className="learn-drill__hint mono-label">
-                {step.drill.hint}
-              </div>
-            )}
+                {step.drill.type === "sequence" && (
+                  <div className="learn-drill__sequence">
+                    <TypingDisplay
+                      target={step.drill.sequence ?? ""}
+                      typed={drill.typed}
+                      showCursor={true}
+                      className="learn-typing-display"
+                    />
+                    {(step.drill.requiredReps ?? 1) > 1 && (
+                      <div className="learn-drill__rep-count">
+                        {drill.repsCompleted} / {step.drill.requiredReps} complete
+                      </div>
+                    )}
+                  </div>
+                )}
 
-            {drillDone && step.drill.type !== "none" && (
-              <div className="learn-drill__complete">ready to continue</div>
+                {step.drill.hint && (
+                  <div className="learn-drill__hint mono-label">
+                    {step.drill.hint}
+                  </div>
+                )}
+
+                {drillDone && step.drill.type !== "none" && (
+                  <div className="learn-drill__complete">ready to continue</div>
+                )}
+              </div>
+            </div>
+            {restartArmed && (
+              <div className="test-restart-overlay" aria-live="polite" aria-label="Restart lesson confirmation">
+                <div className="test-restart-overlay__icon" aria-hidden="true">↻</div>
+                <div className="test-restart-overlay__body">
+                  <div>press enter to restart</div>
+                  <div>click on the screen to resume</div>
+                </div>
+              </div>
             )}
           </div>
 

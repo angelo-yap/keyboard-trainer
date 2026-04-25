@@ -160,6 +160,21 @@
   align-items: center;
 }
 
+.learn-meta-row {
+  width: 100%;
+  max-width: 100%;
+}
+
+.learn-typing-stage {
+  width: 100%;
+  max-width: 100%;
+}
+
+.learn-typing-wrap {
+  width: 100%;
+  max-width: 100%;
+}
+
 /* When not in split layout, center the drill */
 .learn-body:not(.learn-body--split) .learn-drill-col {
   align-items: center;
