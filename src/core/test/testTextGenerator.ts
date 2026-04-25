@@ -1,7 +1,5 @@
 import { getTestGenerator } from "./registry";
 import type {
-  AdaptiveWeakLetterGeneratorOptions,
-  ClassicWordsGeneratorOptions,
   TestGeneratorValidation,
   TestMode,
   TestModeConfig,
@@ -25,92 +23,72 @@ export type TestChunkOptions = TestModeConfig & {
   wordCount: number;
 };
 
-function validateModeOptions<M extends TestMode>(
-  mode: M,
-  options: TestModeOptionsMap[M]
-): TestGeneratorValidation<TestModeOptionsMap[M]> {
-  return getTestGenerator(mode).validateOptions(options);
+type TestGeneratorConfig<M extends TestMode> = {
+  mode: M;
+  options: TestModeOptionsMap[M];
+};
+
+function withValidatedGenerator<M extends TestMode, TResult>(
+  config: TestGeneratorConfig<M>,
+  onValid: (input: {
+    generator: ReturnType<typeof getTestGenerator<M>>;
+    options: TestModeOptionsMap[M];
+  }) => TResult,
+  onInvalid: (reason: string) => TResult
+): TResult {
+  const generator = getTestGenerator(config.mode);
+  const validation = generator.validateOptions(config.options);
+
+  if (!validation.valid) {
+    return onInvalid(validation.reason);
+  }
+
+  return onValid({
+    generator,
+    options: validation.options,
+  });
 }
 
 export function validateTestModeConfig(
   config: TestModeConfig
 ): TestGeneratorValidation<TestModeConfig> {
-  switch (config.mode) {
-    case "standard": {
-      const validation = validateModeOptions("standard", config.options);
-      if (!validation.valid) {
-        return validation;
-      }
-      return {
-        valid: true,
-        options: {
-          mode: "standard",
-          options: validation.options,
-        },
-      };
-    }
-    case "adaptive": {
-      const validation = validateModeOptions("adaptive", config.options);
-      if (!validation.valid) {
-        return validation;
-      }
-      return {
-        valid: true,
-        options: {
-          mode: "adaptive",
-          options: validation.options,
-        },
-      };
-    }
-  }
+  return withValidatedGenerator(
+    config,
+    ({ options }) => ({
+      valid: true,
+      options: {
+        mode: config.mode,
+        options,
+      } as TestModeConfig,
+    }),
+    (reason) => ({ valid: false, reason })
+  );
+}
+
+function throwValidationError(reason: string): never {
+  throw new Error(reason);
 }
 
 export function generateWordChunk(input: TestChunkOptions): string {
-  switch (input.mode) {
-    case "standard": {
-      const validation = validateModeOptions("standard", input.options);
-      if (!validation.valid) {
-        throw new Error(validation.reason);
-      }
-      return getTestGenerator("standard").generateChunk({
+  return withValidatedGenerator(
+    input,
+    ({ generator, options }) =>
+      generator.generateChunk({
         wordCount: input.wordCount,
-        options: validation.options,
-      });
-    }
-    case "adaptive": {
-      const validation = validateModeOptions("adaptive", input.options);
-      if (!validation.valid) {
-        throw new Error(validation.reason);
-      }
-      return getTestGenerator("adaptive").generateChunk({
-        wordCount: input.wordCount,
-        options: validation.options,
-      });
-    }
-  }
+        options,
+      }),
+    throwValidationError
+  );
 }
 
 export function generateTestText(input: TestTextOptions): string {
-  switch (input.mode) {
-    case "standard": {
-      const validation = validateModeOptions("standard", input.options);
-      if (!validation.valid) {
-        throw new Error(validation.reason);
-      }
-      return getTestGenerator("standard").generateInitialText({
+  return withValidatedGenerator(
+    input,
+    ({ generator, options }) =>
+      generator.generateInitialText({
         durationSeconds: input.durationSeconds,
-        options: validation.options,
-      });
-    }
-    case "adaptive": {
-      const validation = validateModeOptions("adaptive", input.options);
-      if (!validation.valid) {
-        throw new Error(validation.reason);
-      }
-      return getTestGenerator("adaptive").generateInitialText({
-        durationSeconds: input.durationSeconds,
-        options: validation.options,
-      });
-    }
-  }
+        options,
+      }),
+    throwValidationError
+  );
 }

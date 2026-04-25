@@ -9,6 +9,7 @@ import {
   type ClassicWordsGeneratorOptions,
   type TestMode,
   type TestModeConfig,
+  type TestModeOptionsMap,
 } from "../core/test/testTextGenerator";
 import { saveTestResult } from "../core/storage/testHistoryStore";
 import { updateStreak } from "../core/storage/streakStore";
@@ -41,20 +42,42 @@ const TRANSITION_MS = 180;
  */
 const BUFFER_AHEAD_CHARS = 300;
 const REFILL_WORD_COUNT = 30;
+const DEFAULT_MODE_OPTIONS: TestModeOptionsMap = {
+  standard: {
+    includePunctuation: false,
+    includeNumbers: false,
+  },
+  adaptive: {
+    includePunctuation: false,
+    includeNumbers: false,
+    adaptiveTargets: [],
+  },
+};
+
+const MODE_CONFIG_BUILDERS: {
+  [K in TestMode]: (
+    options: TestModeOptionsMap[K],
+    adaptiveTargets: ReturnType<typeof getWeakLetterTargets>
+  ) => Extract<TestModeConfig, { mode: K }>;
+} = {
+  standard: (options) => ({
+    mode: "standard",
+    options,
+  }),
+  adaptive: (options, adaptiveTargets) => ({
+    mode: "adaptive",
+    options: {
+      ...options,
+      adaptiveTargets,
+    },
+  }),
+};
 
 export function Test({ onBack, settings, initialMode = "standard" }: TestProps) {
   const [testStatus, setTestStatus] = useState<TestStatus>("setup");
   const [mode, setMode] = useState<TestMode>(initialMode);
   const [duration, setDuration] = useState(settings?.testDuration || 60);
-  const [standardOptions, setStandardOptions] = useState<ClassicWordsGeneratorOptions>({
-    includePunctuation: false,
-    includeNumbers: false,
-  });
-  const [adaptiveOptions, setAdaptiveOptions] = useState<AdaptiveWeakLetterGeneratorOptions>({
-    includePunctuation: false,
-    includeNumbers: false,
-    adaptiveTargets: [],
-  });
+  const [modeOptions, setModeOptions] = useState<TestModeOptionsMap>(DEFAULT_MODE_OPTIONS);
   const [text, setText] = useState("");
   const [timeLeft, setTimeLeft] = useState(duration);
   const [timerStarted, setTimerStarted] = useState(false);
@@ -81,20 +104,9 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
     includeNumbers: false,
   });
   const adaptiveTargetsRef = useRef(getWeakLetterTargets(5));
-  const modeConfigRef = useRef<TestModeConfig>({
-    mode: initialMode,
-    options:
-      initialMode === "adaptive"
-        ? {
-            includePunctuation: false,
-            includeNumbers: false,
-            adaptiveTargets: adaptiveTargetsRef.current,
-          }
-        : {
-            includePunctuation: false,
-            includeNumbers: false,
-          },
-  });
+  const modeConfigRef = useRef<TestModeConfig>(
+    MODE_CONFIG_BUILDERS[initialMode](DEFAULT_MODE_OPTIONS[initialMode] as never, adaptiveTargetsRef.current)
+  );
   const typingRef = useRef<{ reset: () => void } | null>(null);
   const refillingRef = useRef(false);
   const lastGuidedKeyRef = useRef<string | null>(null);
@@ -103,32 +115,16 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
   const textLengthRef = useRef(0);
   textLengthRef.current = text.length;
 
-  const getCurrentOptions = useCallback(
-    (selectedMode: TestMode) =>
-      selectedMode === "adaptive"
-        ? adaptiveOptions
-        : standardOptions,
-    [adaptiveOptions, standardOptions]
-  );
-
   const createModeConfig = useCallback(
     (
       selectedMode: TestMode,
       adaptiveTargets: ReturnType<typeof getWeakLetterTargets> = adaptiveTargetsRef.current
     ): TestModeConfig =>
-      selectedMode === "adaptive"
-        ? {
-            mode: "adaptive",
-            options: {
-              ...adaptiveOptions,
-              adaptiveTargets,
-            },
-          }
-        : {
-            mode: "standard",
-            options: standardOptions,
-          },
-    [adaptiveOptions, standardOptions]
+      MODE_CONFIG_BUILDERS[selectedMode](
+        modeOptions[selectedMode] as never,
+        adaptiveTargets
+      ),
+    [modeOptions]
   );
 
   const validateModeConfig = useCallback((config: TestModeConfig) => {
@@ -136,8 +132,8 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
     return validation.valid ? validation.options : null;
   }, []);
 
-  const includePunctuation = getCurrentOptions(mode).includePunctuation;
-  const includeNumbers = getCurrentOptions(mode).includeNumbers;
+  const includePunctuation = modeOptions[mode].includePunctuation;
+  const includeNumbers = modeOptions[mode].includeNumbers;
   modeConfigRef.current = createModeConfig(mode);
 
   const maybeRefill = useCallback((typedLength: number) => {
@@ -371,17 +367,12 @@ export function Test({ onBack, settings, initialMode = "standard" }: TestProps) 
         current: ClassicWordsGeneratorOptions | AdaptiveWeakLetterGeneratorOptions
       ) => ClassicWordsGeneratorOptions | AdaptiveWeakLetterGeneratorOptions
     ) => {
-      if (mode === "adaptive") {
-        setAdaptiveOptions((current) => ({
-          ...current,
-          ...(updater(current) as AdaptiveWeakLetterGeneratorOptions),
-        }));
-        return;
-      }
-
-      setStandardOptions((current) => ({
+      setModeOptions((current) => ({
         ...current,
-        ...(updater(current) as ClassicWordsGeneratorOptions),
+        [mode]: {
+          ...current[mode],
+          ...(updater(current[mode]) as TestModeOptionsMap[typeof mode]),
+        },
       }));
     },
     [mode]
