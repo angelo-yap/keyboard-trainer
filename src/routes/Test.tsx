@@ -10,8 +10,11 @@ import { Button } from "../ui/components/Button";
 import type { Settings } from "../core/storage/settingsStore";
 import { resetKeyboardLed, sendKeyboardLedForKeys } from "../core/keyboard/keyboardLedBridge";
 import { getGuidanceKeysForChar } from "../core/keyboard/keyNormalization";
+import { FeedbackBanner } from "../ui/components/FeedbackBanner";
+import { CameraPanel } from "../ui/components/CameraPanel";
 import "../ui/Layout/LessonStage.css";
 import "./Test.css";
+import React from "react";
 
 type TestStatus = "setup" | "active" | "finished";
 
@@ -39,6 +42,10 @@ export function Test({ onBack, settings }: TestProps) {
   const [timeLeft, setTimeLeft] = useState(duration);
   const [timerStarted, setTimerStarted] = useState(false);
   const [textTransitioning, setTextTransitioning] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  // server hand tracking data
+  const [verdict, setVerdict] = useState<"GOOD" | "BAD" | "IDLE" | "">("");
+  const [wrongFingers, setWrongFingers] = useState<string[]>([]);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const endSessionRef = useRef<() => import("../core/session/sessionTypes").SessionState | null>(null);
@@ -163,8 +170,35 @@ export function Test({ onBack, settings }: TestProps) {
     if (testStatus !== "active" || !typing.startTime || timerStarted) return;
     startRef.current = Date.now();
     setTimerStarted(true);
-    setTimeLeft(duration);
+    setTimeLeft(duration);  
   }, [testStatus, typing.startTime, timerStarted, duration]);
+
+  // Hand-tracking: connect while the test is active, reset verdict on teardown
+  useEffect(() => {
+    if (testStatus !== "active") {
+      setVerdict("");
+      setWrongFingers([]);
+      return;
+    }
+
+    const ws = new WebSocket("ws://localhost:8000/ws");
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data) as {
+        verdict: "GOOD" | "BAD" | "IDLE";
+        wrong_fingers: string[];
+      };
+      setVerdict(data.verdict);
+      setWrongFingers(data.wrong_fingers);
+    };
+
+    ws.onerror = () => {
+      setVerdict("");
+      setWrongFingers([]);
+    };
+
+    return () => ws.close();
+  }, [testStatus]);
 
   /* Countdown — 100ms interval against a fixed start timestamp, not integer decrement */
   useEffect(() => {
@@ -350,6 +384,14 @@ export function Test({ onBack, settings }: TestProps) {
           >
             new
           </button>
+          <button
+            type="button"
+            className={`test-topbar-badge ${showCamera ? "on" : "off"}`}
+            onClick={() => setShowCamera((v) => !v)}
+            title="Toggle camera panel"
+          >
+            cam
+          </button>
         </div>
         <div className={`test-topbar-timer test-topbar-timer--${timerClass}`}>
           {timerStarted ? timeLeft : duration}s
@@ -392,6 +434,8 @@ export function Test({ onBack, settings }: TestProps) {
             />
           </div>
 
+          <FeedbackBanner verdict={verdict} wrongFingers={wrongFingers} />
+
           {settings?.showKeyboard !== false && (
             <div className="lesson-stage-keyboard-wrap">
               <Keyboard
@@ -402,6 +446,8 @@ export function Test({ onBack, settings }: TestProps) {
               />
             </div>
           )}
+
+          {showCamera && <CameraPanel active={testStatus === "active"} />}
         </div>
       </div>
     </div>

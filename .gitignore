@@ -99,6 +99,11 @@ dist-ssr/
 # Workspace-specific
 qmk_firmware/
 
+# Python
+__pycache__/
+*.pyc
+hand-detection/typing_state.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
