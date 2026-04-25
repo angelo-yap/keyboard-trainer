@@ -1,57 +1,34 @@
-"""
-Typing Checker WebSocket Backend
-=================================
-FastAPI backend that reads typing state from the shared JSON file
-written by typing_checker.py and broadcasts changes to all connected
-WebSocket clients (your Electron/React frontend).
-
-Requirements:
-    pip install fastapi uvicorn
-
-Run:
-    python backend.py
-
-WebSocket endpoint:
-    ws://localhost:8000/ws
-
-Health check:
-    GET http://localhost:8000/health
-
-Current state snapshot:
-    GET http://localhost:8000/state
-"""
-
 import json
 import asyncio
 import os
 import time
+import threading
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 
-# ──────────────────────────────────────────────────────────────
-# CONFIG
-# ──────────────────────────────────────────────────────────────
+# ── Try to import the tracker (may fail if opencv/mediapipe not installed) ────
+try:
+    import typing_checker as _checker
+    _tracker_available = True
+except ImportError:
+    _checker = None  # type: ignore
+    _tracker_available = False
 
-# Must match the path in typing_checker.py
 SHARED_STATE_FILE = "typing_state.json"
+POLL_INTERVAL = 0.05
 
-# How often (seconds) the backend polls the shared file for changes
-POLL_INTERVAL = 0.05  # 50ms = 20 checks per second
-
-app = FastAPI(title="Typing Checker WebSocket Backend")
+app = FastAPI(title="Typing Checker Backend")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Tighten this in production
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ──────────────────────────────────────────────────────────────
-# CONNECTION MANAGER
-# Keeps track of all active WebSocket connections so we can
-# broadcast to all of them when the state changes.
-# ──────────────────────────────────────────────────────────────
+
+# ── Connection manager ────────────────────────────────────────────────────────
 
 class ConnectionManager:
     def __init__(self):
@@ -60,82 +37,57 @@ class ConnectionManager:
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.append(websocket)
-        print(f"Client connected. Total connections: {len(self.active_connections)}")
+        print(f"Client connected. Total: {len(self.active_connections)}")
 
     def disconnect(self, websocket: WebSocket):
         self.active_connections.remove(websocket)
-        print(f"Client disconnected. Total connections: {len(self.active_connections)}")
+        print(f"Client disconnected. Total: {len(self.active_connections)}")
 
     async def broadcast(self, message: dict):
-        """Send a message to all connected clients."""
         if not self.active_connections:
             return
         payload = json.dumps(message)
-        # Iterate over a copy in case a client disconnects mid-broadcast
-        for connection in list(self.active_connections):
+        for conn in list(self.active_connections):
             try:
-                await connection.send_text(payload)
+                await conn.send_text(payload)
             except Exception:
-                self.active_connections.remove(connection)
+                self.active_connections.remove(conn)
 
 
 manager = ConnectionManager()
 
 
-# ──────────────────────────────────────────────────────────────
-# SHARED STATE READER
-# ──────────────────────────────────────────────────────────────
+# ── State reading (in-memory when tracker is running, file otherwise) ─────────
 
 def read_state() -> dict:
-    """
-    Read the current typing state from the shared JSON file.
-    Returns a default idle state if the file doesn't exist yet.
-    """
+    if _tracker_available:
+        return _checker.get_state()
     if not os.path.exists(SHARED_STATE_FILE):
-        return {
-            "verdict": "IDLE",
-            "wrong_fingers": [],
-            "timestamp": time.time(),
-        }
+        return {"verdict": "IDLE", "wrong_fingers": [], "timestamp": time.time()}
     try:
         with open(SHARED_STATE_FILE, "r") as f:
             return json.load(f)
     except (json.JSONDecodeError, IOError):
-        return {
-            "verdict": "IDLE",
-            "wrong_fingers": [],
-            "timestamp": time.time(),
-        }
+        return {"verdict": "IDLE", "wrong_fingers": [], "timestamp": time.time()}
 
 
-# ──────────────────────────────────────────────────────────────
-# BACKGROUND BROADCASTER
-# Runs as a background task on server startup.
-# Polls the shared file and broadcasts to all clients on change.
-# ──────────────────────────────────────────────────────────────
+# ── Background tasks ──────────────────────────────────────────────────────────
 
 async def broadcast_loop():
-    """
-    Background task that watches the shared state file and broadcasts
-    to all connected WebSocket clients only when the state changes.
-    This implements the Pub/Sub pattern — only broadcast on change.
-    """
     last_verdict = None
-    last_wrong_fingers = None
+    last_wrong: list = []
 
     while True:
         state = read_state()
-        current_verdict = state.get("verdict", "IDLE")
-        current_wrong_fingers = sorted(state.get("wrong_fingers", []))
+        verdict = state.get("verdict", "IDLE")
+        wrong = sorted(state.get("wrong_fingers", []))
 
-        # Only broadcast if something changed
-        if current_verdict != last_verdict or current_wrong_fingers != last_wrong_fingers:
-            last_verdict = current_verdict
-            last_wrong_fingers = current_wrong_fingers
-
+        if verdict != last_verdict or wrong != last_wrong:
+            last_verdict = verdict
+            last_wrong = wrong
             await manager.broadcast({
-                "verdict": current_verdict,
-                "wrong_fingers": current_wrong_fingers,
+                "verdict": verdict,
+                "wrong_fingers": wrong,
                 "timestamp": state.get("timestamp", time.time()),
             })
 
@@ -144,52 +96,93 @@ async def broadcast_loop():
 
 @app.on_event("startup")
 async def startup_event():
-    """Start the background broadcaster when the server starts."""
+    if _tracker_available:
+        t = threading.Thread(
+            target=_checker.run,
+            kwargs={"headless": True},
+            daemon=True,
+        )
+        t.start()
+        print("[OK] Hand tracker started (headless).")
+    else:
+        print("[WARN] typing_checker not available - falling back to state file.")
+
     asyncio.create_task(broadcast_loop())
-    print("✅ Background broadcaster started.")
+    print("[OK] Broadcast loop started.")
 
 
-# ──────────────────────────────────────────────────────────────
-# ROUTES
-# ──────────────────────────────────────────────────────────────
+# ── WebSocket ─────────────────────────────────────────────────────────────────
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    """
-    WebSocket endpoint. Connect from Electron/React with:
-
-        const ws = new WebSocket("ws://localhost:8000/ws")
-
-        ws.onopen = () => console.log("Connected")
-
-        ws.onmessage = (e) => {
-            const data = JSON.parse(e.data)
-            // data.verdict       -> "GOOD" | "BAD" | "IDLE"
-            // data.wrong_fingers -> e.g. ["R_INDEX", "L_PINKY"]
-            // data.timestamp     -> Unix timestamp
-        }
-
-        ws.onclose = () => console.log("Disconnected")
-    """
     await manager.connect(websocket)
-
-    # Send current state immediately on connection
-    # so the client doesn't have to wait for the next change
-    current_state = read_state()
-    await websocket.send_text(json.dumps(current_state))
-
+    await websocket.send_text(json.dumps(read_state()))
     try:
-        # Keep the connection alive — we don't expect messages
-        # from the client but we listen anyway for clean disconnects
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
 
+# ── MJPEG video stream ────────────────────────────────────────────────────────
+
+@app.get("/video")
+async def video_stream():
+    async def generate():
+        while True:
+            frame = _checker.get_latest_frame() if _tracker_available else None
+            if frame is not None:
+                yield (
+                    b"--frame\r\n"
+                    b"Content-Type: image/jpeg\r\n\r\n"
+                    + frame
+                    + b"\r\n"
+                )
+                await asyncio.sleep(1 / 30)
+            else:
+                await asyncio.sleep(0.1)
+
+    return StreamingResponse(
+        generate(),
+        media_type="multipart/x-mixed-replace; boundary=frame",
+        headers={"Cache-Control": "no-cache, no-store"},
+    )
+
+
+# ── Calibration endpoints ─────────────────────────────────────────────────────
+
+@app.post("/calibrate")
+async def calibrate(body: dict):
+    corners = body.get("corners", [])
+    if len(corners) != 4:
+        return {"ok": False, "error": "Exactly 4 corners required (TL, TR, BR, BL)"}
+    if not _tracker_available:
+        return {"ok": False, "error": "Tracker not running"}
+    success = _checker.set_calibration_corners(corners)
+    return {"ok": success}
+
+
+@app.post("/calibrate/reset")
+async def calibrate_reset():
+    if _tracker_available:
+        _checker.reset_calibration()
+    return {"ok": True}
+
+
+# ── Info / health ─────────────────────────────────────────────────────────────
+
+@app.get("/info")
+async def info():
+    return {
+        "tracker_available": _tracker_available,
+        "calibrated": _checker.is_calibrated() if _tracker_available else False,
+        "frame_width": 1280,
+        "frame_height": 720,
+    }
+
+
 @app.get("/health")
 async def health():
-    """Health check — returns server status and current state."""
     return {
         "status": "ok",
         "active_connections": len(manager.active_connections),
@@ -199,19 +192,16 @@ async def health():
 
 @app.get("/state")
 async def state():
-    """One-shot current state snapshot (non-WebSocket)."""
     return read_state()
 
 
-# ──────────────────────────────────────────────────────────────
-# ENTRY POINT
-# ──────────────────────────────────────────────────────────────
+# ── Entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     import uvicorn
-    print("=== Typing Checker WebSocket Backend ===")
-    print(f"Watching state file : {SHARED_STATE_FILE}")
-    print("WebSocket endpoint  : ws://localhost:8000/ws")
-    print("Health check        : http://localhost:8000/health")
-    print("State snapshot      : http://localhost:8000/state\n")
+    print("=== Typing Checker Backend ===")
+    print("WebSocket : ws://localhost:8000/ws")
+    print("Video     : http://localhost:8000/video")
+    print("Calibrate : POST http://localhost:8000/calibrate")
+    print("Health    : http://localhost:8000/health\n")
     uvicorn.run(app, host="0.0.0.0", port=8000)
