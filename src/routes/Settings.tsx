@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getSettings, saveSettings, type Settings as SettingsType } from "../core/storage/settingsStore";
-import { clearAllData } from "../core/storage/clearData";
+import { clearAdaptiveTrainingData, clearAllData } from "../core/storage/clearData";
 import { getLastKeyboardLedEvent, resetKeyboardLed, sendKeyboardLedForKey, subscribeKeyboardLedDebug, syncKeyboardBacklightPreference, type KeyboardLedDebugEvent } from "../core/keyboard/keyboardLedBridge";
 import { Keyboard } from "../ui/components/keyboard";
 import { Button } from "../ui/components/Button";
@@ -17,6 +17,7 @@ type SettingsProps = {
 
 export function Settings({ onBack, onSettingsChange }: SettingsProps) {
   const [settings, setSettings] = useState<SettingsType>(getSettings);
+  const [adaptiveCleared, setAdaptiveCleared] = useState(false);
   const [cleared, setCleared] = useState(false);
   const [view, setView] = useState<"general" | "hid">("general");
   const [lastClickedKey, setLastClickedKey] = useState<string>("-");
@@ -84,6 +85,14 @@ export function Settings({ onBack, onSettingsChange }: SettingsProps) {
       clearAllData();
       setCleared(true);
       setTimeout(() => setCleared(false), 3000);
+    }
+  };
+
+  const handleClearAdaptiveData = () => {
+    if (window.confirm("Reset adaptive training history? This will clear weak-key stats only.")) {
+      clearAdaptiveTrainingData();
+      setAdaptiveCleared(true);
+      setTimeout(() => setAdaptiveCleared(false), 3000);
     }
   };
 
@@ -436,6 +445,17 @@ export function Settings({ onBack, onSettingsChange }: SettingsProps) {
               desc="All data is stored locally in your browser. No account required."
             >
               <div className="settings-storage-badge">Local only</div>
+            </SettingRow>
+            <SettingRow
+              label="Reset Adaptive Training"
+              desc="Clear weak-key history used for adaptive typing text"
+            >
+              <button
+                onClick={handleClearAdaptiveData}
+                className={`settings-secondary-action-btn ${adaptiveCleared ? "cleared" : ""}`}
+              >
+                {adaptiveCleared ? "âœ“ Reset" : "Reset Adaptive"}
+              </button>
             </SettingRow>
             <SettingRow
               label="Clear All Data"

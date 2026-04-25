@@ -1,6 +1,7 @@
 import { getLS, setLS } from "./localStorage";
 
 export type KeyStats = Record<string, { attempts: number; errors: number }>;
+export type WeakKeyStat = { key: string; accuracy: number; attempts: number; errors: number };
 
 export function getKeyStats(): KeyStats {
   return getLS("kt_keystats", {});
@@ -32,4 +33,23 @@ export function getWeakKeys(): { key: string; accuracy: number }[] {
       accuracy: Math.round(((v.attempts - v.errors) / v.attempts) * 100),
     }))
     .sort((a, b) => a.accuracy - b.accuracy);
+}
+
+export function getWeakLetterTargets(limit = 5): WeakKeyStat[] {
+  const stats = getKeyStats();
+  return Object.entries(stats)
+    .filter(([key, value]) => /^[a-z]$/.test(key) && value.attempts >= 5)
+    .map(([key, value]) => ({
+      key,
+      attempts: value.attempts,
+      errors: value.errors,
+      accuracy: Math.round(((value.attempts - value.errors) / value.attempts) * 100),
+    }))
+    .filter((entry) => entry.accuracy < 98)
+    .sort((a, b) => {
+      const severityA = (100 - a.accuracy) * 10 + a.errors;
+      const severityB = (100 - b.accuracy) * 10 + b.errors;
+      return severityB - severityA;
+    })
+    .slice(0, limit);
 }

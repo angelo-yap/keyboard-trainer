@@ -17,11 +17,13 @@ import {
 import "./App.css";
 
 type Tab = "home" | "learn" | "test" | "analytics" | "settings";
+type TestEntryMode = "standard" | "adaptive";
 
 type OnboardingView = "welcome" | "learn" | null;
 
 export function App() {
   const [tab, setTab] = useState<Tab>("home");
+  const [testEntryMode, setTestEntryMode] = useState<TestEntryMode>("standard");
   const [onboardingView, setOnboardingView] = useState<OnboardingView>(() =>
     isFirstLaunch() ? "welcome" : null,
   );
@@ -67,7 +69,16 @@ export function App() {
   const renderPage = () => {
     switch (tab) {
       case "home":
-        return <Home onTabChange={setTab} settings={settings} />;
+        return (
+          <Home
+            onTabChange={setTab}
+            onStartAdaptiveTest={() => {
+              setTestEntryMode("adaptive");
+              setTab("test");
+            }}
+            settings={settings}
+          />
+        );
       case "learn":
         return (
           <Learn
@@ -79,7 +90,13 @@ export function App() {
           />
         );
       case "test":
-        return <Test onBack={() => setTab("home")} settings={settings} />;
+        return (
+          <Test
+            onBack={() => setTab("home")}
+            settings={settings}
+            initialMode={testEntryMode}
+          />
+        );
       case "analytics":
         return <Analytics onBack={() => setTab("home")} />;
       case "settings":

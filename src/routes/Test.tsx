@@ -3,6 +3,7 @@ import { useTypingSession } from "../hooks/useTypingSession";
 import { generateTestText, generateWordChunk } from "../core/test/testTextGenerator";
 import { saveTestResult } from "../core/storage/testHistoryStore";
 import { updateStreak } from "../core/storage/streakStore";
+import { getWeakLetterTargets } from "../core/storage/keyStatsStore";
 import { Keyboard } from "../ui/components/keyboard";
 import { TypingDisplay } from "../ui/components/TypingDisplay";
 import { SessionReportCard } from "../ui/components/SessionReport";
@@ -14,10 +15,12 @@ import "../ui/Layout/LessonStage.css";
 import "./Test.css";
 
 type TestStatus = "setup" | "active" | "finished";
+type TestMode = "standard" | "adaptive";
 
 type TestProps = {
   onBack: () => void;
   settings: Settings;
+  initialMode?: TestMode;
 };
 
 const DURATION_OPTIONS = [15, 30, 60, 120] as const;
@@ -30,8 +33,9 @@ const TRANSITION_MS = 180;
 const BUFFER_AHEAD_CHARS = 300;
 const REFILL_WORD_COUNT = 30;
 
-export function Test({ onBack, settings }: TestProps) {
+export function Test({ onBack, settings, initialMode = "standard" }: TestProps) {
   const [testStatus, setTestStatus] = useState<TestStatus>("setup");
+  const [mode, setMode] = useState<TestMode>(initialMode);
   const [duration, setDuration] = useState(settings?.testDuration || 60);
   const [includePunctuation, setIncludePunctuation] = useState(false);
   const [includeNumbers, setIncludeNumbers] = useState(false);
@@ -40,18 +44,27 @@ export function Test({ onBack, settings }: TestProps) {
   const [timerStarted, setTimerStarted] = useState(false);
   const [textTransitioning, setTextTransitioning] = useState(false);
 
+  useEffect(() => {
+    if (testStatus === "setup") {
+      setMode(initialMode);
+    }
+  }, [initialMode, testStatus]);
+
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const endSessionRef = useRef<() => import("../core/session/sessionTypes").SessionState | null>(null);
   const hasEndedRef = useRef(false);
   const startRef = useRef<number | null>(null);
   const prevSettingsRef = useRef({ duration, includePunctuation, includeNumbers });
+  const adaptiveTargetsRef = useRef(getWeakLetterTargets(5));
   const typingRef = useRef<{ reset: () => void } | null>(null);
   const refillingRef = useRef(false);
   const lastGuidedKeyRef = useRef<string | null>(null);
 
   // Keep options in refs so refill callback doesn't go stale
+  const modeRef = useRef(mode);
   const includePunctuationRef = useRef(includePunctuation);
   const includeNumbersRef = useRef(includeNumbers);
+  modeRef.current = mode;
   includePunctuationRef.current = includePunctuation;
   includeNumbersRef.current = includeNumbers;
 
@@ -70,6 +83,8 @@ export function Test({ onBack, settings }: TestProps) {
       REFILL_WORD_COUNT,
       includePunctuationRef.current,
       includeNumbersRef.current,
+      modeRef.current,
+      adaptiveTargetsRef.current,
     );
 
     setText((prev) => `${prev} ${chunk}`);
@@ -100,13 +115,15 @@ export function Test({ onBack, settings }: TestProps) {
       durationSeconds: duration,
       includePunctuation,
       includeNumbers,
+      mode,
+      adaptiveTargets: adaptiveTargetsRef.current,
     });
     startRef.current = null;
     setText(newText);
     setTimeLeft(duration);
     setTimerStarted(false);
     typingRef.current?.reset();
-  }, [duration, includePunctuation, includeNumbers]);
+  }, [duration, includePunctuation, includeNumbers, mode]);
 
   /* Regenerate during active test — used by settings change and manual new test */
   const regenerateTest = useCallback(() => {
@@ -200,9 +217,10 @@ export function Test({ onBack, settings }: TestProps) {
   const startTest = useCallback(() => {
     hasEndedRef.current = false;
     prevSettingsRef.current = { duration, includePunctuation, includeNumbers };
+    adaptiveTargetsRef.current = mode === "adaptive" ? getWeakLetterTargets(5) : [];
     generateAndLoadTest();
     setTestStatus("active");
-  }, [generateAndLoadTest]);
+  }, [duration, includePunctuation, includeNumbers, mode, generateAndLoadTest]);
 
   const backToSetup = useCallback(() => {
     clearInterval(timerRef.current);
@@ -214,14 +232,16 @@ export function Test({ onBack, settings }: TestProps) {
 
   const handleNewTest = useCallback(() => {
     if (testStatus !== "active") return;
+    adaptiveTargetsRef.current = mode === "adaptive" ? getWeakLetterTargets(5) : [];
     regenerateTest();
-  }, [testStatus, regenerateTest]);
+  }, [mode, testStatus, regenerateTest]);
 
   const retryWithSameSettings = useCallback(() => {
     hasEndedRef.current = false;
+    adaptiveTargetsRef.current = mode === "adaptive" ? getWeakLetterTargets(5) : [];
     generateAndLoadTest();
     setTestStatus("active");
-  }, [generateAndLoadTest]);
+  }, [mode, generateAndLoadTest]);
 
   const cycleDuration = useCallback(() => {
     const idx = DURATION_OPTIONS.indexOf(duration as (typeof DURATION_OPTIONS)[number]);
@@ -254,6 +274,32 @@ export function Test({ onBack, settings }: TestProps) {
         <div className="test-setup-card">
           <div className="test-setup-title">WPM Test</div>
           <div className="test-setup-sub">Configure your test, then start when ready.</div>
+
+          <div className="test-setup-section">
+            <div className="test-setup-label">Mode</div>
+            <div className="test-setup-mode-grid">
+              <button
+                type="button"
+                className={`test-setup-mode-card ${mode === "standard" ? "active" : ""}`}
+                onClick={() => setMode("standard")}
+              >
+                <span className="test-setup-mode-card__title">Standard</span>
+                <span className="test-setup-mode-card__body">
+                  Current mixed-word test flow.
+                </span>
+              </button>
+              <button
+                type="button"
+                className={`test-setup-mode-card ${mode === "adaptive" ? "active" : ""}`}
+                onClick={() => setMode("adaptive")}
+              >
+                <span className="test-setup-mode-card__title">Adaptive</span>
+                <span className="test-setup-mode-card__body">
+                  Prioritizes weaker letters when there is enough history.
+                </span>
+              </button>
+            </div>
+          </div>
 
           <div className="test-setup-section">
             <div className="test-setup-label">Duration</div>
@@ -320,6 +366,9 @@ export function Test({ onBack, settings }: TestProps) {
           ← exit
         </button>
         <div className="test-topbar-controls">
+          <div className={`test-topbar-badge ${mode === "adaptive" ? "on" : "off"}`}>
+            {mode}
+          </div>
           <button
             type="button"
             className="test-topbar-duration-btn"
