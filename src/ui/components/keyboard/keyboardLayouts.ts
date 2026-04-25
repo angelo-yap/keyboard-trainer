@@ -101,7 +101,7 @@ const ROW_5_WIN: KeyDef[] = [
   { key: "Control", label: "ctrl", width: 1.25, code: "ControlRight" },
 ];
 
-const ROW_INDENTS = [0, 0.5, 0.75, 0, 0];
+const ROW_INDENTS = [0, 0.5, 0.75, 0.75, 0];
 
 export const keyboardLayouts = {
   mac: {

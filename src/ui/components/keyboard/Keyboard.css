@@ -1,9 +1,9 @@
 /* ─── Keyboard — configuration-based, minimal design ──────────────────── */
 
-/* Scale down when container is narrower than keyboard intrinsic width (~605px) */
-@container kb (max-width: 605px) {
+/* Scale down when container is narrower than keyboard intrinsic width (~625px) */
+@container kb (max-width: 625px) {
   .kb-root {
-    transform: scale(calc(100cqw / 605px));
+    transform: scale(calc(100cqw / 625px));
     transform-origin: center top;
   }
 }

@@ -91,7 +91,7 @@ export function Keyboard({
   if (!layout) return null;
 
   const { rows, indents } = layout;
-  const totalUnits = 15.25;
+  const totalUnits = 15.75;
   const scale = Math.min(1, MAX_WIDTH / (totalUnits * UNIT_SIZE + (totalUnits - 1) * GAP));
 
   return (
