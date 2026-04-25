@@ -105,6 +105,11 @@ export function App() {
           <Settings
             onBack={() => setTab("home")}
             onSettingsChange={() => setSettingsVersion((v) => v + 1)}
+            onResetOnboarding={() => {
+              setSettingsVersion((v) => v + 1);
+              setOnboardingView("welcome");
+              setTab("home");
+            }}
           />
         );
       default:

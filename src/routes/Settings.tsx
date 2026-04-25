@@ -14,9 +14,10 @@ import "./Settings.css";
 type SettingsProps = {
   onBack: () => void;
   onSettingsChange?: () => void;
+  onResetOnboarding?: () => void;
 };
 
-export function Settings({ onBack, onSettingsChange }: SettingsProps) {
+export function Settings({ onBack, onSettingsChange, onResetOnboarding }: SettingsProps) {
   const [settings, setSettings] = useState<SettingsType>(getSettings);
   const [adaptiveCleared, setAdaptiveCleared] = useState(false);
   const [cleared, setCleared] = useState(false);
@@ -129,6 +130,7 @@ export function Settings({ onBack, onSettingsChange }: SettingsProps) {
   const handleClearData = () => {
     if (window.confirm("Clear ALL data? This cannot be undone.")) {
       clearAllData();
+      onResetOnboarding?.();
       setCleared(true);
       setTimeout(() => setCleared(false), 3000);
     }
