@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import { useTyping } from "./useTyping";
-import type { TypingStats } from "./useTyping";
+import type { TypingReplayEvent, TypingStats } from "./useTyping";
 import type { SessionState } from "../core/session/sessionTypes";
 import {
   createEmptyState,
@@ -25,6 +25,7 @@ export type UseTypingSessionOptions = {
   lessonId?: string;
   onComplete?: (stats: TypingStats, session: SessionState) => void;
   onProgress?: (progress: { nextChar: string; typedLength: number; totalLength: number }) => void;
+  onReplayEvent?: (event: TypingReplayEvent) => void;
 };
 
 type PendingKeyStatsSample = {
@@ -48,6 +49,7 @@ export function useTypingSession({
   lessonId,
   onComplete,
   onProgress,
+  onReplayEvent,
 }: UseTypingSessionOptions) {
   const sessionRef = useRef<SessionState | null>(null);
   const lastCorrectTimeRef = useRef<number | null>(null);
@@ -193,6 +195,7 @@ export function useTypingSession({
     onComplete: handleComplete,
     onProgress,
     onKeystroke: handleKeystroke,
+    onReplayEvent,
   });
  
   // WPM samples every second while session is active

@@ -23,6 +23,17 @@ export type KeystrokeEvent = {
   correct: boolean;
   index: number;
 };
+
+export type TypingReplayEvent = {
+  time: number; // ms since session start
+  action: "type" | "backspace";
+  key: string;
+  expectedChar: string;
+  typedChar?: string;
+  correct?: boolean;
+  index: number;
+  typedAfter: string;
+};
  
 export type UseTypingOptions = {
   text: string;
@@ -30,6 +41,7 @@ export type UseTypingOptions = {
   onComplete?: (stats: TypingStats) => void;
   onProgress?: (progress: TypingProgress) => void;
   onKeystroke?: (event: KeystrokeEvent) => void;
+  onReplayEvent?: (event: TypingReplayEvent) => void;
 };
  
 export function useTyping({
@@ -38,6 +50,7 @@ export function useTyping({
   onComplete,
   onProgress,
   onKeystroke,
+  onReplayEvent,
 }: UseTypingOptions) {
   const [typed, setTyped] = useState("");
   const [errors, setErrors] = useState<Set<number>>(new Set());
@@ -130,7 +143,17 @@ export function useTyping({
             errorsRef.current = nextErrors;
             setErrors(nextErrors);
           }
-          return t.slice(0, -1);
+          const next = t.slice(0, -1);
+          const startedAt = startTimeRef.current ?? Date.now();
+          onReplayEvent?.({
+            time: Date.now() - startedAt,
+            action: "backspace",
+            key: "Backspace",
+            expectedChar: textRef.current[removedIndex] ?? "",
+            index: removedIndex,
+            typedAfter: next,
+          });
+          return next;
         });
         return;
       }
@@ -174,9 +197,20 @@ export function useTyping({
         } else {
           setCombo((c) => c + 1);
         }
- 
+
         const next = prev + e.key;
- 
+
+        onReplayEvent?.({
+          time: timeMs,
+          action: "type",
+          key: e.key,
+          expectedChar: expected,
+          typedChar: e.key,
+          correct: isCorrect,
+          index: idx,
+          typedAfter: next,
+        });
+
         onProgress?.({
           nextChar: currentText[next.length],
           typedLength: next.length,
@@ -199,7 +233,7 @@ export function useTyping({
       });
     },
     // textRef, errorsRef, startTimeRef are refs — safe to omit from deps
-    [enabled, onComplete, onProgress, onKeystroke, getStats]
+    [enabled, onComplete, onProgress, onKeystroke, onReplayEvent, getStats]
   );
  
   const liveStats: TypingStats =

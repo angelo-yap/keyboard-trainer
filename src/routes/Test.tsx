@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTypingSession } from "../hooks/useTypingSession";
+import type { TypingReplayEvent } from "../hooks/useTyping";
+import type { SessionState } from "../core/session/sessionTypes";
 import { getWeakLetterTargets } from "../core/storage/keyStatsStore";
 import {
   generateTestText,
@@ -29,7 +31,7 @@ import { CameraPanel } from "../ui/components/CameraPanel";
 import "../ui/Layout/LessonStage.css";
 import "./Test.css";
 
-type TestStatus = "setup" | "active" | "finished";
+type TestStatus = "setup" | "active" | "finished" | "replay";
 type QuoteStatus = Pick<QuoteFetchResult, "sourceType" | "failureReason"> & {
   author: string;
   source: string;
@@ -37,6 +39,11 @@ type QuoteStatus = Pick<QuoteFetchResult, "sourceType" | "failureReason"> & {
 type CodeStatus = {
   language: string;
   source: string;
+};
+
+type TestReplaySnapshot = {
+  target: string;
+  events: TypingReplayEvent[];
 };
 
 type TestProps = {
@@ -55,6 +62,7 @@ const TRANSITION_MS = 180;
  */
 const BUFFER_AHEAD_CHARS = 300;
 const REFILL_WORD_COUNT = 30;
+const REPLAY_KEY_HOLD_MS = 140;
 
 const MODE_CONFIG_BUILDERS: {
   [K in TestMode]: (
@@ -82,6 +90,40 @@ const MODE_CONFIG_BUILDERS: {
     options,
   }),
 };
+
+function buildReplaySnapshot(
+  target: string,
+  events: TypingReplayEvent[],
+  session?: SessionState | null,
+): TestReplaySnapshot | null {
+  if (events.length === 0) return null;
+
+  const maxEventIndex = events.reduce((max, event) => Math.max(max, event.index), -1);
+  const maxSessionIndex = session?.keystrokes.reduce(
+    (max, event) => Math.max(max, event.index),
+    -1,
+  ) ?? -1;
+  const replayTargetLength = Math.max(maxEventIndex, maxSessionIndex) + 1;
+
+  return {
+    target: target.length >= replayTargetLength
+      ? target
+      : target.padEnd(replayTargetLength, " "),
+    events: events.map((event) => ({ ...event })),
+  };
+}
+
+function normalizeReplayPressedKey(event: TypingReplayEvent): string {
+  if (event.action === "backspace") return "backspace";
+  return event.key === " " ? " " : event.key.toLowerCase();
+}
+
+function getReplayLedKeys(event: TypingReplayEvent): string[] {
+  if (event.action === "backspace") return ["backspace"];
+  const key = event.typedChar ?? event.key;
+  const guidedKeys = getGuidanceKeysForChar(key);
+  return guidedKeys.length > 0 ? guidedKeys : [key];
+}
 
 export function Test({ onBack, onStatsChange, settings, initialMode = "standard" }: TestProps) {
   const defaultModeOptions = useRef<TestModeOptionsMap>({
@@ -121,6 +163,13 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
   const [showCamera, setShowCamera] = useState(false);
   const [restartArmed, setRestartArmed] = useState(false);
   const [capsLockOn, setCapsLockOn] = useState(false);
+  const [replaySnapshot, setReplaySnapshot] = useState<TestReplaySnapshot | null>(null);
+  const [replayTyped, setReplayTyped] = useState("");
+  const [replayPressedKey, setReplayPressedKey] = useState("");
+  const [replayActiveKeys, setReplayActiveKeys] = useState<string[]>([]);
+  const [replayEventIndex, setReplayEventIndex] = useState(0);
+  const [replayRunning, setReplayRunning] = useState(false);
+  const [replayRunId, setReplayRunId] = useState(0);
   // server hand tracking data
   const [verdict, setVerdict] = useState<"GOOD" | "BAD" | "IDLE" | "">("");
   const [wrongFingers, setWrongFingers] = useState<string[]>([]);
@@ -161,6 +210,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
   const typingRef = useRef<{ reset: () => void } | null>(null);
   const refillingRef = useRef(false);
   const lastGuidedKeyRef = useRef<string | null>(null);
+  const replayEventsRef = useRef<TypingReplayEvent[]>([]);
   // Keep current text length in a ref so refill can check without stale closures
   const textLengthRef = useRef(0);
   textLengthRef.current = text.length;
@@ -214,10 +264,14 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     }, 0);
   }, []);
 
-  const handleFiniteModeComplete = useCallback((stats: import("../hooks/useTyping").TypingStats) => {
+  const handleFiniteModeComplete = useCallback((
+    stats: import("../hooks/useTyping").TypingStats,
+    session: SessionState,
+  ) => {
     if (hasEndedRef.current) return;
 
     hasEndedRef.current = true;
+    setReplaySnapshot(buildReplaySnapshot(text, replayEventsRef.current, session));
     saveTestResult({
       wpm: stats.wpm,
       rawWpm: stats.rawWpm,
@@ -235,7 +289,11 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     updateStreak();
     onStatsChange?.();
     setTestStatus("finished");
-  }, [codeStatus, mode, onStatsChange, quoteStatus]);
+  }, [codeStatus, mode, onStatsChange, quoteStatus, text]);
+
+  const recordReplayEvent = useCallback((event: TypingReplayEvent) => {
+    replayEventsRef.current.push(event);
+  }, []);
 
   const typing = useTypingSession({
     text,
@@ -246,6 +304,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     onProgress: ({ typedLength }) => {
       maybeRefill(typedLength);
     },
+    onReplayEvent: recordReplayEvent,
   });
   const latestStatsRef = useRef(typing.liveStats);
 
@@ -262,6 +321,14 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
       durationSeconds: duration,
       ...config,
     });
+    replayEventsRef.current = [];
+    setReplaySnapshot(null);
+    setReplayTyped("");
+    setReplayPressedKey("");
+    setReplayActiveKeys([]);
+    setReplayEventIndex(0);
+    setReplayRunning(false);
+    setReplayRunId(0);
     startRef.current = null;
     pauseStartedAtRef.current = null;
     pausedDurationMsRef.current = 0;
@@ -375,8 +442,10 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
   // Drive hardware guidance from the current target character, not from typed key events.
   useEffect(() => {
     if (testStatus !== "active") {
-      lastGuidedKeyRef.current = null;
-      void resetKeyboardLed();
+      if (lastGuidedKeyRef.current !== null) {
+        lastGuidedKeyRef.current = null;
+        void resetKeyboardLed();
+      }
       return;
     }
 
@@ -386,7 +455,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
 
     lastGuidedKeyRef.current = guidedKeySignature;
     void sendKeyboardLedForKeys(guidedTargetKeys);
-  }, [testStatus, guidedTargetKeys, guidedKeySignature]);
+  }, [testStatus, guidedKeySignature, guidedTargetKeys]);
 
   /* Timer starts on first keystroke */
   useEffect(() => {
@@ -454,6 +523,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
         hasEndedRef.current = true;
         const session = endSessionRef.current?.();
         if (session) {
+          setReplaySnapshot(buildReplaySnapshot(text, replayEventsRef.current, session));
           const metrics = latestStatsRef.current;
           saveTestResult({
             wpm: metrics.wpm,
@@ -473,7 +543,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
       }
     }, 100);
     return () => clearInterval(interval);
-  }, [testStatus, duration, isFinitePassageMode, mode, onStatsChange]);
+  }, [testStatus, duration, isFinitePassageMode, mode, onStatsChange, text]);
 
   const startTest = useCallback(async () => {
     hasEndedRef.current = false;
@@ -500,6 +570,14 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     startRef.current = null;
     pauseStartedAtRef.current = null;
     pausedDurationMsRef.current = 0;
+    replayEventsRef.current = [];
+    setReplaySnapshot(null);
+    setReplayTyped("");
+    setReplayPressedKey("");
+    setReplayActiveKeys([]);
+    setReplayEventIndex(0);
+    setReplayRunning(false);
+    setReplayRunId(0);
     setTestStatus("setup");
     setTimerStarted(false);
     typingRef.current?.reset();
@@ -652,6 +730,78 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     typing.focus();
   }, [clearRestartArm, restartArmed, typing]);
 
+  const startReplay = useCallback(() => {
+    if (!replaySnapshot) return;
+    setReplayTyped("");
+    setReplayPressedKey("");
+    setReplayActiveKeys([]);
+    setReplayEventIndex(0);
+    setReplayRunning(true);
+    setReplayRunId((id) => id + 1);
+    setTestStatus("replay");
+  }, [replaySnapshot]);
+
+  const returnToResults = useCallback(() => {
+    setReplayRunning(false);
+    setReplayPressedKey("");
+    setReplayActiveKeys([]);
+    setTestStatus("finished");
+    void resetKeyboardLed();
+  }, []);
+
+  useEffect(() => {
+    if (testStatus !== "replay" || !replaySnapshot || replayRunId === 0) return;
+
+    let cancelled = false;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+
+    setReplayTyped("");
+    setReplayPressedKey("");
+    setReplayActiveKeys([]);
+    setReplayEventIndex(0);
+    void resetKeyboardLed();
+
+    replaySnapshot.events.forEach((event, index) => {
+      const timer = setTimeout(() => {
+        if (cancelled) return;
+
+        setReplayTyped(event.typedAfter);
+        setReplayEventIndex(index + 1);
+        setReplayPressedKey(normalizeReplayPressedKey(event));
+        const replayKeys = getReplayLedKeys(event);
+        setReplayActiveKeys(replayKeys);
+        if (replayKeys.length > 0) {
+          void sendKeyboardLedForKeys(replayKeys);
+        }
+
+        const clearPressedTimer = setTimeout(() => {
+          if (!cancelled) {
+            setReplayPressedKey("");
+          }
+        }, REPLAY_KEY_HOLD_MS);
+        timers.push(clearPressedTimer);
+
+        if (index === replaySnapshot.events.length - 1) {
+          const doneTimer = setTimeout(() => {
+            if (cancelled) return;
+            setReplayRunning(false);
+            setReplayPressedKey("");
+          }, REPLAY_KEY_HOLD_MS);
+          timers.push(doneTimer);
+        }
+      }, event.time);
+      timers.push(timer);
+    });
+
+    return () => {
+      cancelled = true;
+      timers.forEach(clearTimeout);
+      setReplayPressedKey("");
+      setReplayActiveKeys([]);
+      void resetKeyboardLed();
+    };
+  }, [replayRunId, replaySnapshot, testStatus]);
+
   /* ── Finished: show results ─────────────────────────────────────────── */
   if (testStatus === "finished" && typing.report) {
     return (
@@ -661,12 +811,95 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
           onRetry={() => {
             void retryWithSameSettings();
           }}
+          onReplay={replaySnapshot ? startReplay : undefined}
           onHome={onBack}
         />
         <div className="test-results-extra-actions">
           <Button variant="secondary" onClick={backToSetup}>
             Change Settings
           </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (testStatus === "replay" && replaySnapshot) {
+    const replayProgress =
+      replaySnapshot.events.length > 0
+        ? replayEventIndex / replaySnapshot.events.length
+        : 0;
+    const replayNextTarget = replaySnapshot.target.charAt(replayTyped.length);
+    const replayGuidedKeys =
+      replayActiveKeys.length > 0
+        ? replayActiveKeys
+        : getGuidanceKeysForChar(replayNextTarget);
+
+    return (
+      <div className="lesson-stage-root lesson-stage-root--with-timer test--active test--replay">
+        <div className="lesson-stage-topbar test-topbar">
+          <button
+            type="button"
+            className="lesson-stage-topbar__back"
+            onClick={returnToResults}
+          >
+            ← results
+          </button>
+          <div className="test-topbar-controls">
+            <div className="test-topbar-badge on">replay</div>
+            <button
+              type="button"
+              className="test-topbar-new-btn"
+              onClick={startReplay}
+              title="Restart replay"
+            >
+              restart
+            </button>
+          </div>
+          <div className="test-topbar-timer">
+            {Math.round(replayProgress * 100)}%
+          </div>
+        </div>
+
+        <div className="test-progress-bar">
+          <div
+            className="test-progress-fill"
+            style={{ width: `${Math.min(100, Math.max(0, replayProgress * 100))}%` }}
+          />
+        </div>
+
+        <div className="lesson-stage-body">
+          <div className="lesson-stage-content-col">
+            <div className="test-meta-row" aria-live="polite">
+              <div className="test-restart-hint mono-label">
+                {replayRunning ? "replaying keystrokes" : "replay complete"}
+              </div>
+              <div className="test-quote-source mono-label">
+                {replayEventIndex} / {replaySnapshot.events.length}
+              </div>
+            </div>
+
+            <div className="test-typing-stage">
+              <div className="test-typing-wrap test-typing-wrap--replay">
+                <TypingDisplay
+                  target={replaySnapshot.target}
+                  typed={replayTyped}
+                  mode="viewport"
+                />
+              </div>
+            </div>
+
+            {settings?.showKeyboard !== false && (
+              <div className="lesson-stage-keyboard-wrap">
+                <Keyboard
+                  layoutType={settings?.keyboardLayout ?? "mac"}
+                  highlightKeys={replayGuidedKeys}
+                  pressedKey={replayPressedKey}
+                  showFingerHints={settings?.showFingerHints !== false}
+                  mode="test"
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
