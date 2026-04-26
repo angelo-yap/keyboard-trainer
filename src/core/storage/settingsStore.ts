@@ -53,7 +53,7 @@ function normalizeTheme(value: unknown, fallback: ThemeMode): ThemeMode {
 }
 
 const DEFAULT_SETTINGS: Settings = {
-  theme: "dark",
+  theme: "light",
   testDuration: 60,
   quotesModeEnabled: true,
   codeModeEnabled: true,

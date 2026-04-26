@@ -548,7 +548,7 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
                   ["dark", "Dark"],
                   ["light", "Light"],
                 ]}
-                value={settings.theme ?? "dark"}
+                value={settings.theme ?? "light"}
                 onChange={(v) => update("theme", v as SettingsType["theme"])}
               />
             </SettingRow>

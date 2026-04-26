@@ -98,12 +98,12 @@
 }
 
 [data-theme="light"] {
-  --color-bg:             #F4F2EC;
-  --color-surface:        #FFFFFF;
-  --color-surface-2:      #ECE9E1;
-  --color-surface-3:      #DED9CE;
-  --color-bg-elevated:    #ECE9E1;
-  --color-bg-card:        #FFFFFF;
+  --color-bg:             #ECE8DE;
+  --color-surface:        #FAF7F0;
+  --color-surface-2:      #E2DDD2;
+  --color-surface-3:      #D3CBBB;
+  --color-bg-elevated:    #E2DDD2;
+  --color-bg-card:        #FAF7F0;
 
   --color-line:           rgba(33, 31, 27, 0.08);
   --color-line-2:         rgba(33, 31, 27, 0.14);
