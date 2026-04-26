@@ -44,6 +44,12 @@ type CodeStatus = {
 type TestReplaySnapshot = {
   target: string;
   events: TypingReplayEvent[];
+  fingerFrames: TestReplayFingerFrame[];
+};
+
+type TestReplayFingerFrame = {
+  time: number;
+  markers: KeyboardFingerMarker[];
 };
 
 type TestProps = {
@@ -94,6 +100,7 @@ const MODE_CONFIG_BUILDERS: {
 function buildReplaySnapshot(
   target: string,
   events: TypingReplayEvent[],
+  fingerFrames: TestReplayFingerFrame[],
   session?: SessionState | null,
 ): TestReplaySnapshot | null {
   if (events.length === 0) return null;
@@ -110,6 +117,10 @@ function buildReplaySnapshot(
       ? target
       : target.padEnd(replayTargetLength, " "),
     events: events.map((event) => ({ ...event })),
+    fingerFrames: fingerFrames.map((frame) => ({
+      time: frame.time,
+      markers: frame.markers.map((marker) => ({ ...marker })),
+    })),
   };
 }
 
@@ -167,6 +178,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
   const [replayTyped, setReplayTyped] = useState("");
   const [replayPressedKey, setReplayPressedKey] = useState("");
   const [replayActiveKeys, setReplayActiveKeys] = useState<string[]>([]);
+  const [replayFingerMarkers, setReplayFingerMarkers] = useState<KeyboardFingerMarker[]>([]);
   const [replayEventIndex, setReplayEventIndex] = useState(0);
   const [replayRunning, setReplayRunning] = useState(false);
   const [replayRunId, setReplayRunId] = useState(0);
@@ -211,6 +223,8 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
   const refillingRef = useRef(false);
   const lastGuidedKeyRef = useRef<string | null>(null);
   const replayEventsRef = useRef<TypingReplayEvent[]>([]);
+  const replayFingerFramesRef = useRef<TestReplayFingerFrame[]>([]);
+  const replayStartedAtRef = useRef<number | null>(null);
   // Keep current text length in a ref so refill can check without stale closures
   const textLengthRef = useRef(0);
   textLengthRef.current = text.length;
@@ -271,7 +285,12 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     if (hasEndedRef.current) return;
 
     hasEndedRef.current = true;
-    setReplaySnapshot(buildReplaySnapshot(text, replayEventsRef.current, session));
+    setReplaySnapshot(buildReplaySnapshot(
+      text,
+      replayEventsRef.current,
+      replayFingerFramesRef.current,
+      session,
+    ));
     saveTestResult({
       wpm: stats.wpm,
       rawWpm: stats.rawWpm,
@@ -292,6 +311,9 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
   }, [codeStatus, mode, onStatsChange, quoteStatus, text]);
 
   const recordReplayEvent = useCallback((event: TypingReplayEvent) => {
+    if (replayStartedAtRef.current == null) {
+      replayStartedAtRef.current = Date.now() - event.time;
+    }
     replayEventsRef.current.push(event);
   }, []);
 
@@ -322,10 +344,13 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
       ...config,
     });
     replayEventsRef.current = [];
+    replayFingerFramesRef.current = [];
+    replayStartedAtRef.current = null;
     setReplaySnapshot(null);
     setReplayTyped("");
     setReplayPressedKey("");
     setReplayActiveKeys([]);
+    setReplayFingerMarkers([]);
     setReplayEventIndex(0);
     setReplayRunning(false);
     setReplayRunId(0);
@@ -485,14 +510,19 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
       };
       setVerdict(data.verdict);
       setWrongFingers(data.wrong_fingers);
-      setFingerMarkers(
-        (data.finger_positions ?? []).filter(
-          (finger) =>
-            typeof finger.label === "string" &&
-            Number.isFinite(finger.x) &&
-            Number.isFinite(finger.y),
-        ),
+      const nextFingerMarkers = (data.finger_positions ?? []).filter(
+        (finger) =>
+          typeof finger.label === "string" &&
+          Number.isFinite(finger.x) &&
+          Number.isFinite(finger.y),
       );
+      setFingerMarkers(nextFingerMarkers);
+      if (replayStartedAtRef.current != null) {
+        replayFingerFramesRef.current.push({
+          time: Math.max(0, Date.now() - replayStartedAtRef.current),
+          markers: nextFingerMarkers.map((finger) => ({ ...finger })),
+        });
+      }
       recordHandFormSampleRef.current({
         verdict: data.verdict,
         expectedKey: currentTargetCharRef.current,
@@ -523,7 +553,12 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
         hasEndedRef.current = true;
         const session = endSessionRef.current?.();
         if (session) {
-          setReplaySnapshot(buildReplaySnapshot(text, replayEventsRef.current, session));
+          setReplaySnapshot(buildReplaySnapshot(
+            text,
+            replayEventsRef.current,
+            replayFingerFramesRef.current,
+            session,
+          ));
           const metrics = latestStatsRef.current;
           saveTestResult({
             wpm: metrics.wpm,
@@ -571,10 +606,13 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     pauseStartedAtRef.current = null;
     pausedDurationMsRef.current = 0;
     replayEventsRef.current = [];
+    replayFingerFramesRef.current = [];
+    replayStartedAtRef.current = null;
     setReplaySnapshot(null);
     setReplayTyped("");
     setReplayPressedKey("");
     setReplayActiveKeys([]);
+    setReplayFingerMarkers([]);
     setReplayEventIndex(0);
     setReplayRunning(false);
     setReplayRunId(0);
@@ -735,6 +773,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     setReplayTyped("");
     setReplayPressedKey("");
     setReplayActiveKeys([]);
+    setReplayFingerMarkers([]);
     setReplayEventIndex(0);
     setReplayRunning(true);
     setReplayRunId((id) => id + 1);
@@ -745,6 +784,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     setReplayRunning(false);
     setReplayPressedKey("");
     setReplayActiveKeys([]);
+    setReplayFingerMarkers([]);
     setTestStatus("finished");
     void resetKeyboardLed();
   }, []);
@@ -758,6 +798,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     setReplayTyped("");
     setReplayPressedKey("");
     setReplayActiveKeys([]);
+    setReplayFingerMarkers([]);
     setReplayEventIndex(0);
     void resetKeyboardLed();
 
@@ -793,11 +834,20 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
       timers.push(timer);
     });
 
+    replaySnapshot.fingerFrames.forEach((frame) => {
+      const timer = setTimeout(() => {
+        if (cancelled) return;
+        setReplayFingerMarkers(frame.markers);
+      }, frame.time);
+      timers.push(timer);
+    });
+
     return () => {
       cancelled = true;
       timers.forEach(clearTimeout);
       setReplayPressedKey("");
       setReplayActiveKeys([]);
+      setReplayFingerMarkers([]);
       void resetKeyboardLed();
     };
   }, [replayRunId, replaySnapshot, testStatus]);
@@ -896,6 +946,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
                   pressedKey={replayPressedKey}
                   showFingerHints={settings?.showFingerHints !== false}
                   mode="test"
+                  fingerMarkers={replayFingerMarkers}
                 />
               </div>
             )}
