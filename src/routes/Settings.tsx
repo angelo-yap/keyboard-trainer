@@ -105,8 +105,8 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
       keyboardBacklightOff: false,
       keyboardLitKeyOff: false,
       keyboardLightingMode: "solid" as const,
-      keyboardBacklightColor: "#80FD77",
-      keyboardLitKeyColor: "#0087A8",
+      keyboardBacklightColor: "#861313",
+      keyboardLitKeyColor: "#99EBFF",
     };
     setSettings(next);
     saveSettings(next);
