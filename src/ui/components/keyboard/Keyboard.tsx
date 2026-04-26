@@ -45,6 +45,17 @@ function getShortFingerLabel(label: string): string {
     .replace("THUMB", "T");
 }
 
+function getFingerMarkerClass(label: string, correct?: boolean): string {
+  const sideClass = label.startsWith("L_")
+    ? " kb-finger-marker--left"
+    : label.startsWith("R_")
+    ? " kb-finger-marker--right"
+    : "";
+  const correctnessClass = correct === false ? " kb-finger-marker--wrong" : "";
+
+  return `kb-finger-marker${sideClass}${correctnessClass}`;
+}
+
 export function Keyboard({
   layoutType = "mac",
   highlightKey = "",
@@ -129,15 +140,17 @@ export function Keyboard({
               return (
                 <div
                   key={`${finger.label}-${index}`}
-                  className={`kb-finger-marker${
-                    finger.correct === false ? " kb-finger-marker--wrong" : ""
-                  }`}
+                  className={getFingerMarkerClass(finger.label, finger.correct)}
                   style={{
                     left: `${x * 100}%`,
                     top: `${y * 100}%`,
                   }}
                   title={`${finger.label}${finger.zone ? ` · ${finger.zone}` : ""}`}
                 >
+                  <span className="kb-finger-marker__nail" />
+                  <span className="kb-finger-marker__pad" />
+                  <span className="kb-finger-marker__knuckle kb-finger-marker__knuckle--top" />
+                  <span className="kb-finger-marker__knuckle kb-finger-marker__knuckle--bottom" />
                   <span className="kb-finger-marker__label">{label}</span>
                 </div>
               );
