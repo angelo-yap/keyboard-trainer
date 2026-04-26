@@ -33,10 +33,12 @@
   font-weight: 900;
   font-size: 15px;
   letter-spacing: -0.3px;
+  color: #d4af37;
+  font-family: "Courier New", Courier, monospace;
 }
 
 .sidebar-brand-accent {
-  color: #ff8c32;
+  color: #d4af37;
 }
 
 .sidebar-brand-tagline {

@@ -831,7 +831,7 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
 
           <SettingsSection title="About">
             <div className="settings-about">
-              <div>KeyboardTrainer v1.0</div>
+              <div>Typr v1.0</div>
               <div>Built for learning correct touch typing with hardware feedback.</div>
               <div className="settings-about-note">
                 Camera integration placeholder ready — connect MediaPipe Hands when

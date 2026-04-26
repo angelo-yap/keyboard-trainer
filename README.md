@@ -2,7 +2,7 @@
 
 ## UI Architecture
 
-The app uses a **sidebar + content** layout (from `KeyboardTrainer.jsx`):
+The app uses a **sidebar + content** layout (from `Typr.jsx`):
 
 - **Splash** → **Dashboard** with sidebar (Home, Learn, Practice, WPM Test, Analytics, Settings)
 - **Home** — Hero stats, mode cards, recent tests

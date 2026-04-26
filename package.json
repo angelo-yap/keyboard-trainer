@@ -5,7 +5,7 @@
   "type": "module",
   "main": "electron/main.mjs",
   "scripts": {
-    "electron:dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:dev": "concurrently -k \"vite --port 5173 --strictPort\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:start": "electron .",
     "dev": "vite",
     "build": "vite build",

@@ -61,11 +61,12 @@
   font-weight: 900;
   margin: 0 0 10px;
   letter-spacing: -1.5px;
-  color: rgba(255, 255, 255, 0.95);
+  color: #d4af37;
+  font-family: "Courier New", Courier, monospace;
 }
 
 .splash-accent {
-  color: #ff8c32;
+  color: #d4af37;
 }
 
 .splash-subtitle {

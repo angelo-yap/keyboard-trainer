@@ -4,9 +4,7 @@ export default function Sidebar({ tabs, activeTab, onTab }) {
       <div className="brand">
         <span className="brandMark" />
         <div className="brandText">
-          <div className="brandName">
-            Keyboard<span className="accent">Trainer</span>
-          </div>
+          <div className="brandName">Typr</div>
           <div className="brandSub">Desktop coach • Local progress</div>
         </div>
       </div>

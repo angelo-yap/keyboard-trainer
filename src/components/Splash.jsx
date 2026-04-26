@@ -35,7 +35,7 @@ export default function Splash({ onDone }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.7 }}
         >
-          Keyboard<span className="accent">Trainer</span>
+          Typr
         </motion.h1>
 
         <motion.p

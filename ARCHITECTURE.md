@@ -1,4 +1,4 @@
-# UI Architecture (from KeyboardTrainer.jsx)
+# UI Architecture (from Typr.jsx)
 
 ## Structure
 

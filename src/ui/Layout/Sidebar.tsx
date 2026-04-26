@@ -30,9 +30,7 @@ export function Sidebar({ tab, setTab }: SidebarProps) {
       <div className="sidebar-brand">
         <div className="sidebar-logo" />
         <div>
-          <div className="sidebar-brand-name">
-            Keyboard<span className="sidebar-brand-accent">Trainer</span>
-          </div>
+          <div className="sidebar-brand-name">Typr</div>
           <div className="sidebar-brand-tagline">Local · No login</div>
         </div>
       </div>

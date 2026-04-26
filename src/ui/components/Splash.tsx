@@ -17,9 +17,7 @@ export function Splash({ onDone }: SplashProps) {
           <div className="splash-scan" />
         </div>
 
-        <h1 className="splash-title">
-          Keyboard<span className="splash-accent">Trainer</span>
-        </h1>
+        <h1 className="splash-title">KeyboardTrainer</h1>
 
         <p className="splash-subtitle">Learn · Practice · Test · Local analytics</p>
 

@@ -33,9 +33,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   return (
     <div className="app-layout">
       <header className="app-topbar">
-        <span className="app-wordmark">
-          ten<em>fingers</em>
-        </span>
+        <span className="app-wordmark">Typr</span>
 
         <nav className="app-nav" role="navigation" aria-label="Main navigation">
           {NAV_ITEMS.map(item => (

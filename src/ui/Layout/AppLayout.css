@@ -57,17 +57,12 @@
 }
 
 .app-wordmark {
-  font-family: var(--font-serif);
+  font-family: var(--font-mono);
   font-size: 16px;
   color: var(--color-accent);
   letter-spacing: 0.02em;
   flex-shrink: 0;
   user-select: none;
-}
-
-.app-wordmark em {
-  font-style: italic;
-  color: var(--color-text-2);
 }
 
 /* ── Nav ──────────────────────────────────────────────────────────────── */

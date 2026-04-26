@@ -801,6 +801,7 @@ ipcMain.handle("keyboard-led:reset", (_event, payload) => {
 
 function createWindow() {
   const win = new BrowserWindow({
+    title: "Typr",
     width: 1200,
     height: 800,
     autoHideMenuBar: process.platform !== "darwin",
