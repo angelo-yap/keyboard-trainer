@@ -7,10 +7,14 @@ import {
   validateTestModeConfig,
   type AdaptiveWeakLetterGeneratorOptions,
   type ClassicWordsGeneratorOptions,
+  type CodeSnippetGeneratorOptions,
+  type QuotesGeneratorOptions,
   type TestMode,
   type TestModeConfig,
   type TestModeOptionsMap,
 } from "../core/test/testTextGenerator";
+import { getRandomLocalCodeSnippet } from "../core/test/providers/codeSnippetProvider";
+import { fetchQuote, type QuoteFetchResult } from "../core/test/providers/quoteProvider";
 import { saveTestResult } from "../core/storage/testHistoryStore";
 import { updateStreak } from "../core/storage/streakStore";
 import { Keyboard, type KeyboardFingerMarker } from "../ui/components/keyboard";
@@ -26,6 +30,14 @@ import "../ui/Layout/LessonStage.css";
 import "./Test.css";
 
 type TestStatus = "setup" | "active" | "finished";
+type QuoteStatus = Pick<QuoteFetchResult, "sourceType" | "failureReason"> & {
+  author: string;
+  source: string;
+};
+type CodeStatus = {
+  language: string;
+  source: string;
+};
 
 type TestProps = {
   onBack: () => void;
@@ -61,6 +73,14 @@ const MODE_CONFIG_BUILDERS: {
       adaptiveTargets,
     },
   }),
+  quotes: (options) => ({
+    mode: "quotes",
+    options,
+  }),
+  code: (options) => ({
+    mode: "code",
+    options,
+  }),
 };
 
 export function Test({ onBack, onStatsChange, settings, initialMode = "standard" }: TestProps) {
@@ -76,6 +96,16 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
       randomCase: false,
       adaptiveTargets: [],
     },
+    quotes: {
+      includePunctuation: true,
+      includeNumbers: true,
+      randomCase: false,
+    },
+    code: {
+      includePunctuation: true,
+      includeNumbers: true,
+      randomCase: false,
+    },
   });
   const [testStatus, setTestStatus] = useState<TestStatus>("setup");
   const [mode, setMode] = useState<TestMode>(initialMode);
@@ -85,6 +115,9 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
   const [timeLeft, setTimeLeft] = useState(duration);
   const [timerStarted, setTimerStarted] = useState(false);
   const [textTransitioning, setTextTransitioning] = useState(false);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteStatus, setQuoteStatus] = useState<QuoteStatus | null>(null);
+  const [codeStatus, setCodeStatus] = useState<CodeStatus | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [restartArmed, setRestartArmed] = useState(false);
   const [capsLockOn, setCapsLockOn] = useState(false);
@@ -98,6 +131,15 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
       setMode(initialMode);
     }
   }, [initialMode, testStatus]);
+
+  useEffect(() => {
+    if (testStatus === "setup" && mode === "quotes" && settings.quotesModeEnabled === false) {
+      setMode("standard");
+    }
+    if (testStatus === "setup" && mode === "code" && settings.codeModeEnabled === false) {
+      setMode("standard");
+    }
+  }, [mode, settings.codeModeEnabled, settings.quotesModeEnabled, testStatus]);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const endSessionRef = useRef<() => import("../core/session/sessionTypes").SessionState | null>(null);
@@ -143,10 +185,17 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
   const includePunctuation = modeOptions[mode].includePunctuation;
   const includeNumbers = modeOptions[mode].includeNumbers;
   const randomCase = modeOptions[mode].randomCase;
+  const quoteModeAvailable = settings.quotesModeEnabled !== false;
+  const codeModeAvailable = settings.codeModeEnabled !== false;
+  const isFinitePassageMode = mode === "quotes" || mode === "code";
   const handTrackingEnabled = settings.handTrackingEnabled !== false;
-  modeConfigRef.current = createModeConfig(mode);
+  if (testStatus === "setup") {
+    modeConfigRef.current = createModeConfig(mode);
+  }
 
   const maybeRefill = useCallback((typedLength: number) => {
+    if (modeConfigRef.current.mode === "quotes" || modeConfigRef.current.mode === "code") return;
+
     const remaining = textLengthRef.current - typedLength;
 
     if (remaining >= BUFFER_AHEAD_CHARS || refillingRef.current) return;
@@ -165,13 +214,31 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     }, 0);
   }, []);
 
+  const handleFiniteModeComplete = useCallback((stats: import("../hooks/useTyping").TypingStats) => {
+    if (hasEndedRef.current) return;
+
+    hasEndedRef.current = true;
+    saveTestResult({
+      wpm: stats.wpm,
+      rawWpm: stats.rawWpm,
+      accuracy: stats.accuracy,
+      errors: stats.errors,
+      chars: stats.chars,
+      elapsed: stats.elapsed,
+      date: new Date().toISOString(),
+      completed: true,
+    });
+    updateStreak();
+    onStatsChange?.();
+    setTestStatus("finished");
+  }, [onStatsChange]);
+
   const typing = useTypingSession({
     text,
     enabled: testStatus === "active",
     sessionType: "test",
-    // Timer is the ONLY thing that ends a timed test.
-    // Text exhaustion is prevented by the dynamic refill above.
-    onComplete: undefined,
+    // Timed modes are ended by the countdown. Quotes/code modes are finite passages.
+    onComplete: isFinitePassageMode ? handleFiniteModeComplete : undefined,
     onProgress: ({ typedLength }) => {
       maybeRefill(typedLength);
     },
@@ -200,15 +267,59 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     typingRef.current?.reset();
   }, [duration]);
 
+  const withPreparedQuote = useCallback(async (config: TestModeConfig): Promise<TestModeConfig> => {
+    if (config.mode !== "quotes") return config;
+
+    setQuoteLoading(true);
+
+    try {
+      const result = await fetchQuote({ timeoutMs: 900, retries: 0 });
+      setQuoteStatus({
+        author: result.quote.author,
+        source: result.quote.source,
+        sourceType: result.sourceType,
+        failureReason: result.failureReason,
+      });
+
+      return {
+        mode: "quotes",
+        options: {
+          ...config.options,
+          quote: result.quote,
+        },
+      };
+    } finally {
+      setQuoteLoading(false);
+    }
+  }, []);
+
+  const withPreparedCodeSnippet = useCallback((config: TestModeConfig): TestModeConfig => {
+    if (config.mode !== "code") return config;
+
+    const snippet = getRandomLocalCodeSnippet();
+    setCodeStatus({
+      language: snippet.language,
+      source: snippet.source,
+    });
+
+    return {
+      mode: "code",
+      options: {
+        ...config.options,
+        snippet,
+      },
+    };
+  }, []);
+
   /* Regenerate during active test — used by settings change and manual new test */
-  const regenerateTest = useCallback(() => {
+  const regenerateTest = useCallback((config: TestModeConfig = modeConfigRef.current) => {
     if (testStatus !== "active") return undefined;
 
     setTextTransitioning(true);
     clearInterval(timerRef.current);
 
     const timeout = setTimeout(() => {
-      generateAndLoadTest();
+      generateAndLoadTest(config);
       setTextTransitioning(false);
     }, TRANSITION_MS);
 
@@ -233,8 +344,12 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
       randomCase,
     };
     if (changed) {
-      modeConfigRef.current = createModeConfig(mode);
-      const cleanup = regenerateTest();
+      const activeConfig =
+        isFinitePassageMode && modeConfigRef.current.mode === mode
+          ? modeConfigRef.current
+          : createModeConfig(mode);
+      modeConfigRef.current = activeConfig;
+      const cleanup = regenerateTest(activeConfig);
       return cleanup;
     }
   }, [testStatus, text, duration, mode, includePunctuation, includeNumbers, randomCase, createModeConfig, regenerateTest]);
@@ -323,7 +438,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
 
   /* Countdown — 100ms interval against a fixed start timestamp, not integer decrement */
   useEffect(() => {
-    if (testStatus !== "active") return;
+    if (testStatus !== "active" || isFinitePassageMode) return;
     const interval = setInterval(() => {
       if (!startRef.current) return;
       if (pauseStartedAtRef.current) return;
@@ -353,14 +468,15 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
       }
     }, 100);
     return () => clearInterval(interval);
-  }, [testStatus, duration, onStatsChange]);
+  }, [testStatus, duration, isFinitePassageMode, onStatsChange]);
 
-  const startTest = useCallback(() => {
+  const startTest = useCallback(async () => {
     hasEndedRef.current = false;
     const nextAdaptiveTargets = mode === "adaptive" ? getWeakLetterTargets(5) : [];
     adaptiveTargetsRef.current = nextAdaptiveTargets;
     const nextConfig = createModeConfig(mode, nextAdaptiveTargets);
-    const validatedConfig = validateModeConfig(nextConfig);
+    const preparedConfig = withPreparedCodeSnippet(await withPreparedQuote(nextConfig));
+    const validatedConfig = validateModeConfig(preparedConfig);
     if (!validatedConfig) return;
     modeConfigRef.current = validatedConfig;
     prevSettingsRef.current = {
@@ -372,7 +488,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     };
     generateAndLoadTest(validatedConfig);
     setTestStatus("active");
-  }, [createModeConfig, duration, generateAndLoadTest, mode, validateModeConfig]);
+  }, [createModeConfig, duration, generateAndLoadTest, mode, validateModeConfig, withPreparedCodeSnippet, withPreparedQuote]);
 
   const backToSetup = useCallback(() => {
     clearInterval(timerRef.current);
@@ -384,16 +500,17 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     typingRef.current?.reset();
   }, []);
 
-  const handleNewTest = useCallback(() => {
+  const handleNewTest = useCallback(async () => {
     if (testStatus !== "active") return;
     const nextAdaptiveTargets = mode === "adaptive" ? getWeakLetterTargets(5) : [];
     adaptiveTargetsRef.current = nextAdaptiveTargets;
     const nextConfig = createModeConfig(mode, nextAdaptiveTargets);
-    const validatedConfig = validateModeConfig(nextConfig);
+    const preparedConfig = withPreparedCodeSnippet(await withPreparedQuote(nextConfig));
+    const validatedConfig = validateModeConfig(preparedConfig);
     if (!validatedConfig) return;
     modeConfigRef.current = validatedConfig;
-    regenerateTest();
-  }, [createModeConfig, mode, testStatus, regenerateTest, validateModeConfig]);
+    regenerateTest(validatedConfig);
+  }, [createModeConfig, mode, testStatus, regenerateTest, validateModeConfig, withPreparedCodeSnippet, withPreparedQuote]);
 
   const clearRestartArm = useCallback(() => {
     if (pauseStartedAtRef.current) {
@@ -410,17 +527,18 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     setRestartArmed(true);
   }, [timerStarted]);
 
-  const retryWithSameSettings = useCallback(() => {
+  const retryWithSameSettings = useCallback(async () => {
     hasEndedRef.current = false;
     const nextAdaptiveTargets = mode === "adaptive" ? getWeakLetterTargets(5) : [];
     adaptiveTargetsRef.current = nextAdaptiveTargets;
     const nextConfig = createModeConfig(mode, nextAdaptiveTargets);
-    const validatedConfig = validateModeConfig(nextConfig);
+    const preparedConfig = withPreparedCodeSnippet(await withPreparedQuote(nextConfig));
+    const validatedConfig = validateModeConfig(preparedConfig);
     if (!validatedConfig) return;
     modeConfigRef.current = validatedConfig;
     generateAndLoadTest(validatedConfig);
     setTestStatus("active");
-  }, [createModeConfig, generateAndLoadTest, mode, validateModeConfig]);
+  }, [createModeConfig, generateAndLoadTest, mode, validateModeConfig, withPreparedCodeSnippet, withPreparedQuote]);
 
   const cycleDuration = useCallback(() => {
     const idx = DURATION_OPTIONS.indexOf(duration as (typeof DURATION_OPTIONS)[number]);
@@ -431,8 +549,8 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
   const updateCurrentWordOptions = useCallback(
     (
       updater: (
-        current: ClassicWordsGeneratorOptions | AdaptiveWeakLetterGeneratorOptions
-      ) => ClassicWordsGeneratorOptions | AdaptiveWeakLetterGeneratorOptions
+        current: ClassicWordsGeneratorOptions | AdaptiveWeakLetterGeneratorOptions | QuotesGeneratorOptions | CodeSnippetGeneratorOptions
+      ) => ClassicWordsGeneratorOptions | AdaptiveWeakLetterGeneratorOptions | QuotesGeneratorOptions | CodeSnippetGeneratorOptions
     ) => {
       setModeOptions((current) => ({
         ...current,
@@ -535,7 +653,9 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
       <div className="test-results-page">
         <SessionReportCard
           report={typing.report}
-          onRetry={retryWithSameSettings}
+          onRetry={() => {
+            void retryWithSameSettings();
+          }}
           onHome={onBack}
         />
         <div className="test-results-extra-actions">
@@ -575,76 +695,110 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
               >
                 <span className="test-setup-mode-card__title">Adaptive</span>
                 <span className="test-setup-mode-card__body">
-                  Prioritizes weaker letters when there is enough history.
+                  Prioritizes weaker letters.
                 </span>
               </button>
-            </div>
-          </div>
-
-          <div className="test-setup-section">
-            <div className="test-setup-label">Duration</div>
-            <div className="test-setup-duration">
-              {DURATION_OPTIONS.map((d) => (
+              {quoteModeAvailable && (
                 <button
-                  key={d}
                   type="button"
-                  className={`test-setup-duration-btn ${duration === d ? "active" : ""}`}
-                  onClick={() => setDuration(d)}
+                  className={`test-setup-mode-card ${mode === "quotes" ? "active" : ""}`}
+                  onClick={() => setMode("quotes")}
                 >
-                  {d}s
+                  <span className="test-setup-mode-card__title">Quotes</span>
+                  <span className="test-setup-mode-card__body">
+                    Quotes from famous people and books.
+                  </span>
                 </button>
-              ))}
+              )}
+              {codeModeAvailable && (
+                <button
+                  type="button"
+                  className={`test-setup-mode-card ${mode === "code" ? "active" : ""}`}
+                  onClick={() => setMode("code")}
+                >
+                  <span className="test-setup-mode-card__title">Code</span>
+                  <span className="test-setup-mode-card__body">
+                    Popular algorithms across different languages.
+                  </span>
+                </button>
+              )}
             </div>
           </div>
 
-          <div className="test-setup-section">
-            <div className="test-setup-label">Include</div>
-            <div className="test-setup-toggles">
-              <button
-                type="button"
-                className={`test-setup-toggle ${includePunctuation ? "active" : ""}`}
-                onClick={() =>
-                  updateCurrentWordOptions((current) => ({
-                    ...current,
-                    includePunctuation: !current.includePunctuation,
-                  }))
-                }
-              >
-                Punctuation
-              </button>
-              <button
-                type="button"
-                className={`test-setup-toggle ${includeNumbers ? "active" : ""}`}
-                onClick={() =>
-                  updateCurrentWordOptions((current) => ({
-                    ...current,
-                    includeNumbers: !current.includeNumbers,
-                  }))
-                }
-              >
-                Numbers
-              </button>
-              <button
-                type="button"
-                className={`test-setup-toggle ${randomCase ? "active" : ""}`}
-                onClick={() =>
-                  updateCurrentWordOptions((current) => ({
-                    ...current,
-                    randomCase: !current.randomCase,
-                  }))
-                }
-              >
-                Random Case
-              </button>
+          {!isFinitePassageMode && (
+            <div className="test-setup-section">
+              <div className="test-setup-label">Duration</div>
+              <div className="test-setup-duration">
+                {DURATION_OPTIONS.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    className={`test-setup-duration-btn ${duration === d ? "active" : ""}`}
+                    onClick={() => setDuration(d)}
+                  >
+                    {d}s
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {!isFinitePassageMode && (
+            <div className="test-setup-section">
+              <div className="test-setup-label">Include</div>
+              <div className="test-setup-toggles">
+                <button
+                  type="button"
+                  className={`test-setup-toggle ${includePunctuation ? "active" : ""}`}
+                  onClick={() =>
+                    updateCurrentWordOptions((current) => ({
+                      ...current,
+                      includePunctuation: !current.includePunctuation,
+                    }))
+                  }
+                >
+                  Punctuation
+                </button>
+                <button
+                  type="button"
+                  className={`test-setup-toggle ${includeNumbers ? "active" : ""}`}
+                  onClick={() =>
+                    updateCurrentWordOptions((current) => ({
+                      ...current,
+                      includeNumbers: !current.includeNumbers,
+                    }))
+                  }
+                >
+                  Numbers
+                </button>
+                <button
+                  type="button"
+                  className={`test-setup-toggle ${randomCase ? "active" : ""}`}
+                  onClick={() =>
+                    updateCurrentWordOptions((current) => ({
+                      ...current,
+                      randomCase: !current.randomCase,
+                    }))
+                  }
+                >
+                  Random Case
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="test-setup-actions">
             <Button variant="secondary" onClick={onBack}>
               Back
             </Button>
-            <Button variant="primary" onClick={startTest}>
-              Start Test
+            <Button
+              variant="primary"
+              disabled={quoteLoading}
+              onClick={() => {
+                void startTest();
+              }}
+            >
+              {quoteLoading ? "Loading..." : "Start Test"}
             </Button>
           </div>
         </div>
@@ -671,54 +825,62 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
           <div className={`test-topbar-badge ${mode === "adaptive" ? "on" : "off"}`}>
             {mode}
           </div>
-          <button
-            type="button"
-            className="test-topbar-duration-btn"
-            onClick={cycleDuration}
-            title="Change duration"
-          >
-            {duration}s
-          </button>
-          <button
-            type="button"
-            className={`test-topbar-badge ${includePunctuation ? "on" : "off"}`}
-            onClick={() =>
-              updateCurrentWordOptions((current) => ({
-                ...current,
-                includePunctuation: !current.includePunctuation,
-              }))
-            }
-          >
-            punct
-          </button>
-          <button
-            type="button"
-            className={`test-topbar-badge ${includeNumbers ? "on" : "off"}`}
-            onClick={() =>
-              updateCurrentWordOptions((current) => ({
-                ...current,
-                includeNumbers: !current.includeNumbers,
-              }))
-            }
-          >
-            nums
-          </button>
-          <button
-            type="button"
-            className={`test-topbar-badge ${randomCase ? "on" : "off"}`}
-            onClick={() =>
-              updateCurrentWordOptions((current) => ({
-                ...current,
-                randomCase: !current.randomCase,
-              }))
-            }
-          >
-            case
-          </button>
+          {!isFinitePassageMode && (
+            <button
+              type="button"
+              className="test-topbar-duration-btn"
+              onClick={cycleDuration}
+              title="Change duration"
+            >
+              {duration}s
+            </button>
+          )}
+          {!isFinitePassageMode && (
+            <>
+              <button
+                type="button"
+                className={`test-topbar-badge ${includePunctuation ? "on" : "off"}`}
+                onClick={() =>
+                  updateCurrentWordOptions((current) => ({
+                    ...current,
+                    includePunctuation: !current.includePunctuation,
+                  }))
+                }
+              >
+                punct
+              </button>
+              <button
+                type="button"
+                className={`test-topbar-badge ${includeNumbers ? "on" : "off"}`}
+                onClick={() =>
+                  updateCurrentWordOptions((current) => ({
+                    ...current,
+                    includeNumbers: !current.includeNumbers,
+                  }))
+                }
+              >
+                nums
+              </button>
+              <button
+                type="button"
+                className={`test-topbar-badge ${randomCase ? "on" : "off"}`}
+                onClick={() =>
+                  updateCurrentWordOptions((current) => ({
+                    ...current,
+                    randomCase: !current.randomCase,
+                  }))
+                }
+              >
+                case
+              </button>
+            </>
+          )}
           <button
             type="button"
             className="test-topbar-new-btn"
-            onClick={handleNewTest}
+            onClick={() => {
+              void handleNewTest();
+            }}
             title="New test"
           >
             new
@@ -734,19 +896,32 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
             </button>
           )}
         </div>
-        <div className={`test-topbar-timer test-topbar-timer--${timerClass}`}>
-          {timerStarted ? timeLeft : duration}s
-        </div>
+        {!isFinitePassageMode && (
+          <div className={`test-topbar-timer test-topbar-timer--${timerClass}`}>
+            {timerStarted ? timeLeft : duration}s
+          </div>
+        )}
       </div>
 
-      <div className="test-timer-bar">
-        <div
-          className={`test-timer-fill test-timer-fill--${timerClass}`}
-          style={{
-            width: `${(timerStarted ? timeLeft : duration) / duration * 100}%`,
-          }}
-        />
-      </div>
+      {isFinitePassageMode ? (
+        <div className="test-progress-bar">
+          <div
+            className="test-progress-fill"
+            style={{
+              width: `${Math.min(100, Math.max(0, typing.progress * 100))}%`,
+            }}
+          />
+        </div>
+      ) : (
+        <div className="test-timer-bar">
+          <div
+            className={`test-timer-fill test-timer-fill--${timerClass}`}
+            style={{
+              width: `${(timerStarted ? timeLeft : duration) / duration * 100}%`,
+            }}
+          />
+        </div>
+      )}
 
       <div className="lesson-stage-body" onClick={handleTypingAreaClick}>
         <input
@@ -765,10 +940,33 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
               </div>
             )}
             {capsLockOn && <div className="test-caps-indicator mono-label">Caps Lock on</div>}
+            {mode === "quotes" && quoteStatus && (
+              <div
+                className="test-quote-source mono-label"
+                title={quoteStatus.failureReason ?? `${quoteStatus.sourceType} · ${quoteStatus.source}`}
+              >
+                {quoteStatus.author} · {quoteStatus.source}
+              </div>
+            )}
+            {mode === "code" && codeStatus && (
+              <div
+                className="test-quote-source mono-label"
+                title={codeStatus.source}
+              >
+                {codeStatus.language} · {codeStatus.source}
+              </div>
+            )}
           </div>
           {!timerStarted && (
             <div className="test-idle-hint mono-label">
-              Start typing — timer begins on first keypress
+              {isFinitePassageMode
+                ? `Start typing to begin the ${mode === "code" ? "snippet" : "quote"}`
+                : "Start typing — timer begins on first keypress"}
+            </div>
+          )}
+          {mode === "quotes" && quoteStatus?.failureReason && (
+            <div className="test-quote-failure mono-label">
+              {quoteStatus.failureReason}
             </div>
           )}
 

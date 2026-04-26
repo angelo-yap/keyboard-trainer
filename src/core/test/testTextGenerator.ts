@@ -9,6 +9,8 @@ import type {
 export type {
   AdaptiveWeakLetterGeneratorOptions,
   ClassicWordsGeneratorOptions,
+  CodeSnippetGeneratorOptions,
+  QuotesGeneratorOptions,
   TestGenerator,
   TestMode,
   TestModeConfig,

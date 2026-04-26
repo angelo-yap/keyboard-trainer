@@ -1,0 +1,625 @@
+:: c-binary-search-1 | C | Binary Search
+int binarySearch(int a[], int n, int target) { int l = 0, r = n - 1; while (l <= r) { int m = l + (r - l) / 2; if (a[m] == target) return m; if (a[m] < target) l = m + 1; else r = m - 1; } return -1; }
+
+:: c-linear-search-1 | C | Linear Search
+int linearSearch(int a[], int n, int target) { for (int i = 0; i < n; i++) if (a[i] == target) return i; return -1; }
+
+:: c-bubble-sort-1 | C | Bubble Sort
+void bubbleSort(int a[], int n) { for (int i = 0; i < n - 1; i++) for (int j = 0; j < n - i - 1; j++) if (a[j] > a[j + 1]) { int t = a[j]; a[j] = a[j + 1]; a[j + 1] = t; } }
+
+:: c-selection-sort-1 | C | Selection Sort
+void selectionSort(int a[], int n) { for (int i = 0; i < n - 1; i++) { int min = i; for (int j = i + 1; j < n; j++) if (a[j] < a[min]) min = j; int t = a[i]; a[i] = a[min]; a[min] = t; } }
+
+:: c-insertion-sort-1 | C | Insertion Sort
+void insertionSort(int a[], int n) { for (int i = 1; i < n; i++) { int key = a[i], j = i - 1; while (j >= 0 && a[j] > key) { a[j + 1] = a[j]; j--; } a[j + 1] = key; } }
+
+:: c-merge-sort-1 | C | Merge Sort Call
+void mergeSort(int a[], int left, int right) { if (left >= right) return; int mid = left + (right - left) / 2; mergeSort(a, left, mid); mergeSort(a, mid + 1, right); merge(a, left, mid, right); }
+
+:: c-quick-sort-1 | C | Quick Sort Call
+void quickSort(int a[], int low, int high) { if (low < high) { int p = partition(a, low, high); quickSort(a, low, p - 1); quickSort(a, p + 1, high); } }
+
+:: c-kadane-1 | C | Maximum Subarray Sum
+int kadane(int a[], int n) { int best = a[0], current = a[0]; for (int i = 1; i < n; i++) { current = a[i] > current + a[i] ? a[i] : current + a[i]; best = best > current ? best : current; } return best; }
+
+:: c-prefix-sum-1 | C | Prefix Sum Array
+void prefixSum(int a[], int prefix[], int n) { prefix[0] = 0; for (int i = 0; i < n; i++) prefix[i + 1] = prefix[i] + a[i]; }
+
+:: c-two-pointer-sum-1 | C | Two Pointer Target Sum
+int twoPointerSum(int a[], int n, int target) { int l = 0, r = n - 1; while (l < r) { int sum = a[l] + a[r]; if (sum == target) return 1; if (sum < target) l++; else r--; } return 0; }
+
+:: c-sliding-window-1 | C | Max Window Sum
+int maxWindowSum(int a[], int n, int k) { int sum = 0; for (int i = 0; i < k; i++) sum += a[i]; int best = sum; for (int i = k; i < n; i++) { sum += a[i] - a[i - k]; if (sum > best) best = sum; } return best; }
+
+:: c-gcd-1 | C | Euclidean GCD
+int gcd(int a, int b) { while (b != 0) { int t = b; b = a % b; a = t; } return a; }
+
+:: c-lcm-1 | C | Least Common Multiple
+int lcm(int a, int b) { return a / gcd(a, b) * b; }
+
+:: c-fast-power-1 | C | Fast Exponentiation
+long long fastPower(long long base, long long exp) { long long result = 1; while (exp > 0) { if (exp % 2) result *= base; base *= base; exp /= 2; } return result; }
+
+:: c-factorial-recursive-1 | C | Recursive Factorial
+long long factorial(int n) { return n <= 1 ? 1 : n * factorial(n - 1); }
+
+:: c-fibonacci-dp-1 | C | Fibonacci DP
+int fib(int n) { if (n <= 1) return n; int a = 0, b = 1; for (int i = 2; i <= n; i++) { int c = a + b; a = b; b = c; } return b; }
+
+:: c-sieve-1 | C | Sieve of Eratosthenes
+void sieve(int prime[], int n) { for (int i = 0; i <= n; i++) prime[i] = 1; prime[0] = prime[1] = 0; for (int p = 2; p * p <= n; p++) if (prime[p]) for (int i = p * p; i <= n; i += p) prime[i] = 0; }
+
+:: c-palindrome-string-1 | C | Palindrome String
+int isPalindrome(char s[]) { int l = 0, r = strlen(s) - 1; while (l < r) if (s[l++] != s[r--]) return 0; return 1; }
+
+:: c-valid-parentheses-1 | C | Valid Parentheses Stack
+int isMatching(char open, char close) { return (open == '(' && close == ')') || (open == '[' && close == ']') || (open == '{' && close == '}'); }
+
+:: c-reverse-array-1 | C | Reverse Array
+void reverseArray(int a[], int n) { int l = 0, r = n - 1; while (l < r) { int t = a[l]; a[l++] = a[r]; a[r--] = t; } }
+
+:: c-bfs-queue-1 | C | BFS Queue Skeleton
+void bfs(int start) { int q[1000], front = 0, back = 0; visited[start] = 1; q[back++] = start; while (front < back) { int node = q[front++]; process(node); } }
+
+:: c-dfs-recursive-1 | C | DFS Recursive Skeleton
+void dfs(int node) { visited[node] = 1; process(node); for (int i = 0; i < graphSize[node]; i++) if (!visited[graph[node][i]]) dfs(graph[node][i]); }
+
+:: c-union-find-find-1 | C | Union Find Find
+int find(int x) { if (parent[x] != x) parent[x] = find(parent[x]); return parent[x]; }
+
+:: c-union-find-union-1 | C | Union Find Union
+void unite(int a, int b) { int rootA = find(a), rootB = find(b); if (rootA != rootB) parent[rootB] = rootA; }
+
+:: c-reverse-linked-list-1 | C | Reverse Linked List
+struct Node* reverseList(struct Node* head) { struct Node *prev = NULL, cur = head; while (cur) { struct Node next = cur->next; cur->next = prev; prev = cur; cur = next; } return prev; }
+
+:: cpp-binary-search-1 | C++ | Binary Search
+int binarySearch(vector<int>& nums, int target) { int l = 0, r = nums.size() - 1; while (l <= r) { int m = l + (r - l) / 2; if (nums[m] == target) return m; nums[m] < target ? l = m + 1 : r = m - 1; } return -1; }
+
+:: cpp-two-sum-1 | C++ | Two Sum Hash Map
+vector<int> twoSum(vector<int>& nums, int target) { unordered_map<int, int> seen; for (int i = 0; i < nums.size(); i++) { if (seen.count(target - nums[i])) return {seen[target - nums[i]], i}; seen[nums[i]] = i; } return {}; }
+
+:: cpp-sliding-window-1 | C++ | Longest Unique Substring
+int lengthOfLongestSubstring(string s) { unordered_set<char> seen; int l = 0, best = 0; for (int r = 0; r < s.size(); r++) { while (seen.count(s[r])) seen.erase(s[l++]); seen.insert(s[r]); best = max(best, r - l + 1); } return best; }
+
+:: cpp-prefix-sum-1 | C++ | Prefix Sum
+vector<int> prefixSum(vector<int>& nums) { vector<int> prefix(nums.size() + 1, 0); for (int i = 0; i < nums.size(); i++) prefix[i + 1] = prefix[i] + nums[i]; return prefix; }
+
+:: cpp-kadane-1 | C++ | Maximum Subarray
+int maxSubArray(vector<int>& nums) { int best = nums[0], cur = nums[0]; for (int i = 1; i < nums.size(); i++) { cur = max(nums[i], cur + nums[i]); best = max(best, cur); } return best; }
+
+:: cpp-merge-sort-1 | C++ | Merge Sort
+void mergeSort(vector<int>& a, int l, int r) { if (l >= r) return; int m = l + (r - l) / 2; mergeSort(a, l, m); mergeSort(a, m + 1, r); merge(a, l, m, r); }
+
+:: cpp-quick-sort-1 | C++ | Quick Sort
+void quickSort(vector<int>& a, int low, int high) { if (low < high) { int p = partition(a, low, high); quickSort(a, low, p - 1); quickSort(a, p + 1, high); } }
+
+:: cpp-bfs-1 | C++ | Breadth First Search
+void bfs(int start, vector<vector<int>>& graph) { queue<int> q; vector<bool> seen(graph.size()); seen[start] = true; q.push(start); while (!q.empty()) { int node = q.front(); q.pop(); for (int next : graph[node]) if (!seen[next]) seen[next] = true, q.push(next); } }
+
+:: cpp-dfs-1 | C++ | Depth First Search
+void dfs(int node, vector<vector<int>>& graph, vector<bool>& seen) { seen[node] = true; for (int next : graph[node]) if (!seen[next]) dfs(next, graph, seen); }
+
+:: cpp-dijkstra-1 | C++ | Dijkstra Shortest Path
+priority_queue<pair<int,int>, vector<pair<int,int>>, greater<pair<int,int>>> pq; dist[start] = 0; pq.push({0, start});
+
+:: cpp-topological-sort-1 | C++ | Topological Sort Queue
+queue<int> q; for (int i = 0; i < n; i++) if (indegree[i] == 0) q.push(i);
+
+:: cpp-union-find-find-1 | C++ | Union Find Find
+int find(int x) { return parent[x] == x ? x : parent[x] = find(parent[x]); }
+
+:: cpp-union-find-union-1 | C++ | Union Find Union
+void unite(int a, int b) { a = find(a); b = find(b); if (a != b) parent[b] = a; }
+
+:: cpp-heap-top-k-1 | C++ | Top K Elements
+priority_queue<int, vector<int>, greater<int>> heap; for (int x : nums) { heap.push(x); if (heap.size() > k) heap.pop(); }
+
+:: cpp-binary-tree-inorder-1 | C++ | Inorder Traversal
+void inorder(TreeNode* root, vector<int>& result) { if (!root) return; inorder(root->left, result); result.push_back(root->val); inorder(root->right, result); }
+
+:: cpp-tree-depth-1 | C++ | Maximum Tree Depth
+int maxDepth(TreeNode* root) { return root ? 1 + max(maxDepth(root->left), maxDepth(root->right)) : 0; }
+
+:: cpp-reverse-linked-list-1 | C++ | Reverse Linked List
+ListNode* reverseList(ListNode* head) { ListNode *prev = nullptr, cur = head; while (cur) { ListNode next = cur->next; cur->next = prev; prev = cur; cur = next; } return prev; }
+
+:: cpp-valid-parentheses-1 | C++ | Valid Parentheses
+bool isValid(string s) { stack<char> st; unordered_map<char,char> pairs{{')','('},{']','['},{'}','{'}}; for (char c : s) { if (pairs.count(c)) { if (st.empty() || st.top() != pairs[c]) return false; st.pop(); } else st.push(c); } return st.empty(); }
+
+:: cpp-lis-1 | C++ | Longest Increasing Subsequence
+int lengthOfLIS(vector<int>& nums) { vector<int> tails; for (int x : nums) { auto it = lower_bound(tails.begin(), tails.end(), x); if (it == tails.end()) tails.push_back(x); else *it = x; } return tails.size(); }
+
+:: cpp-knapsack-1 | C++ | Zero One Knapsack
+for (int i = 0; i < n; i++) for (int c = capacity; c >= weight[i]; c--) dp[c] = max(dp[c], dp[c - weight[i]] + value[i]);
+
+:: cpp-coin-change-1 | C++ | Coin Change DP
+vector<int> dp(amount + 1, amount + 1); dp[0] = 0; for (int coin : coins) for (int x = coin; x <= amount; x++) dp[x] = min(dp[x], dp[x - coin] + 1);
+
+:: cpp-sieve-1 | C++ | Sieve of Eratosthenes
+vector<bool> prime(n + 1, true); prime[0] = prime[1] = false; for (int p = 2; p * p <= n; p++) if (prime[p]) for (int i = p * p; i <= n; i += p) prime[i] = false;
+
+:: cpp-gcd-1 | C++ | Euclidean GCD
+int gcd(int a, int b) { while (b) { int t = b; b = a % b; a = t; } return a; }
+
+:: cpp-fast-power-1 | C++ | Fast Power
+long long power(long long base, long long exp) { long long ans = 1; while (exp) { if (exp & 1) ans *= base; base *= base; exp >>= 1; } return ans; }
+
+:: cpp-anagram-1 | C++ | Anagram Check
+bool isAnagram(string a, string b) { sort(a.begin(), a.end()); sort(b.begin(), b.end()); return a == b; }
+
+:: cpp-palindrome-1 | C++ | Palindrome Check
+bool isPalindrome(string s) { int l = 0, r = s.size() - 1; while (l < r) if (s[l++] != s[r--]) return false; return true; }
+
+:: python-binary-search-1 | Python | Binary Search
+def binary_search(nums, target):
+left, right = 0, len(nums) - 1
+while left <= right:
+mid = (left + right) // 2
+if nums[mid] == target: return mid
+if nums[mid] < target: left = mid + 1
+else: right = mid - 1
+return -1
+
+:: python-two-sum-1 | Python | Two Sum Hash Map
+def two_sum(nums, target):
+seen = {}
+for i, num in enumerate(nums):
+if target - num in seen: return [seen[target - num], i]
+seen[num] = i
+
+:: python-sliding-window-1 | Python | Longest Unique Substring
+def longest_unique(s):
+seen, left, best = set(), 0, 0
+for right, char in enumerate(s):
+while char in seen: seen.remove(s[left]); left += 1
+seen.add(char); best = max(best, right - left + 1)
+return best
+
+:: python-prefix-sum-1 | Python | Prefix Sum
+def prefix_sum(nums):
+prefix = [0]
+for num in nums: prefix.append(prefix[-1] + num)
+return prefix
+
+:: python-kadane-1 | Python | Maximum Subarray
+def max_subarray(nums):
+best = current = nums[0]
+for num in nums[1:]: current = max(num, current + num); best = max(best, current)
+return best
+
+:: python-merge-sort-1 | Python | Merge Sort
+def merge_sort(nums):
+if len(nums) <= 1: return nums
+mid = len(nums) // 2
+return merge(merge_sort(nums[:mid]), merge_sort(nums[mid:]))
+
+:: python-quick-sort-1 | Python | Quick Sort
+def quick_sort(nums):
+if len(nums) <= 1: return nums
+pivot = nums[0]
+return quick_sort([x for x in nums[1:] if x <= pivot]) + [pivot] + quick_sort([x for x in nums[1:] if x > pivot])
+
+:: python-bfs-1 | Python | Breadth First Search
+def bfs(start, graph):
+queue, seen = deque([start]), {start}
+while queue:
+node = queue.popleft()
+for nxt in graph[node]:
+if nxt not in seen: seen.add(nxt); queue.append(nxt)
+
+:: python-dfs-1 | Python | Depth First Search
+def dfs(node, graph, seen):
+seen.add(node)
+for nxt in graph[node]:
+if nxt not in seen: dfs(nxt, graph, seen)
+
+:: python-dijkstra-1 | Python | Dijkstra Shortest Path
+def dijkstra(start):
+dist, heap = defaultdict(lambda: float("inf")), [(0, start)]
+dist[start] = 0
+while heap:
+cost, node = heapq.heappop(heap)
+
+:: python-topological-sort-1 | Python | Topological Sort Queue
+queue = deque([node for node in graph if indegree[node] == 0])
+
+:: python-union-find-find-1 | Python | Union Find Find
+def find(x):
+if parent[x] != x: parent[x] = find(parent[x])
+return parent[x]
+
+:: python-union-find-union-1 | Python | Union Find Union
+def union(a, b):
+root_a, root_b = find(a), find(b)
+if root_a != root_b: parent[root_b] = root_a
+
+:: python-heap-top-k-1 | Python | Top K Elements
+top_k = heapq.nlargest(k, nums)
+
+:: python-tree-inorder-1 | Python | Inorder Traversal
+def inorder(root):
+return inorder(root.left) + [root.val] + inorder(root.right) if root else []
+
+:: python-tree-depth-1 | Python | Maximum Tree Depth
+def max_depth(root):
+return 0 if not root else 1 + max(max_depth(root.left), max_depth(root.right))
+
+:: python-reverse-linked-list-1 | Python | Reverse Linked List
+def reverse_list(head):
+prev, cur = None, head
+while cur: cur.next, prev, cur = prev, cur, cur.next
+return prev
+
+:: python-valid-parentheses-1 | Python | Valid Parentheses
+def is_valid(s):
+stack, pairs = [], {")": "(", "]": "[", "}": "{"}
+for char in s:
+if char in pairs:
+if not stack or stack.pop() != pairs[char]: return False
+else: stack.append(char)
+return not stack
+
+:: python-lis-1 | Python | Longest Increasing Subsequence
+def length_of_lis(nums):
+tails = []
+for num in nums:
+i = bisect_left(tails, num)
+if i == len(tails): tails.append(num)
+else: tails[i] = num
+return len(tails)
+
+:: python-knapsack-1 | Python | Zero One Knapsack
+dp = [0] * (capacity + 1)
+for weight, value in items:
+for c in range(capacity, weight - 1, -1): dp[c] = max(dp[c], dp[c - weight] + value)
+
+:: python-coin-change-1 | Python | Coin Change DP
+dp = [0] + [float("inf")] * amount
+for coin in coins:
+for x in range(coin, amount + 1): dp[x] = min(dp[x], dp[x - coin] + 1)
+
+:: python-sieve-1 | Python | Sieve of Eratosthenes
+prime = [True] * (n + 1); prime[0] = prime[1] = False
+for p in range(2, int(n ** 0.5) + 1):
+if prime[p]:
+for i in range(p * p, n + 1, p): prime[i] = False
+
+:: python-gcd-1 | Python | Euclidean GCD
+def gcd(a, b):
+while b: a, b = b, a % b
+return a
+
+:: python-fast-power-1 | Python | Fast Power
+def fast_power(base, exp):
+result = 1
+while exp:
+if exp & 1: result *= base
+base *= base; exp >>= 1
+return result
+
+:: python-anagram-1 | Python | Anagram Check
+def is_anagram(a, b):
+return Counter(a) == Counter(b)
+
+:: python-palindrome-1 | Python | Palindrome Check
+def is_palindrome(text):
+return text == text[::-1]
+
+:: java-binary-search-1 | Java | Binary Search
+int binarySearch(int[] nums, int target) { int l = 0, r = nums.length - 1; while (l <= r) { int m = l + (r - l) / 2; if (nums[m] == target) return m; if (nums[m] < target) l = m + 1; else r = m - 1; } return -1; }
+
+:: java-two-sum-1 | Java | Two Sum Hash Map
+int[] twoSum(int[] nums, int target) { Map<Integer, Integer> seen = new HashMap<>(); for (int i = 0; i < nums.length; i++) { if (seen.containsKey(target - nums[i])) return new int[]{seen.get(target - nums[i]), i}; seen.put(nums[i], i); } return new int[]{}; }
+
+:: java-sliding-window-1 | Java | Longest Unique Substring
+int longestUnique(String s) { Set<Character> seen = new HashSet<>(); int left = 0, best = 0; for (int right = 0; right < s.length(); right++) { while (seen.contains(s.charAt(right))) seen.remove(s.charAt(left++)); seen.add(s.charAt(right)); best = Math.max(best, right - left + 1); } return best; }
+
+:: java-prefix-sum-1 | Java | Prefix Sum
+int[] prefixSum(int[] nums) { int[] prefix = new int[nums.length + 1]; for (int i = 0; i < nums.length; i++) prefix[i + 1] = prefix[i] + nums[i]; return prefix; }
+
+:: java-kadane-1 | Java | Maximum Subarray
+int maxSubArray(int[] nums) { int best = nums[0], cur = nums[0]; for (int i = 1; i < nums.length; i++) { cur = Math.max(nums[i], cur + nums[i]); best = Math.max(best, cur); } return best; }
+
+:: java-merge-sort-1 | Java | Merge Sort Call
+void mergeSort(int[] nums, int left, int right) { if (left >= right) return; int mid = left + (right - left) / 2; mergeSort(nums, left, mid); mergeSort(nums, mid + 1, right); merge(nums, left, mid, right); }
+
+:: java-quick-sort-1 | Java | Quick Sort Call
+void quickSort(int[] nums, int low, int high) { if (low < high) { int p = partition(nums, low, high); quickSort(nums, low, p - 1); quickSort(nums, p + 1, high); } }
+
+:: java-bfs-1 | Java | Breadth First Search
+void bfs(int start, List<List<Integer>> graph) { Queue<Integer> q = new LinkedList<>(); boolean[] seen = new boolean[graph.size()]; seen[start] = true; q.add(start); while (!q.isEmpty()) { int node = q.poll(); for (int next : graph.get(node)) if (!seen[next]) { seen[next] = true; q.add(next); } } }
+
+:: java-dfs-1 | Java | Depth First Search
+void dfs(int node, List<List<Integer>> graph, boolean[] seen) { seen[node] = true; for (int next : graph.get(node)) if (!seen[next]) dfs(next, graph, seen); }
+
+:: java-dijkstra-1 | Java | Dijkstra Setup
+PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> a[0] - b[0]); dist[start] = 0; pq.add(new int[]{0, start});
+
+:: java-topological-sort-1 | Java | Topological Sort Queue
+Queue<Integer> q = new LinkedList<>(); for (int i = 0; i < n; i++) if (indegree[i] == 0) q.add(i);
+
+:: java-union-find-find-1 | Java | Union Find Find
+int find(int x) { if (parent[x] != x) parent[x] = find(parent[x]); return parent[x]; }
+
+:: java-union-find-union-1 | Java | Union Find Union
+void union(int a, int b) { int rootA = find(a), rootB = find(b); if (rootA != rootB) parent[rootB] = rootA; }
+
+:: java-heap-top-k-1 | Java | Top K Elements
+PriorityQueue<Integer> heap = new PriorityQueue<>(); for (int x : nums) { heap.add(x); if (heap.size() > k) heap.poll(); }
+
+:: java-tree-inorder-1 | Java | Inorder Traversal
+void inorder(TreeNode root, List<Integer> result) { if (root == null) return; inorder(root.left, result); result.add(root.val); inorder(root.right, result); }
+
+:: java-tree-depth-1 | Java | Maximum Tree Depth
+int maxDepth(TreeNode root) { return root == null ? 0 : 1 + Math.max(maxDepth(root.left), maxDepth(root.right)); }
+
+:: java-reverse-linked-list-1 | Java | Reverse Linked List
+ListNode reverseList(ListNode head) { ListNode prev = null, cur = head; while (cur != null) { ListNode next = cur.next; cur.next = prev; prev = cur; cur = next; } return prev; }
+
+:: java-valid-parentheses-1 | Java | Valid Parentheses
+boolean isValid(String s) { Stack<Character> stack = new Stack<>(); Map<Character, Character> pairs = Map.of(')', '(', ']', '[', '}', '{'); for (char c : s.toCharArray()) { if (pairs.containsKey(c)) { if (stack.isEmpty() || stack.pop() != pairs.get(c)) return false; } else stack.push(c); } return stack.isEmpty(); }
+
+:: java-lis-1 | Java | Longest Increasing Subsequence
+int lengthOfLIS(int[] nums) { int[] tails = new int[nums.length]; int size = 0; for (int x : nums) { int i = Arrays.binarySearch(tails, 0, size, x); if (i < 0) i = -(i + 1); tails[i] = x; if (i == size) size++; } return size; }
+
+:: java-knapsack-1 | Java | Zero One Knapsack
+for (int i = 0; i < n; i++) for (int c = capacity; c >= weight[i]; c--) dp[c] = Math.max(dp[c], dp[c - weight[i]] + value[i]);
+
+:: java-coin-change-1 | Java | Coin Change DP
+int[] dp = new int[amount + 1]; Arrays.fill(dp, amount + 1); dp[0] = 0; for (int coin : coins) for (int x = coin; x <= amount; x++) dp[x] = Math.min(dp[x], dp[x - coin] + 1);
+
+:: java-sieve-1 | Java | Sieve of Eratosthenes
+boolean[] prime = new boolean[n + 1]; Arrays.fill(prime, true); prime[0] = prime[1] = false; for (int p = 2; p * p <= n; p++) if (prime[p]) for (int i = p * p; i <= n; i += p) prime[i] = false;
+
+:: java-gcd-1 | Java | Euclidean GCD
+int gcd(int a, int b) { while (b != 0) { int t = b; b = a % b; a = t; } return a; }
+
+:: java-fast-power-1 | Java | Fast Power
+long fastPower(long base, long exp) { long result = 1; while (exp > 0) { if ((exp & 1) == 1) result *= base; base *= base; exp >>= 1; } return result; }
+
+:: java-anagram-1 | Java | Anagram Check
+boolean isAnagram(String a, String b) { char[] x = a.toCharArray(), y = b.toCharArray(); Arrays.sort(x); Arrays.sort(y); return Arrays.equals(x, y); }
+
+:: java-palindrome-1 | Java | Palindrome Check
+boolean isPalindrome(String s) { int l = 0, r = s.length() - 1; while (l < r) if (s.charAt(l++) != s.charAt(r--)) return false; return true; }
+
+:: csharp-merge-intervals-1 | C# | Merge Intervals
+intervals.Sort((a, b) => a[0].CompareTo(b[0])); foreach (var x in intervals) if (merged.Count == 0 || merged[^1][1] < x[0]) merged.Add(x); else merged[^1][1] = Math.Max(merged[^1][1], x[1]);
+
+:: csharp-kmp-prefix-1 | C# | KMP Prefix Table
+int[] lps = new int[p.Length]; for (int i = 1, len = 0; i < p.Length;) { if (p[i] == p[len]) lps[i++] = ++len; else if (len > 0) len = lps[len - 1]; else lps[i++] = 0; }
+
+:: csharp-rolling-hash-1 | C# | Rolling Hash
+long hash = 0, mod = 1_000_000_007, baseNum = 257; foreach (char c in text) hash = (hash * baseNum + c) % mod;
+
+:: csharp-reservoir-sampling-1 | C# | Reservoir Sampling
+int chosen = items[0]; for (int i = 1; i < items.Length; i++) if (random.Next(i + 1) == 0) chosen = items[i];
+
+:: csharp-trie-insert-1 | C# | Trie Insert
+foreach (char c in word) node = node.Children.TryGetValue(c, out var next) ? next : node.Children[c] = new TrieNode(); node.IsWord = true;
+
+:: csharp-segment-tree-query-1 | C# | Segment Tree Range Query
+int Query(int node, int l, int r, int ql, int qr) { if (qr < l || r < ql) return 0; if (ql <= l && r <= qr) return tree[node]; int m = (l + r) / 2; return Query(node * 2, l, m, ql, qr) + Query(node * 2 + 1, m + 1, r, ql, qr); }
+
+:: csharp-floyd-cycle-1 | C# | Floyd Cycle Detection
+bool HasCycle(ListNode head) { var slow = head; var fast = head; while (fast?.Next != null) { slow = slow.Next; fast = fast.Next.Next; if (slow == fast) return true; } return false; }
+
+:: csharp-astar-heuristic-1 | C# | A Star Manhattan Heuristic
+int Heuristic(Point a, Point b) => Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y);
+
+:: go-next-greater-1 | Go | Next Greater Element
+stack := []int{}; for i := len(nums)-1; i >= 0; i-- { for len(stack) > 0 && stack[len(stack)-1] <= nums[i] { stack = stack[:len(stack)-1] }; next[i] = -1; if len(stack) > 0 { next[i] = stack[len(stack)-1] }; stack = append(stack, nums[i]) }
+
+:: go-flood-fill-1 | Go | Flood Fill
+func fill(r, c int) { if r < 0 || c < 0 || r == len(grid) || c == len(grid[0]) || grid[r][c] != old { return }; grid[r][c] = color; fill(r+1,c); fill(r-1,c); fill(r,c+1); fill(r,c-1) }
+
+:: go-fenwick-add-1 | Go | Fenwick Tree Update
+func add(bit []int, i, delta int) { for i < len(bit) { bit[i] += delta; i += i & -i } }
+
+:: go-quickselect-1 | Go | Quickselect Partition
+pivot := nums[right]; p := left; for i := left; i < right; i++ { if nums[i] <= pivot { nums[i], nums[p] = nums[p], nums[i]; p++ } }; nums[p], nums[right] = nums[right], nums[p]
+
+:: go-edit-distance-1 | Go | Edit Distance DP
+dp := make([][]int, len(a)+1); for i := range dp { dp[i] = make([]int, len(b)+1) }
+
+:: go-rabin-karp-1 | Go | Rabin Karp Hash Match
+if windowHash == patternHash && text[i:i+len(pattern)] == pattern { return i }
+
+:: go-rotate-matrix-1 | Go | Rotate Matrix
+for i := 0; i < n; i++ { for j := i+1; j < n; j++ { matrix[i][j], matrix[j][i] = matrix[j][i], matrix[i][j] } }; for i := range matrix { slices.Reverse(matrix[i]) }
+
+:: go-tarjan-lowlink-1 | Go | Tarjan Low Link Update
+low[u] = min(low[u], low[v])
+
+:: rust-kruskal-1 | Rust | Kruskal Edge Selection
+edges.sort_by_key(|e| e.weight); for e in edges { if find(e.u) != find(e.v) { union(e.u, e.v); mst.push(e); } }
+
+:: rust-bellman-ford-1 | Rust | Bellman Ford Relaxation
+for _ in 0..n-1 { for &(u, v, w) in &edges { if dist[u] != i32::MAX && dist[u] + w < dist[v] { dist[v] = dist[u] + w; } } }
+
+:: rust-z-algorithm-1 | Rust | Z Algorithm Window
+if i <= r { z[i] = z[i - l].min(r - i + 1); }
+
+:: rust-counting-sort-1 | Rust | Counting Sort
+for &x in &nums { count[x as usize] += 1; }
+
+:: rust-top-k-frequency-1 | Rust | Top K Frequent
+let mut freq = std::collections::HashMap::new(); for x in nums { *freq.entry(x).or_insert(0) += 1; }
+
+:: rust-activity-selection-1 | Rust | Activity Selection
+activities.sort_by_key(|a| a.end); let chosen: Vec<_> = activities.into_iter().filter(|a| { let ok = a.start >= last_end; if ok { last_end = a.end; } ok }).collect();
+
+:: rust-prefix-xor-1 | Rust | Prefix XOR
+let mut prefix = vec![0]; for &x in &nums { prefix.push(prefix.last().unwrap() ^ x); }
+
+:: rust-binary-lifting-1 | Rust | Binary Lifting Table
+up[k][v] = up[k - 1][up[k - 1][v]];
+
+:: kotlin-floyd-warshall-1 | Kotlin | Floyd Warshall
+for (k in 0 until n) for (i in 0 until n) for (j in 0 until n) dist[i][j] = minOf(dist[i][j], dist[i][k] + dist[k][j])
+
+:: kotlin-dutch-flag-1 | Kotlin | Dutch National Flag
+while (mid <= high) when (nums[mid]) { 0 -> nums[low] = nums[mid].also { nums[mid++] = nums[low++] }; 1 -> mid++; else -> nums[mid] = nums[high].also { nums[high--] = nums[mid] } }
+
+:: kotlin-product-except-self-1 | Kotlin | Product Except Self
+val ans = IntArray(nums.size) { 1 }; var left = 1; for (i in nums.indices) { ans[i] = left; left *= nums[i] }
+
+:: kotlin-word-break-1 | Kotlin | Word Break DP
+val dp = BooleanArray(s.length + 1); dp[0] = true; for (i in 1..s.length) dp[i] = words.any { i >= it.length && dp[i - it.length] && s.substring(i - it.length, i) == it }
+
+:: kotlin-permutations-1 | Kotlin | Backtracking Permutations
+fun backtrack(path: MutableList<Int>) { if (path.size == nums.size) result.add(path.toList()) else for (x in nums) if (x !in path) { path.add(x); backtrack(path); path.removeAt(path.lastIndex) } }
+
+:: kotlin-nqueens-safe-1 | Kotlin | N Queens Safe Check
+fun safe(r: Int, c: Int) = rows[r] == 0 && diag1[r - c + n] == 0 && diag2[r + c] == 0
+
+:: kotlin-spiral-matrix-1 | Kotlin | Spiral Matrix Traversal
+while (top <= bottom && left <= right) { for (c in left..right) ans.add(a[top][c]); top++ }
+
+:: kotlin-median-heaps-1 | Kotlin | Two Heap Median
+if (low.size > high.size + 1) high.add(low.poll()) else if (high.size > low.size) low.add(high.poll())
+
+:: swift-lcs-1 | Swift | Longest Common Subsequence
+for i in 1...a.count { for j in 1...b.count { dp[i][j] = a[i-1] == b[j-1] ? dp[i-1][j-1] + 1 : max(dp[i-1][j], dp[i][j-1]) } }
+
+:: swift-min-stack-1 | Swift | Min Stack Push
+stack.append(x); mins.append(min(x, mins.last ?? x))
+
+:: swift-sweep-line-1 | Swift | Maximum Overlap Sweep Line
+for event in events.sorted(by: { $0.time < $1.time }) { active += event.delta; best = max(best, active) }
+
+:: swift-level-order-1 | Swift | Binary Tree Level Order
+while !queue.isEmpty { let node = queue.removeFirst(); values.append(node.val); if let l = node.left { queue.append(l) }; if let r = node.right { queue.append(r) } }
+
+:: swift-majority-vote-1 | Swift | Boyer Moore Majority Vote
+for x in nums { if count == 0 { candidate = x }; count += x == candidate ? 1 : -1 }
+
+:: swift-expand-palindrome-1 | Swift | Expand Around Center
+while left >= 0 && right < chars.count && chars[left] == chars[right] { left -= 1; right += 1 }
+
+:: swift-topological-sort-1 | Swift | Topological Sort
+while !queue.isEmpty { let node = queue.removeFirst(); order.append(node); for next in graph[node] { indegree[next] -= 1; if indegree[next] == 0 { queue.append(next) } } }
+
+:: swift-weighted-random-1 | Swift | Weighted Random Choice
+let r = Int.random(in: 1...totalWeight); let choice = prefix.firstIndex { $0 >= r }!
+
+:: php-run-length-1 | PHP | Run Length Encoding
+$result = ""; for ($i = 0; $i < strlen($s); $i++) { $count = 1; while ($i + 1 < strlen($s) && $s[$i] === $s[$i + 1]) { $count++; $i++; } $result .= $s[$i] . $count; }
+
+:: php-prime-factorization-1 | PHP | Prime Factorization
+for ($d = 2; $d * $d <= $n; $d++) while ($n % $d == 0) { $factors[] = $d; $n /= $d; } if ($n > 1) $factors[] = $n;
+
+:: php-group-anagrams-1 | PHP | Group Anagrams
+foreach ($words as $word) { $chars = str_split($word); sort($chars); $groups[implode("", $chars)][] = $word; }
+
+:: php-grid-bfs-1 | PHP | Grid Shortest Path BFS
+$queue = [[0, 0, 0]]; while ($queue) { [$r, $c, $d] = array_shift($queue); if ($r == $targetR && $c == $targetC) return $d; }
+
+:: php-memoization-1 | PHP | Memoized Recursion
+function fib($n, &$memo = []) { if ($n < 2) return $n; return $memo[$n] ??= fib($n - 1, $memo) + fib($n - 2, $memo); }
+
+:: php-common-prefix-1 | PHP | Longest Common Prefix
+$prefix = $words[0]; foreach ($words as $word) while (strpos($word, $prefix) !== 0) $prefix = substr($prefix, 0, -1);
+
+:: ruby-connected-components-1 | Ruby | Connected Components
+def dfs(v, graph, seen); seen[v] = true; graph[v].each { |n| dfs(n, graph, seen) unless seen[n] }; end
+
+:: ruby-generate-parentheses-1 | Ruby | Generate Parentheses
+def gen(s, open, close, n, out); out << s if s.length == 2*n; gen(s+"(", open+1, close, n, out) if open < n; gen(s+")", open, close+1, n, out) if close < open; end
+
+:: ruby-bitmask-subsets-1 | Ruby | Bitmask Subsets
+subsets = (0...(1 << nums.length)).map { |mask| nums.each_index.select { |i| mask & (1 << i) != 0 }.map { |i| nums[i] } }
+
+:: ruby-consecutive-sequence-1 | Ruby | Longest Consecutive Sequence
+set = nums.to_set; best = nums.select { |x| !set.include?(x - 1) }.map { |x| y = x; y += 1 while set.include?(y); y - x }.max
+
+:: ruby-stable-partition-1 | Ruby | Stable Partition
+partitioned = nums.select { |x| x < pivot } + nums.reject { |x| x < pivot }
+
+:: ruby-levenshtein-1 | Ruby | Levenshtein Distance Setup
+dp = Array.new(a.length + 1) { Array.new(b.length + 1, 0) }
+
+:: dart-rotate-array-1 | Dart | Rotate Array
+nums.setAll(0, [...nums.sublist(nums.length - k), ...nums.sublist(0, nums.length - k)]);
+
+:: dart-invert-tree-1 | Dart | Invert Binary Tree
+TreeNode? invert(TreeNode? root) { if (root == null) return null; final left = invert(root.left); root.left = invert(root.right); root.right = left; return root; }
+
+:: dart-sudoku-check-1 | Dart | Valid Sudoku Row
+final valid = row.where((x) => x != ".").toSet().length == row.where((x) => x != ".").length;
+
+:: dart-postfix-eval-1 | Dart | Postfix Expression Evaluation
+for (final t in tokens) ops.contains(t) ? stack.add(apply(stack.removeLast(), stack.removeLast(), t)) : stack.add(int.parse(t));
+
+:: dart-range-sum-1 | Dart | Prefix Range Sum
+int rangeSum(int left, int right) => prefix[right + 1] - prefix[left];
+
+:: dart-island-dfs-1 | Dart | Number Of Islands DFS
+void sink(int r, int c) { if (r < 0 || c < 0 || r >= grid.length || c >= grid[0].length || grid[r][c] != "1") return; grid[r][c] = "0"; sink(r+1,c); sink(r-1,c); sink(r,c+1); sink(r,c-1); }
+
+:: scala-graph-coloring-1 | Scala | Graph Coloring Check
+def canColor(v: Int, color: Int): Boolean = graph(v).forall(neighbor => colors(neighbor) != color)
+
+:: scala-memo-fib-1 | Scala | Memoized Fibonacci
+def fib(n: Int): BigInt = memo.getOrElseUpdate(n, if (n < 2) n else fib(n - 1) + fib(n - 2))
+
+:: scala-circular-kadane-1 | Scala | Circular Maximum Subarray
+val answer = math.max(kadane(nums), nums.sum + kadane(nums.map(-_)))
+
+:: scala-top-k-frequency-1 | Scala | Top K Frequent
+val topK = nums.groupBy(identity).view.mapValues(.length).toSeq.sortBy(-.2).take(k).map(._1)
+
+:: scala-transpose-1 | Scala | Matrix Transpose
+val transposed = matrix.transpose
+
+:: scala-brackets-fold-1 | Scala | Balanced Brackets
+val ok = s.foldLeft(List.empty[Char])((stack, c) => if ("([{".contains(c)) c :: stack else stack).isEmpty
+
+:: elixir-flatten-list-1 | Elixir | Flatten Nested List
+def flatten([]), do: []; def flatten([h | t]) when is_list(h), do: flatten(h) ++ flatten(t); def flatten([h | t]), do: [h | flatten(t)]
+
+:: elixir-combinations-1 | Elixir | Generate Combinations
+def comb(_, 0), do: [[]]; def comb([], _), do: []; def comb([h | t], k), do: Enum.map(comb(t, k - 1), &[h | &1]) ++ comb(t, k)
+
+:: elixir-extended-gcd-1 | Elixir | Extended Euclidean Algorithm
+def egcd(a, 0), do: {a, 1, 0}; def egcd(a, b), do: (fn {g, x, y} -> {g, y, x - div(a, b) * y} end).(egcd(b, rem(a, b)))
+
+:: elixir-run-length-1 | Elixir | Run Length Encoding
+encoded = Enum.chunk_by(chars, & &1) |> Enum.map(fn group -> {hd(group), length(group)} end)
+
+:: elixir-bfs-layer-1 | Elixir | BFS Layer Expansion
+next_layer = layer |> Enum.flat_map(&Map.get(graph, &1, [])) |> Enum.reject(&MapSet.member?(seen, &1))
+
+:: elixir-moving-average-1 | Elixir | Moving Average
+averages = values |> Enum.chunk_every(k, 1, :discard) |> Enum.map(&(Enum.sum(&1) / k))
+
+:: julia-newton-root-1 | Julia | Newton Method
+x = x - f(x) / fprime(x)
+
+:: julia-gradient-step-1 | Julia | Gradient Descent Step
+weights .-= learning_rate .* gradient
+
+:: julia-kmeans-assign-1 | Julia | K Means Assignment
+labels = [argmin([sum((x .- c).^2) for c in centroids]) for x in points]
+
+:: julia-convolution-1 | Julia | One Dimensional Convolution
+y[i] = sum(kernel[j] * signal[i - j + 1] for j in 1:length(kernel) if i - j + 1 in eachindex(signal))
+
+:: julia-monte-carlo-pi-1 | Julia | Monte Carlo Pi Estimate
+pi_estimate = 4 * count(rand()^2 + rand()^2 <= 1 for _ in 1:n) / n
+
+:: julia-markov-step-1 | Julia | Markov Chain Step
+state = transition_matrix' * state
+
+:: r-bootstrap-1 | R | Bootstrap Resample
+sampled <- sample(values, size = length(values), replace = TRUE)
+
+:: r-moving-average-1 | R | Moving Average
+moving_avg <- stats::filter(values, rep(1 / k, k), sides = 1)
+
+:: r-zscore-1 | R | Z Score Standardization
+z <- (values - mean(values)) / sd(values)
+
+:: r-train-test-split-1 | R | Train Test Split
+train_idx <- sample(seq_len(nrow(data)), size = floor(0.8 * nrow(data)))

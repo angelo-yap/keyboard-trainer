@@ -5,6 +5,8 @@ export type KeyboardLightingMode = "solid" | "fingerBounds";
 
 export type Settings = {
   testDuration: number;
+  quotesModeEnabled: boolean;
+  codeModeEnabled: boolean;
   wordCount: number;
   testMode: "time" | "words";
   showKeyboard: boolean;
@@ -46,6 +48,8 @@ function normalizeLightingMode(value: unknown, fallback: KeyboardLightingMode): 
 
 const DEFAULT_SETTINGS: Settings = {
   testDuration: 60,
+  quotesModeEnabled: true,
+  codeModeEnabled: true,
   wordCount: 25,
   testMode: "time",
   showKeyboard: true,

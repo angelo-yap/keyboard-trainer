@@ -58,6 +58,13 @@ function normalizeSample(value: Partial<KeyAttemptSample>): KeyAttemptSample | n
   };
 }
 
+function normalizeTrackedKey(char: string): string {
+  return char
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
 function entryFromSamples(samples: KeyAttemptSample[]): KeyStatEntry {
   const windowedSamples = samples.slice(-KEY_ATTEMPT_WINDOW);
   const latencySamples = windowedSamples.filter((sample) => sample.latencyMs != null);
@@ -122,16 +129,38 @@ function getScoreForEntry(entry: KeyStatEntry): number {
   return Math.max(0, accuracy - getHesitationPenalty(avgLatencyMs));
 }
 
+function mergeEntries(a: KeyStatEntry, b: KeyStatEntry): KeyStatEntry {
+  if (a.samples.length > 0 || b.samples.length > 0) {
+    return entryFromSamples([...a.samples, ...b.samples]);
+  }
+
+  return {
+    attempts: a.attempts + b.attempts,
+    errors: a.errors + b.errors,
+    totalLatencyMs: a.totalLatencyMs + b.totalLatencyMs,
+    latencySamples: a.latencySamples + b.latencySamples,
+    slowAttempts: a.slowAttempts + b.slowAttempts,
+    samples: [],
+  };
+}
+
 export function getKeyStats(): KeyStats {
   const raw = getLS("kt_keystats", {}) as Record<string, StoredKeyStatEntry>;
-  return Object.fromEntries(
-    Object.entries(raw).map(([key, value]) => [key, normalizeEntry(value)]),
-  );
+  const normalized: KeyStats = {};
+
+  Object.entries(raw).forEach(([key, value]) => {
+    const normalizedKey = normalizeTrackedKey(key);
+    const entry = normalizeEntry(value);
+    const current = normalized[normalizedKey];
+    normalized[normalizedKey] = current ? mergeEntries(current, entry) : entry;
+  });
+
+  return normalized;
 }
 
 export function recordKeyStats(char: string, wasError: boolean, latencyMs?: number | null): void {
   const stats = getKeyStats();
-  const key = char.toLowerCase();
+  const key = normalizeTrackedKey(char);
   const sampleLatencyMs =
     typeof latencyMs === "number" &&
     Number.isFinite(latencyMs) &&
