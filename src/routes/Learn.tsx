@@ -42,6 +42,7 @@ interface LearnProps {
   /** Called when user completes the final step (curriculum complete). If not provided, onBack is used. */
   onCurriculumComplete?: () => void;
   settings?: Settings;
+  showKeyboardLightIntro?: boolean;
 }
 
 /* ── Drill state machine ──────────────────────────────────────────────── */
@@ -117,7 +118,12 @@ function renderBody(text: string): React.ReactNode[] {
 
 /* ── Main component ──────────────────────────────────────────────────── */
 
-export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
+export function Learn({
+  onBack,
+  onCurriculumComplete,
+  settings,
+  showKeyboardLightIntro = false,
+}: LearnProps) {
   const [stepIndex, setStepIndex] = useState(() =>
     Math.min(getLearnProgress(), TOTAL_STEPS - 1),
   );
@@ -128,6 +134,7 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
   const [verdict, setVerdict] = useState<"GOOD" | "BAD" | "IDLE" | "">("");
   const [wrongFingers, setWrongFingers] = useState<string[]>([]);
   const [showCamera, setShowCamera] = useState(false);
+  const [keyboardLightIntroSeen, setKeyboardLightIntroSeen] = useState(false);
   const lastGuidedKeyRef = useRef<string | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -301,6 +308,9 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
 
       const key = e.key === " " ? " " : e.key.toLowerCase();
       setLastKey(key);
+      if (e.key.length === 1) {
+        setKeyboardLightIntroSeen(true);
+      }
 
       if (step.drill.type === "keys") {
         const validKeys = step.drill.keys ?? [];
@@ -506,6 +516,13 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
                 {step.drill.hint && (
                   <div className="learn-drill__hint mono-label">
                     {step.drill.hint}
+                  </div>
+                )}
+
+                {showKeyboardLightIntro && isTypingDrill && !keyboardLightIntroSeen && (
+                  <div className="learn-tool-callout">
+                    The keyboard lights change to the next key. Follow the glow
+                    when you start typing.
                   </div>
                 )}
 
