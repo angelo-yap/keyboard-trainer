@@ -12,6 +12,7 @@ import { formatKeyLabel } from '../../core/text/formatChar';
 interface SessionReportProps {
   report: SessionReport;
   onRetry:       () => void;   /* repeat the same session */
+  onReplay?:     () => void;   /* replay the completed session */
   onNextLesson?: () => void;   /* only shown for practice sessions */
   onHome:        () => void;
 }
@@ -359,6 +360,7 @@ function getVerdict(report: SessionReport): { headline: string; detail: string }
 export const SessionReportCard: React.FC<SessionReportProps> = ({
   report,
   onRetry,
+  onReplay,
   onNextLesson,
   onHome,
 }) => {
@@ -483,6 +485,11 @@ export const SessionReportCard: React.FC<SessionReportProps> = ({
         <button className="sr-action sr-action--ghost" onClick={onHome}>
           home
         </button>
+        {onReplay && (
+          <button className="sr-action sr-action--ghost" onClick={onReplay}>
+            watch test
+          </button>
+        )}
         <button className="sr-action sr-action--ghost" onClick={onRetry}>
           retry →
         </button>

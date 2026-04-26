@@ -446,6 +446,14 @@
   left: 0;
 }
 
+.test--replay .lesson-stage-body {
+  cursor: default;
+}
+
+.test-typing-wrap--replay {
+  cursor: default;
+}
+
 /* ── Hand-tracking feedback banner ─────────────────────────────────── */
 .feedback-banner {
   display: flex;
@@ -503,8 +511,10 @@
 .test-results-extra-actions {
   display: flex;
   justify-content: center;
+  gap: var(--space-3);
   padding: 0 clamp(var(--space-6), 6vw, 80px) var(--space-8);
   max-width: 960px;
   margin: 0 auto;
   width: 100%;
+  flex-wrap: wrap;
 }

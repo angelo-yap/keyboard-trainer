@@ -23,6 +23,19 @@ function getCharForKey(def: KeyDef): string | null {
   return null;
 }
 
+function keyMatchesToken(def: KeyDef, token: string): boolean {
+  const normalized = token.toLowerCase();
+  const ch = getCharForKey(def);
+
+  if (ch === normalized) return true;
+  if (def.key === " " && normalized === "space") return true;
+  if (def.key.toLowerCase() === normalized) return true;
+  if (def.code?.toLowerCase() === normalized) return true;
+  if (def.key.toLowerCase() === "shift" && normalized.startsWith("shift")) return true;
+
+  return false;
+}
+
 function getFingerColor(def: KeyDef): string | null {
   const specialIdx = SPECIAL_FINGER_MAP[def.code ?? def.key];
   if (specialIdx != null) return FINGER_COLORS_SOFT[specialIdx] ?? null;
@@ -57,7 +70,8 @@ export const KeyboardRow = memo(function KeyboardRow({
         const ch = getCharForKey(def);
         const pk = pressedKey?.toLowerCase();
         const isHighlighted =
-          !!ch && (ch === hl || (highlightKeys ? highlightKeys.has(ch) : false));
+          (!!hl && keyMatchesToken(def, hl)) ||
+          (highlightKeys ? Array.from(highlightKeys).some((key) => keyMatchesToken(def, key)) : false);
         const isPressed =
           (!!ch && ch === pk) ||
           (def.key === " " && pressedKey === " ") ||

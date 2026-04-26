@@ -22,7 +22,7 @@ type KeyboardProps = {
   layoutType?: LayoutType;
   highlightKey?: string;
   highlightKeys?: string[];
-  pressedKey?: string;       // still accepted so callers don't break, but ignored internally
+  pressedKey?: string;
   showFingerHints?: boolean;
   mode?: KeyboardMode;
   className?: string;
@@ -49,16 +49,14 @@ export function Keyboard({
   layoutType = "mac",
   highlightKey = "",
   highlightKeys,
+  pressedKey: controlledPressedKey,
   showFingerHints = true,
   mode = "test",
   className = "",
   fingerMarkers = [],
   onKeyClick,
 }: KeyboardProps) {
-  // Own internal pressedKey state — updated by window keydown/keyup.
-  // This means the parent (Test) never re-renders when a key is pressed.
-  // Only the Keyboard itself re-renders, and only the one changed key thanks to memo.
-  const [pressedKey, setPressedKey] = useState("");
+  const [internalPressedKey, setInternalPressedKey] = useState("");
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -66,14 +64,14 @@ export function Keyboard({
     const onDown = (e: KeyboardEvent) => {
       clearTimeout(timer);
       const k = e.key === " " ? " " : e.key.length === 1 ? e.key.toLowerCase() : e.key.toLowerCase();
-      setPressedKey(k);
+      setInternalPressedKey(k);
       // Auto-clear after 150ms in case keyup is missed
-      timer = setTimeout(() => setPressedKey(""), 150);
+      timer = setTimeout(() => setInternalPressedKey(""), 150);
     };
 
     const onUp = () => {
       clearTimeout(timer);
-      setPressedKey("");
+      setInternalPressedKey("");
     };
 
     window.addEventListener("keydown", onDown);
@@ -87,6 +85,7 @@ export function Keyboard({
 
   const hlKey = highlightKey || (highlightKeys && highlightKeys[0]) || "";
   const hlSet = highlightKeys ? new Set(highlightKeys.map((k) => k.toLowerCase())) : null;
+  const pressedKey = controlledPressedKey ?? internalPressedKey;
   const layout = keyboardLayouts[layoutType];
   if (!layout) return null;
 
