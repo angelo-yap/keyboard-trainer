@@ -242,6 +242,16 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
   const currentTargetChar = testStatus === "active" ? text.charAt(typing.typed.length) : "";
   const guidedTargetKeys = getGuidanceKeysForChar(currentTargetChar);
   const guidedKeySignature = guidedTargetKeys.join("+");
+  const currentTargetCharRef = useRef(currentTargetChar);
+  const recordHandFormSampleRef = useRef(typing.recordHandFormSample);
+
+  useEffect(() => {
+    currentTargetCharRef.current = currentTargetChar;
+  }, [currentTargetChar]);
+
+  useEffect(() => {
+    recordHandFormSampleRef.current = typing.recordHandFormSample;
+  }, [typing.recordHandFormSample]);
 
   // Drive hardware guidance from the current target character, not from typed key events.
   useEffect(() => {
@@ -295,6 +305,11 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
             Number.isFinite(finger.y),
         ),
       );
+      recordHandFormSampleRef.current({
+        verdict: data.verdict,
+        expectedKey: currentTargetCharRef.current,
+        wrongFingers: data.wrong_fingers ?? [],
+      });
     };
 
     ws.onerror = () => {
@@ -329,6 +344,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
             chars: metrics.chars,
             duration,
             date: new Date().toISOString(),
+            completed: true,
           });
           updateStreak();
           onStatsChange?.();

@@ -260,6 +260,16 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, onStartAdaptiveTest, se
   const nextTargetChar = lesson ? text.charAt(typing.typed.length) : "";
   const guidedTargetKeys = getGuidanceKeysForChar(nextTargetChar);
   const guidedKeySignature = guidedTargetKeys.join("+");
+  const nextTargetCharRef = useRef(nextTargetChar);
+  const recordHandFormSampleRef = useRef(typing.recordHandFormSample);
+
+  useEffect(() => {
+    nextTargetCharRef.current = nextTargetChar;
+  }, [nextTargetChar]);
+
+  useEffect(() => {
+    recordHandFormSampleRef.current = typing.recordHandFormSample;
+  }, [typing.recordHandFormSample]);
 
   useEffect(() => {
     if (!lesson || typing.report) {
@@ -286,6 +296,8 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, onStartAdaptiveTest, se
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data) as {
+        verdict?: "GOOD" | "BAD" | "IDLE";
+        wrong_fingers?: string[];
         finger_positions?: KeyboardFingerMarker[];
       };
       setFingerMarkers(
@@ -296,6 +308,13 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, onStartAdaptiveTest, se
             Number.isFinite(finger.y),
         ),
       );
+      if (data.verdict) {
+        recordHandFormSampleRef.current({
+          verdict: data.verdict,
+          expectedKey: nextTargetCharRef.current,
+          wrongFingers: data.wrong_fingers ?? [],
+        });
+      }
     };
 
     ws.onerror = () => setFingerMarkers([]);

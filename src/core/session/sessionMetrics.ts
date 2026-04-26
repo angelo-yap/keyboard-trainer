@@ -31,6 +31,34 @@ export interface KeyStat {
   accuracy: number;           /* 0–100, rounded */
   avgReactionMs: number;      /* avg ms between previous keypress and this key */
 }
+
+export type HandFormVerdict = 'GOOD' | 'BAD' | 'IDLE';
+
+export interface HandFormSample {
+  verdict: HandFormVerdict;
+  expectedKey?: string;
+  wrongFingers?: string[];
+  timestamp: number;           /* performance.now() */
+}
+
+export interface HandFormKeyStat {
+  key: string;
+  observedMs: number;
+  badMs: number;
+  score: number;               /* 0–100 */
+}
+
+export interface HandFormReport {
+  score: number;               /* 0–100 overall hand-positioning form */
+  observedMs: number;
+  badMs: number;
+  coverage: number;            /* observed hand-tracking time / session duration */
+  badEvents: number;
+  debounceMs: number;
+  keyStats: HandFormKeyStat[];  /* sorted by score asc (worst first) */
+  weakKeys: string[];
+  topWrongFingers: string[];
+}
  
 export interface SessionReport {
   id: string;                 /* crypto.randomUUID() */
@@ -38,6 +66,7 @@ export interface SessionReport {
   lessonId?: string;          /* set for practice/drill sessions */
   startedAt: number;          /* Date.now() at session start */
   durationSeconds: number;
+  completed: boolean;         /* false for abandoned/interrupted sessions */
  
   /* ── Core numbers ───────────────────────────────────────────────── */
   wpm: number;                /* final WPM (correct chars / 5 / minutes) */
@@ -56,6 +85,9 @@ export interface SessionReport {
   strongKeys: string[];         /* accuracy >= 95%, attempts >= 3 */
   weakKeys: string[];           /* accuracy < 80%, attempts >= 3 */
   slowKeys: string[];           /* avgReactionMs in top 20% (slowest), attempts >= 3 */
+
+  /* ── Optional hand-tracking form score. Missing when tracking was off. */
+  handForm?: HandFormReport;
  
   /* ── Comparison to personal bests (populated by sessionHistoryStore) */
   prevBestWpm?: number;
@@ -70,6 +102,11 @@ export interface SessionRecorder {
     expected: string;
     correct: boolean;
   }) => void;
+  recordHandFormSample: (params: {
+    verdict: HandFormVerdict;
+    expectedKey?: string;
+    wrongFingers?: string[];
+  }) => void;
   tick: () => void;             /* call every 3 s on a setInterval */
   finish: (coreMetrics?: {
     wpm?: number;
@@ -78,6 +115,7 @@ export interface SessionRecorder {
     correctChars?: number;
     errorChars?: number;
     totalChars?: number;
+    completed?: boolean;
   }) => SessionReport;
   getliveWpm: () => number;     /* for the topbar display during session */
   getLiveAccuracy: () => number;
@@ -86,6 +124,8 @@ export interface SessionRecorder {
 /* ══════════════════════════════════════════════════════════════════════ */
  
 const CHARS_PER_WORD = 5;
+const BAD_FORM_DEBOUNCE_MS = 300;
+const MIN_HAND_FORM_KEY_MS = 500;
  
 function roundTo(n: number, decimals = 0): number {
   const factor = Math.pow(10, decimals);
@@ -97,6 +137,115 @@ function uuid(): string {
     return crypto.randomUUID();
   }
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function normalizeExpectedKey(key: string | undefined): string | undefined {
+  if (key == null) return undefined;
+  if (key === ' ') return ' ';
+  const normalized = key.toLowerCase();
+  return normalized.length > 0 ? normalized : undefined;
+}
+
+function computeHandFormReport(
+  samples: HandFormSample[],
+  startPerf: number | null,
+  endPerf: number,
+): HandFormReport | undefined {
+  if (startPerf === null || samples.length === 0) return undefined;
+
+  const sorted = [...samples]
+    .filter((sample) => sample.timestamp >= startPerf && sample.timestamp <= endPerf)
+    .sort((a, b) => a.timestamp - b.timestamp);
+
+  if (sorted.length === 0) return undefined;
+
+  let observedMs = 0;
+  let badMs = 0;
+  let idleMs = 0;
+  let badEvents = 0;
+  let badRunElapsed = 0;
+  let wasInBadRun = false;
+  const keyMap = new Map<string, { observedMs: number; badMs: number }>();
+  const wrongFingerCounts = new Map<string, number>();
+
+  sorted.forEach((sample, index) => {
+    const nextTime = sorted[index + 1]?.timestamp ?? endPerf;
+    const duration = Math.max(0, nextTime - sample.timestamp);
+    const key = normalizeExpectedKey(sample.expectedKey);
+
+    if (sample.verdict === 'IDLE') {
+      idleMs += duration;
+      badRunElapsed = 0;
+      wasInBadRun = false;
+      return;
+    }
+
+    observedMs += duration;
+    if (key) {
+      const entry = keyMap.get(key) ?? { observedMs: 0, badMs: 0 };
+      entry.observedMs += duration;
+      keyMap.set(key, entry);
+    }
+
+    if (sample.verdict === 'GOOD') {
+      badRunElapsed = 0;
+      wasInBadRun = false;
+      return;
+    }
+
+    if (!wasInBadRun) {
+      badEvents += 1;
+    }
+    wasInBadRun = true;
+
+    const penalizedBefore = Math.max(0, badRunElapsed - BAD_FORM_DEBOUNCE_MS);
+    badRunElapsed += duration;
+    const penalizedAfter = Math.max(0, badRunElapsed - BAD_FORM_DEBOUNCE_MS);
+    const penalizedDuration = Math.max(0, penalizedAfter - penalizedBefore);
+    badMs += penalizedDuration;
+
+    if (key && penalizedDuration > 0) {
+      const entry = keyMap.get(key) ?? { observedMs: 0, badMs: 0 };
+      entry.badMs += penalizedDuration;
+      keyMap.set(key, entry);
+    }
+
+    (sample.wrongFingers ?? []).forEach((finger) => {
+      wrongFingerCounts.set(finger, (wrongFingerCounts.get(finger) ?? 0) + 1);
+    });
+  });
+
+  if (observedMs <= 0) {
+    return undefined;
+  }
+
+  const durationMs = Math.max(0, endPerf - startPerf);
+  const keyStats = Array.from(keyMap.entries())
+    .filter(([, data]) => data.observedMs >= MIN_HAND_FORM_KEY_MS)
+    .map(([key, data]) => ({
+      key,
+      observedMs: Math.round(data.observedMs),
+      badMs: Math.round(data.badMs),
+      score: Math.round(Math.max(0, 100 - (data.badMs / data.observedMs) * 100)),
+    }))
+    .sort((a, b) => a.score - b.score);
+
+  return {
+    score: Math.round(Math.max(0, 100 - (badMs / observedMs) * 100)),
+    observedMs: Math.round(observedMs),
+    badMs: Math.round(badMs),
+    coverage: durationMs > 0
+      ? Math.round(((observedMs + idleMs) / durationMs) * 100)
+      : 0,
+    badEvents,
+    debounceMs: BAD_FORM_DEBOUNCE_MS,
+    keyStats,
+    weakKeys: keyStats.filter((key) => key.score < 85).map((key) => key.key),
+    topWrongFingers: Array.from(wrongFingerCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([finger]) => finger),
+  };
 }
  
 /* ── Main factory ─────────────────────────────────────────────────────── */
@@ -112,6 +261,7 @@ export function createSessionRecorder(params: {
  
   const events: KeyEvent[]       = [];
   const snapshots: WpmSnapshot[] = [];
+  const handFormSamples: HandFormSample[] = [];
   let lastKeypressTime: number | null = null;
  
   /* ── recordKeypress ─────────────────────────────────────────────── */
@@ -134,6 +284,25 @@ export function createSessionRecorder(params: {
  
     events.push({ key, expected, correct, timestamp: now });
     lastKeypressTime = now;
+  }
+
+  function recordHandFormSample({
+    verdict,
+    expectedKey,
+    wrongFingers,
+  }: {
+    verdict: HandFormVerdict;
+    expectedKey?: string;
+    wrongFingers?: string[];
+  }) {
+    if (startPerf === null) return;
+
+    handFormSamples.push({
+      verdict,
+      expectedKey,
+      wrongFingers,
+      timestamp: performance.now(),
+    });
   }
  
   /* ── tick (called every ~3 s) ───────────────────────────────────── */
@@ -176,6 +345,7 @@ export function createSessionRecorder(params: {
     correctChars?: number;
     errorChars?: number;
     totalChars?: number;
+    completed?: boolean;
   }): SessionReport {
     const endPerf = performance.now();
     const durationSeconds =
@@ -278,6 +448,8 @@ export function createSessionRecorder(params: {
     const slowKeys = keysWithReaction
       .filter(k => k.avgReactionMs >= reactionThreshold)
       .map(k => k.key);
+
+    const handForm = computeHandFormReport(handFormSamples, startPerf, endPerf);
  
     /* ── Personal best ────────────────────────────────────────────── */
     const isPersonalBest = params.prevBestWpm != null
@@ -290,6 +462,7 @@ export function createSessionRecorder(params: {
       lessonId:      params.lessonId,
       startedAt:     startedAt ?? Date.now(),
       durationSeconds,
+      completed:     coreMetrics?.completed ?? true,
       wpm,
       rawWpm,
       accuracy,
@@ -302,11 +475,12 @@ export function createSessionRecorder(params: {
       strongKeys,
       weakKeys,
       slowKeys,
+      ...(handForm ? { handForm } : {}),
       prevBestWpm:   params.prevBestWpm,
       prevAvgWpm:    params.prevAvgWpm,
       isPersonalBest,
     };
   }
  
-  return { recordKeypress, tick, finish, getliveWpm, getLiveAccuracy };
+  return { recordKeypress, recordHandFormSample, tick, finish, getliveWpm, getLiveAccuracy };
 }
