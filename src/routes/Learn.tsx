@@ -19,7 +19,7 @@ import "../ui/Layout/LessonStage.css";
 import "./Learn.css";
 import "./Test.css";
 import { TypingDisplay } from "../ui/components/TypingDisplay";
-import { Keyboard } from "../ui/components/keyboard";
+import { Keyboard, type KeyboardFingerMarker } from "../ui/components/keyboard";
 import type { Settings } from "../core/storage/settingsStore";
 import {
   LEARN_STEPS,
@@ -133,6 +133,7 @@ export function Learn({
   const [capsLockOn, setCapsLockOn] = useState(false);
   const [verdict, setVerdict] = useState<"GOOD" | "BAD" | "IDLE" | "">("");
   const [wrongFingers, setWrongFingers] = useState<string[]>([]);
+  const [fingerMarkers, setFingerMarkers] = useState<KeyboardFingerMarker[]>([]);
   const [showCamera, setShowCamera] = useState(false);
   const [keyboardLightIntroSeen, setKeyboardLightIntroSeen] = useState(false);
   const lastGuidedKeyRef = useRef<string | null>(null);
@@ -202,13 +203,23 @@ export function Learn({
       const data = JSON.parse(event.data) as {
         verdict: "GOOD" | "BAD" | "IDLE";
         wrong_fingers: string[];
+        finger_positions?: KeyboardFingerMarker[];
       };
       setVerdict(data.verdict);
       setWrongFingers(data.wrong_fingers);
+      setFingerMarkers(
+        (data.finger_positions ?? []).filter(
+          (finger) =>
+            typeof finger.label === "string" &&
+            Number.isFinite(finger.x) &&
+            Number.isFinite(finger.y),
+        ),
+      );
     };
     ws.onerror = () => {
       setVerdict("");
       setWrongFingers([]);
+      setFingerMarkers([]);
     };
     return () => ws.close();
   }, []);
@@ -465,6 +476,7 @@ export function Learn({
                 pressedKey={lastKey}
                 showFingerHints={settings?.showFingerHints !== false}
                 mode="lesson"
+                fingerMarkers={fingerMarkers}
               />
             </div>
           )}

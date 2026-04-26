@@ -25,7 +25,7 @@ import { resetKeyboardLed, sendKeyboardLedForKeys } from "../core/keyboard/keybo
 import { getGuidanceKeysForChar } from "../core/keyboard/keyNormalization";
 import { TypingDisplay } from "../ui/components/TypingDisplay";
 import { SessionReportCard } from "../ui/components/SessionReport";
-import { Keyboard } from "../ui/components/keyboard";
+import { Keyboard, type KeyboardFingerMarker } from "../ui/components/keyboard";
 import type { Settings } from "../core/storage/settingsStore";
 import { formatKeyLabel } from "../core/text/formatChar";
 
@@ -215,6 +215,7 @@ const HandCue: React.FC<{
 
 export const Home: React.FC<HomeProps> = ({ onTabChange, onStartAdaptiveTest, settings }) => {
   const [lessonId, setLessonId] = useState<number | null>(null);
+  const [fingerMarkers, setFingerMarkers] = useState<KeyboardFingerMarker[]>([]);
   const lastGuidedKeyRef = useRef<string | null>(null);
 
   const lessons = getLessonSummaries();
@@ -273,6 +274,32 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, onStartAdaptiveTest, se
     lastGuidedKeyRef.current = guidedKeySignature;
     void sendKeyboardLedForKeys(guidedTargetKeys);
   }, [lesson, typing.report, guidedTargetKeys, guidedKeySignature]);
+
+  useEffect(() => {
+    if (!lesson || typing.report) {
+      setFingerMarkers([]);
+      return;
+    }
+
+    const ws = new WebSocket("ws://localhost:8000/ws");
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data) as {
+        finger_positions?: KeyboardFingerMarker[];
+      };
+      setFingerMarkers(
+        (data.finger_positions ?? []).filter(
+          (finger) =>
+            typeof finger.label === "string" &&
+            Number.isFinite(finger.x) &&
+            Number.isFinite(finger.y),
+        ),
+      );
+    };
+
+    ws.onerror = () => setFingerMarkers([]);
+    return () => ws.close();
+  }, [lesson, typing.report]);
 
   const dayLabel =
     streak.count > 0
@@ -339,6 +366,7 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, onStartAdaptiveTest, se
         callout={callout}
         guidedKeys={guidedTargetKeys}
         settings={settings}
+        fingerMarkers={fingerMarkers}
         onKeyDown={handleKeyDown}
         onBack={exitSession}
         onRestart={() => typing.reset()}
@@ -507,6 +535,7 @@ interface PracticeSessionViewProps {
   callout: ReturnType<typeof getCallout>;
   guidedKeys: string[];
   settings?: Settings;
+  fingerMarkers: KeyboardFingerMarker[];
   onKeyDown: (e: React.KeyboardEvent) => void;
   onBack: () => void;
   onRestart: () => void;
@@ -519,6 +548,7 @@ function PracticeSessionView({
   callout,
   guidedKeys,
   settings,
+  fingerMarkers,
   onKeyDown,
   onBack,
   onRestart,
@@ -669,6 +699,7 @@ function PracticeSessionView({
               pressedKey={typing.pressedKey ?? ""}
               showFingerHints={settings?.showFingerHints !== false}
               mode="lesson"
+              fingerMarkers={fingerMarkers}
             />
           </div>
         )}
