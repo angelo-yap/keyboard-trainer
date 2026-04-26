@@ -12,16 +12,20 @@
   --color-surface:        #181815;   /* cards, panels */
   --color-surface-2:      #1E1E1A;   /* inset surfaces, hover states */
   --color-surface-3:      #242420;   /* deepest inset */
+  --color-bg-elevated:    var(--color-surface-2);
+  --color-bg-card:        var(--color-surface);
 
   /* ── Borders ─────────────────────────────────────────────────────── */
   --color-line:           rgba(255, 255, 255, 0.07);   /* subtle dividers */
   --color-line-2:         rgba(255, 255, 255, 0.12);   /* visible borders */
   --color-line-3:         rgba(255, 255, 255, 0.18);   /* emphasis borders */
+  --color-border:         var(--color-line-2);
 
   /* ── Text ────────────────────────────────────────────────────────── */
   --color-text:           #E8E4DC;   /* primary */
   --color-text-2:         #8A8780;   /* secondary / muted */
   --color-text-3:         #4A4844;   /* tertiary / placeholder */
+  --color-text-muted:     var(--color-text-2);
 
   /* ── Accent — gold ───────────────────────────────────────────────── */
   --color-accent:         #C8A96E;
@@ -91,4 +95,40 @@
   --color-grade-b: #C8A96E;
   --color-grade-c: #e09a54;
   --color-grade-d: #C06060;
+}
+
+[data-theme="light"] {
+  --color-bg:             #F4F2EC;
+  --color-surface:        #FFFFFF;
+  --color-surface-2:      #ECE9E1;
+  --color-surface-3:      #DED9CE;
+  --color-bg-elevated:    #ECE9E1;
+  --color-bg-card:        #FFFFFF;
+
+  --color-line:           rgba(33, 31, 27, 0.08);
+  --color-line-2:         rgba(33, 31, 27, 0.14);
+  --color-line-3:         rgba(33, 31, 27, 0.24);
+  --color-border:         var(--color-line-2);
+
+  --color-text:           #211F1B;
+  --color-text-2:         #625F57;
+  --color-text-3:         #8A867D;
+  --color-text-muted:     var(--color-text-2);
+
+  --color-accent:         #BFA15A;
+  --color-accent-dim:     rgba(191, 161, 90, 0.14);
+  --color-accent-border:  rgba(191, 161, 90, 0.28);
+  --color-accent-dark:    #8D6F2E;
+  --color-accent-hover:   #C6A96B;
+
+  --color-correct:        #287A55;
+  --color-correct-dim:    rgba(40, 122, 85, 0.11);
+  --color-correct-border: rgba(40, 122, 85, 0.22);
+
+  --color-error:          #B44747;
+  --color-error-dim:      rgba(180, 71, 71, 0.11);
+  --color-error-border:   rgba(180, 71, 71, 0.24);
+
+  --shadow-sm: 0 1px 2px rgba(33, 31, 27, 0.08);
+  --shadow-glow: 0 0 12px rgba(155, 118, 54, 0.18);
 }

@@ -2,8 +2,10 @@ import { getLS, setLS } from "./localStorage";
 
 export type KeyboardLayoutType = "mac" | "windows";
 export type KeyboardLightingMode = "solid" | "fingerBounds";
+export type ThemeMode = "dark" | "light";
 
 export type Settings = {
+  theme: ThemeMode;
   testDuration: number;
   quotesModeEnabled: boolean;
   codeModeEnabled: boolean;
@@ -46,7 +48,12 @@ function normalizeLightingMode(value: unknown, fallback: KeyboardLightingMode): 
   return value === "solid" || value === "fingerBounds" ? value : fallback;
 }
 
+function normalizeTheme(value: unknown, fallback: ThemeMode): ThemeMode {
+  return value === "dark" || value === "light" ? value : fallback;
+}
+
 const DEFAULT_SETTINGS: Settings = {
+  theme: "dark",
   testDuration: 60,
   quotesModeEnabled: true,
   codeModeEnabled: true,
@@ -81,6 +88,7 @@ export function getSettings(): Settings {
     keyboardBacklightColor: normalizeHexColor(raw.keyboardBacklightColor, DEFAULT_SETTINGS.keyboardBacklightColor),
     keyboardLitKeyColor: normalizeHexColor(raw.keyboardLitKeyColor, DEFAULT_SETTINGS.keyboardLitKeyColor),
     keyboardLightingMode: normalizeLightingMode(raw.keyboardLightingMode, DEFAULT_SETTINGS.keyboardLightingMode),
+    theme: normalizeTheme(raw.theme, DEFAULT_SETTINGS.theme),
     handTrackerCameraIndex: normalizeCameraIndex(raw.handTrackerCameraIndex, DEFAULT_SETTINGS.handTrackerCameraIndex),
   };
 }
