@@ -61,23 +61,24 @@ FINGER_TIPS = {
 # We define 8 column zones + 1 bottom space bar zone.
 # ──────────────────────────────────────────────────────────────
 
-# Zone definitions: (x_start_frac, x_end_frac, correct_finger_label)
 # Fingers labeled as: "L_PINKY", "L_RING", "L_MIDDLE", "L_INDEX",
 #                     "R_INDEX", "R_MIDDLE", "R_RING", "R_PINKY", "THUMB"
-KEYBOARD_ZONES = [
-    # (x_start, x_end, zone_name, correct_fingers_set)
-    (0.00, 0.11, "L_PINKY_ZONE",  {"L_PINKY"}),
-    (0.11, 0.18, "L_RING_ZONE",   {"L_RING"}),
-    (0.18, 0.25, "L_MIDDLE_ZONE", {"L_MIDDLE"}),
-    (0.25, 0.38, "L_INDEX_ZONE",  {"L_INDEX"}),
-    (0.38, 0.54, "R_INDEX_ZONE",  {"R_INDEX"}),
-    (0.54, 0.62, "R_MIDDLE_ZONE", {"R_MIDDLE"}),
-    (0.62, 0.70, "R_RING_ZONE",   {"R_RING"}),
-    (0.70, 1.00, "R_PINKY_ZONE",  {"R_PINKY"}),
+ZONE_ORDER = [
+    ("L_PINKY_ZONE", {"L_PINKY"}),
+    ("L_RING_ZONE", {"L_RING"}),
+    ("L_MIDDLE_ZONE", {"L_MIDDLE"}),
+    ("L_INDEX_ZONE", {"L_INDEX"}),
+    ("R_INDEX_ZONE", {"R_INDEX"}),
+    ("R_MIDDLE_ZONE", {"R_MIDDLE"}),
+    ("R_RING_ZONE", {"R_RING"}),
+    ("R_PINKY_ZONE", {"R_PINKY"}),
 ]
 
+ZONE_BY_NAME = {zone_name: correct for zone_name, correct in ZONE_ORDER}
+
 # Space bar: bottom 20% of keyboard height → thumbs only
-SPACEBAR_Y_FRAC = 0.85  # below this y-fraction = spacebar row
+SPACEBAR_Y_FRAC = 0.78  # below this y-fraction = spacebar row
+ZONE_OVERLAP_FRAC = 0.010
 
 # ──────────────────────────────────────────────────────────────
 # ZONE COLORS (BGR) for visualization
@@ -108,18 +109,64 @@ FINGER_LABEL_MAP = {
     ("Right", "PINKY"):  "R_PINKY",
 }
 
-# Row stagger offsets (fraction of keyboard width)
-# Each row is offset to the right as you go down (standard QWERTY stagger)
-ROW_STAGGER = [
-    -0.02,  # Number row (top)
-    0.01,  # QWERTY row
-    0.02,   # ASDF row (home row)
-    0.05,   # ZXCV row
-    0.10,   # Spacebar row (heavily centered)
+KEYBOARD_ROWS = [
+    {
+        "y0": 0.00,
+        "y1": 0.20,
+        "segments": [
+            (0.000, 0.155, "L_PINKY_ZONE"),
+            (0.162, 0.242, "L_RING_ZONE"),
+            (0.242, 0.318, "L_MIDDLE_ZONE"),
+            (0.318, 0.406, "L_INDEX_ZONE"),
+            (0.406, 0.565, "R_INDEX_ZONE"),
+            (0.565, 0.638, "R_MIDDLE_ZONE"),
+            (0.638, 0.728, "R_RING_ZONE"),
+            (0.728, 1.000, "R_PINKY_ZONE"),
+        ],
+    },
+    {
+        "y0": 0.20,
+        "y1": 0.42,
+        "segments": [
+            (0.000, 0.150, "L_PINKY_ZONE"),
+            (0.158, 0.240, "L_RING_ZONE"),
+            (0.240, 0.318, "L_MIDDLE_ZONE"),
+            (0.318, 0.413, "L_INDEX_ZONE"),
+            (0.413, 0.575, "R_INDEX_ZONE"),
+            (0.575, 0.643, "R_MIDDLE_ZONE"),
+            (0.643, 0.733, "R_RING_ZONE"),
+            (0.733, 1.000, "R_PINKY_ZONE"),
+        ],
+    },
+    {
+        "y0": 0.42,
+        "y1": 0.61,
+        "segments": [
+            (0.000, 0.165, "L_PINKY_ZONE"),
+            (0.165, 0.250, "L_RING_ZONE"),
+            (0.250, 0.330, "L_MIDDLE_ZONE"),
+            (0.330, 0.428, "L_INDEX_ZONE"),
+            (0.428, 0.575, "R_INDEX_ZONE"),
+            (0.575, 0.645, "R_MIDDLE_ZONE"),
+            (0.645, 0.735, "R_RING_ZONE"),
+            (0.735, 1.000, "R_PINKY_ZONE"),
+        ],
+    },
+    {
+        "y0": 0.61,
+        "y1": SPACEBAR_Y_FRAC,
+        "segments": [
+            (0.000, 0.185, "L_PINKY_ZONE"),
+            (0.185, 0.270, "L_RING_ZONE"),
+            (0.270, 0.360, "L_MIDDLE_ZONE"),
+            (0.360, 0.463, "L_INDEX_ZONE"),
+            (0.463, 0.610, "R_INDEX_ZONE"),
+            (0.610, 0.675, "R_MIDDLE_ZONE"),
+            (0.675, 0.765, "R_RING_ZONE"),
+            (0.765, 1.000, "R_PINKY_ZONE"),
+        ],
+    },
 ]
-
-# Y positions of each row boundary (fraction of keyboard height)
-ROW_Y = [0.0, 0.20, 0.42, 0.63, SPACEBAR_Y_FRAC, 1.0]
 
 # ──────────────────────────────────────────────────────────────
 # KEYBOARD CALIBRATION
@@ -165,7 +212,7 @@ class KeyboardCalibrator:
                 cv2.line(frame, self.corners[i], self.corners[i+1], (0, 255, 255), 2)
 
     def _draw_zones(self, frame):
-        """Draw keyboard finger zones as staggered colored overlays on the frame."""
+        """Draw keyboard finger zones as row-specific overlays on the frame."""
         overlay = frame.copy()
 
         def kb_to_img(fx, fy):
@@ -173,33 +220,22 @@ class KeyboardCalibrator:
             res = cv2.perspectiveTransform(pt, self.inv_transform)
             return int(res[0][0][0]), int(res[0][0][1])
 
-        # Draw finger zones as staggered parallelograms
-        for (x0, x1, zone_name, _) in KEYBOARD_ZONES:
-            color = ZONE_COLORS.get(zone_name, (128, 128, 128))
+        for row in KEYBOARD_ROWS:
+            y0 = row["y0"]
+            y1 = row["y1"]
+            for x0, x1, zone_name in row["segments"]:
+                color = ZONE_COLORS.get(zone_name, (128, 128, 128))
+                pts = np.array([
+                    kb_to_img(x0, y0),
+                    kb_to_img(x1, y0),
+                    kb_to_img(x1, y1),
+                    kb_to_img(x0, y1),
+                ], dtype=np.int32)
+                cv2.fillPoly(overlay, [pts], color)
 
-            # Build a polygon spanning all keyboard rows with stagger applied
-            # Left edge points going top to bottom
-            left_pts = [
-                kb_to_img(x0 + ROW_STAGGER[0], ROW_Y[0]),
-                kb_to_img(x0 + ROW_STAGGER[1], ROW_Y[1]),
-                kb_to_img(x0 + ROW_STAGGER[2], ROW_Y[2]),
-                kb_to_img(x0 + ROW_STAGGER[3], ROW_Y[3]),
-                kb_to_img(x0 + ROW_STAGGER[4], ROW_Y[4]),
-            ]
-            # Right edge points going bottom to top
-            right_pts = [
-                kb_to_img(x1 + ROW_STAGGER[4], ROW_Y[4]),
-                kb_to_img(x1 + ROW_STAGGER[3], ROW_Y[3]),
-                kb_to_img(x1 + ROW_STAGGER[2], ROW_Y[2]),
-                kb_to_img(x1 + ROW_STAGGER[1], ROW_Y[1]),
-                kb_to_img(x1 + ROW_STAGGER[0], ROW_Y[0]),
-            ]
-
-            pts = np.array(left_pts + right_pts, dtype=np.int32)
-            cv2.fillPoly(overlay, [pts], color)
-
-            # Zone label at home row height
-            cx, cy = kb_to_img((x0 + x1) / 2 + ROW_STAGGER[2], ROW_Y[2] + 0.05)
+        label_row = KEYBOARD_ROWS[2]
+        for x0, x1, zone_name in label_row["segments"]:
+            cx, cy = kb_to_img((x0 + x1) / 2, (label_row["y0"] + label_row["y1"]) / 2)
             label = zone_name.replace("_ZONE", "").replace("_", "\n")
             for i, line in enumerate(label.split("\n")):
                 cv2.putText(overlay, line, (cx - 25, cy + i * 16),
@@ -224,27 +260,21 @@ class KeyboardCalibrator:
 # TYPING CHECKER
 # ──────────────────────────────────────────────────────────────
 
-def get_stagger_for_y(fy):
-    """Return the stagger offset for a given y position."""
-    for i in range(len(ROW_Y) - 1):
-        if ROW_Y[i] <= fy <= ROW_Y[i + 1]:
-            # Interpolate stagger between the two row boundaries
-            t = (fy - ROW_Y[i]) / (ROW_Y[i + 1] - ROW_Y[i])
-            top_stagger = ROW_STAGGER[i] if i < len(ROW_STAGGER) else ROW_STAGGER[-1]
-            bot_stagger = ROW_STAGGER[i + 1] if i + 1 < len(ROW_STAGGER) else ROW_STAGGER[-1]
-            return top_stagger + t * (bot_stagger - top_stagger)
-    return 0.0
-
 def get_zone_for_keyboard_point(fx, fy):
     """Return (zone_name, correct_fingers_set) for a point in keyboard space."""
     if fy > SPACEBAR_Y_FRAC:
         return "SPACEBAR", {"L_THUMB", "R_THUMB"}
-    # Subtract the stagger offset so detection matches the visual zones
-    stagger = get_stagger_for_y(fy)
-    adjusted_fx = fx - stagger
-    for (x0, x1, zone_name, correct) in KEYBOARD_ZONES:
-        if x0 <= adjusted_fx <= x1:
-            return zone_name, correct
+    for row in KEYBOARD_ROWS:
+        if row["y0"] <= fy <= row["y1"]:
+            segments = row["segments"]
+            for i, (x0, x1, zone_name) in enumerate(segments):
+                if x0 <= fx <= x1:
+                    correct = set(ZONE_BY_NAME[zone_name])
+                    if i > 0 and fx - x0 <= ZONE_OVERLAP_FRAC:
+                        correct.update(ZONE_BY_NAME[segments[i - 1][2]])
+                    if i < len(segments) - 1 and x1 - fx <= ZONE_OVERLAP_FRAC:
+                        correct.update(ZONE_BY_NAME[segments[i + 1][2]])
+                    return zone_name, correct
     return None, set()
 
 

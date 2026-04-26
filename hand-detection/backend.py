@@ -97,12 +97,12 @@ def read_state() -> dict:
     if _tracker_available:
         return _checker.get_state()
     if not os.path.exists(SHARED_STATE_FILE):
-        return {"verdict": "IDLE", "wrong_fingers": [], "timestamp": time.time()}
+        return {"verdict": "IDLE", "wrong_fingers": [], "finger_positions": [], "timestamp": time.time()}
     try:
         with open(SHARED_STATE_FILE, "r") as f:
             return json.load(f)
     except (json.JSONDecodeError, IOError):
-        return {"verdict": "IDLE", "wrong_fingers": [], "timestamp": time.time()}
+        return {"verdict": "IDLE", "wrong_fingers": [], "finger_positions": [], "timestamp": time.time()}
 
 
 # ── Background tasks ──────────────────────────────────────────────────────────
@@ -110,18 +110,22 @@ def read_state() -> dict:
 async def broadcast_loop():
     last_verdict = None
     last_wrong: list = []
+    last_fingers: list = []
 
     while True:
         state = read_state()
         verdict = state.get("verdict", "IDLE")
         wrong = sorted(state.get("wrong_fingers", []))
+        fingers = state.get("finger_positions", [])
 
-        if verdict != last_verdict or wrong != last_wrong:
+        if verdict != last_verdict or wrong != last_wrong or fingers != last_fingers:
             last_verdict = verdict
             last_wrong = wrong
+            last_fingers = fingers
             await manager.broadcast({
                 "verdict": verdict,
                 "wrong_fingers": wrong,
+                "finger_positions": fingers,
                 "timestamp": state.get("timestamp", time.time()),
             })
 

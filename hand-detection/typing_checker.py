@@ -15,7 +15,12 @@ _latest_frame: bytes | None = None
 
 # ── Thread-safe state ─────────────────────────────────────────────────────────
 _state_lock = threading.Lock()
-_current_state: dict = {"verdict": "IDLE", "wrong_fingers": [], "timestamp": 0.0}
+_current_state: dict = {
+    "verdict": "IDLE",
+    "wrong_fingers": [],
+    "finger_positions": [],
+    "timestamp": 0.0,
+}
 
 # ── Calibrator reference (set when run() is active) ───────────────────────────
 _calib_lock = threading.Lock()
@@ -224,10 +229,11 @@ def _create_hand_tracker():
 
 SHARED_STATE_FILE = "typing_state.json"
 
-def write_state(verdict: str, wrong_fingers: list):
+def write_state(verdict: str, wrong_fingers: list, finger_positions: list | None = None):
     state = {
         "verdict": verdict,
         "wrong_fingers": wrong_fingers,
+        "finger_positions": finger_positions or [],
         "timestamp": time.time(),
     }
     try:
@@ -243,18 +249,21 @@ def write_state(verdict: str, wrong_fingers: list):
 
 FINGER_TIPS = {"THUMB": 4, "INDEX": 8, "MIDDLE": 12, "RING": 16, "PINKY": 20}
 
-KEYBOARD_ZONES = [
-    (0.00, 0.11, "L_PINKY_ZONE",  {"L_PINKY"}),
-    (0.11, 0.18, "L_RING_ZONE",   {"L_RING"}),
-    (0.18, 0.25, "L_MIDDLE_ZONE", {"L_MIDDLE"}),
-    (0.25, 0.38, "L_INDEX_ZONE",  {"L_INDEX"}),
-    (0.38, 0.54, "R_INDEX_ZONE",  {"R_INDEX"}),
-    (0.54, 0.62, "R_MIDDLE_ZONE", {"R_MIDDLE"}),
-    (0.62, 0.70, "R_RING_ZONE",   {"R_RING"}),
-    (0.70, 1.00, "R_PINKY_ZONE",  {"R_PINKY"}),
+ZONE_ORDER = [
+    ("L_PINKY_ZONE", {"L_PINKY"}),
+    ("L_RING_ZONE", {"L_RING"}),
+    ("L_MIDDLE_ZONE", {"L_MIDDLE"}),
+    ("L_INDEX_ZONE", {"L_INDEX"}),
+    ("R_INDEX_ZONE", {"R_INDEX"}),
+    ("R_MIDDLE_ZONE", {"R_MIDDLE"}),
+    ("R_RING_ZONE", {"R_RING"}),
+    ("R_PINKY_ZONE", {"R_PINKY"}),
 ]
 
-SPACEBAR_Y_FRAC = 0.85
+ZONE_BY_NAME = {zone_name: correct for zone_name, correct in ZONE_ORDER}
+
+SPACEBAR_Y_FRAC = 0.78
+ZONE_OVERLAP_FRAC = 0.010
 
 ZONE_COLORS = {
     "L_PINKY_ZONE":  (200, 100, 255),
@@ -281,14 +290,64 @@ FINGER_LABEL_MAP = {
     ("Right", "PINKY"):  "R_PINKY",
 }
 
-ROW_STAGGER = [
-    -0.02,  # Number row (top)
-    0.01,   # QWERTY row
-    0.02,   # ASDF row (home row)
-    0.05,   # ZXCV row
-    0.10,   # Spacebar row (heavily centered)
+KEYBOARD_ROWS = [
+    {
+        "y0": 0.00,
+        "y1": 0.20,
+        "segments": [
+            (0.000, 0.155, "L_PINKY_ZONE"),
+            (0.162, 0.242, "L_RING_ZONE"),
+            (0.242, 0.318, "L_MIDDLE_ZONE"),
+            (0.318, 0.406, "L_INDEX_ZONE"),
+            (0.406, 0.565, "R_INDEX_ZONE"),
+            (0.565, 0.638, "R_MIDDLE_ZONE"),
+            (0.638, 0.728, "R_RING_ZONE"),
+            (0.728, 1.000, "R_PINKY_ZONE"),
+        ],
+    },
+    {
+        "y0": 0.20,
+        "y1": 0.42,
+        "segments": [
+            (0.000, 0.150, "L_PINKY_ZONE"),
+            (0.158, 0.240, "L_RING_ZONE"),
+            (0.240, 0.318, "L_MIDDLE_ZONE"),
+            (0.318, 0.413, "L_INDEX_ZONE"),
+            (0.413, 0.575, "R_INDEX_ZONE"),
+            (0.575, 0.643, "R_MIDDLE_ZONE"),
+            (0.643, 0.733, "R_RING_ZONE"),
+            (0.733, 1.000, "R_PINKY_ZONE"),
+        ],
+    },
+    {
+        "y0": 0.42,
+        "y1": 0.61,
+        "segments": [
+            (0.000, 0.165, "L_PINKY_ZONE"),
+            (0.165, 0.250, "L_RING_ZONE"),
+            (0.250, 0.330, "L_MIDDLE_ZONE"),
+            (0.330, 0.428, "L_INDEX_ZONE"),
+            (0.428, 0.575, "R_INDEX_ZONE"),
+            (0.575, 0.645, "R_MIDDLE_ZONE"),
+            (0.645, 0.735, "R_RING_ZONE"),
+            (0.735, 1.000, "R_PINKY_ZONE"),
+        ],
+    },
+    {
+        "y0": 0.61,
+        "y1": SPACEBAR_Y_FRAC,
+        "segments": [
+            (0.000, 0.185, "L_PINKY_ZONE"),
+            (0.185, 0.270, "L_RING_ZONE"),
+            (0.270, 0.360, "L_MIDDLE_ZONE"),
+            (0.360, 0.463, "L_INDEX_ZONE"),
+            (0.463, 0.610, "R_INDEX_ZONE"),
+            (0.610, 0.675, "R_MIDDLE_ZONE"),
+            (0.675, 0.765, "R_RING_ZONE"),
+            (0.765, 1.000, "R_PINKY_ZONE"),
+        ],
+    },
 ]
-ROW_Y = [0.0, 0.20, 0.42, 0.63, SPACEBAR_Y_FRAC, 1.0]
 
 
 # ── Keyboard calibrator ───────────────────────────────────────────────────────
@@ -351,26 +410,22 @@ class KeyboardCalibrator:
             res = cv2.perspectiveTransform(pt, self.inv_transform)
             return int(res[0][0][0]), int(res[0][0][1])
 
-        for (x0, x1, zone_name, _) in KEYBOARD_ZONES:
-            color = ZONE_COLORS.get(zone_name, (128, 128, 128))
-            left_pts = [
-                kb_to_img(x0 + ROW_STAGGER[0], ROW_Y[0]),
-                kb_to_img(x0 + ROW_STAGGER[1], ROW_Y[1]),
-                kb_to_img(x0 + ROW_STAGGER[2], ROW_Y[2]),
-                kb_to_img(x0 + ROW_STAGGER[3], ROW_Y[3]),
-                kb_to_img(x0 + ROW_STAGGER[4], ROW_Y[4]),
-            ]
-            right_pts = [
-                kb_to_img(x1 + ROW_STAGGER[4], ROW_Y[4]),
-                kb_to_img(x1 + ROW_STAGGER[3], ROW_Y[3]),
-                kb_to_img(x1 + ROW_STAGGER[2], ROW_Y[2]),
-                kb_to_img(x1 + ROW_STAGGER[1], ROW_Y[1]),
-                kb_to_img(x1 + ROW_STAGGER[0], ROW_Y[0]),
-            ]
-            pts = np.array(left_pts + right_pts, dtype=np.int32)
-            cv2.fillPoly(overlay, [pts], color)
+        for row in KEYBOARD_ROWS:
+            y0 = row["y0"]
+            y1 = row["y1"]
+            for x0, x1, zone_name in row["segments"]:
+                color = ZONE_COLORS.get(zone_name, (128, 128, 128))
+                pts = np.array([
+                    kb_to_img(x0, y0),
+                    kb_to_img(x1, y0),
+                    kb_to_img(x1, y1),
+                    kb_to_img(x0, y1),
+                ], dtype=np.int32)
+                cv2.fillPoly(overlay, [pts], color)
 
-            cx, cy = kb_to_img((x0 + x1) / 2 + ROW_STAGGER[2], ROW_Y[2] + 0.05)
+        label_row = KEYBOARD_ROWS[2]
+        for x0, x1, zone_name in label_row["segments"]:
+            cx, cy = kb_to_img((x0 + x1) / 2, (label_row["y0"] + label_row["y1"]) / 2)
             label = zone_name.replace("_ZONE", "").replace("_", "\n")
             for i, line in enumerate(label.split("\n")):
                 cv2.putText(overlay, line, (cx - 25, cy + i * 16),
@@ -390,23 +445,20 @@ class KeyboardCalibrator:
 
 # ── Zone helpers ──────────────────────────────────────────────────────────────
 
-def get_stagger_for_y(fy):
-    for i in range(len(ROW_Y) - 1):
-        if ROW_Y[i] <= fy <= ROW_Y[i + 1]:
-            t = (fy - ROW_Y[i]) / (ROW_Y[i + 1] - ROW_Y[i])
-            top = ROW_STAGGER[i] if i < len(ROW_STAGGER) else ROW_STAGGER[-1]
-            bot = ROW_STAGGER[i + 1] if i + 1 < len(ROW_STAGGER) else ROW_STAGGER[-1]
-            return top + t * (bot - top)
-    return 0.0
-
-
 def get_zone_for_keyboard_point(fx, fy):
     if fy > SPACEBAR_Y_FRAC:
         return "SPACEBAR", {"L_THUMB", "R_THUMB"}
-    adjusted_fx = fx - get_stagger_for_y(fy)
-    for (x0, x1, zone_name, correct) in KEYBOARD_ZONES:
-        if x0 <= adjusted_fx <= x1:
-            return zone_name, correct
+    for row in KEYBOARD_ROWS:
+        if row["y0"] <= fy <= row["y1"]:
+            segments = row["segments"]
+            for i, (x0, x1, zone_name) in enumerate(segments):
+                if x0 <= fx <= x1:
+                    correct = set(ZONE_BY_NAME[zone_name])
+                    if i > 0 and fx - x0 <= ZONE_OVERLAP_FRAC:
+                        correct.update(ZONE_BY_NAME[segments[i - 1][2]])
+                    if i < len(segments) - 1 and x1 - fx <= ZONE_OVERLAP_FRAC:
+                        correct.update(ZONE_BY_NAME[segments[i + 1][2]])
+                    return zone_name, correct
     return None, set()
 
 
@@ -614,7 +666,15 @@ def run(headless: bool = False):
                                 if zone_name:
                                     active_touches.append((finger_label, zone_name, correct_fingers))
                                     correct = finger_label in correct_fingers
-                                    finger_positions.append((finger_label, px, py, correct))
+                                    finger_positions.append({
+                                        "label": finger_label,
+                                        "x": fx,
+                                        "y": fy,
+                                        "px": px,
+                                        "py": py,
+                                        "correct": correct,
+                                        "zone": zone_name,
+                                    })
             else:
                 mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
                 timestamp_ms = int(time.time() * 1000)
@@ -659,9 +719,21 @@ def run(headless: bool = False):
                             if zone_name:
                                 active_touches.append((finger_label, zone_name, correct_fingers))
                                 correct = finger_label in correct_fingers
-                                finger_positions.append((finger_label, px, py, correct))
+                                finger_positions.append({
+                                    "label": finger_label,
+                                    "x": fx,
+                                    "y": fy,
+                                    "px": px,
+                                    "py": py,
+                                    "correct": correct,
+                                    "zone": zone_name,
+                                })
 
-        for (finger_label, px, py, correct) in finger_positions:
+        for finger in finger_positions:
+            finger_label = finger["label"]
+            px = finger["px"]
+            py = finger["py"]
+            correct = finger["correct"]
             color = (0, 255, 80) if correct else (0, 60, 255)
             cv2.circle(frame, (px, py), 14, color, -1)
             cv2.circle(frame, (px, py), 14, (255, 255, 255), 2)
@@ -681,14 +753,27 @@ def run(headless: bool = False):
         )
 
         sorted_wrong = sorted(wrong_fingers)
+        state_fingers = [
+            {
+                "label": finger["label"],
+                "x": round(float(finger["x"]), 4),
+                "y": round(float(finger["y"]), 4),
+                "correct": bool(finger["correct"]),
+                "zone": finger["zone"],
+            }
+            for finger in finger_positions
+            if finger["label"] != "UNKNOWN"
+        ]
+        state_timestamp = time.time()
+        with _state_lock:
+            _current_state = {
+                "verdict": smoothed,
+                "wrong_fingers": sorted_wrong,
+                "finger_positions": state_fingers,
+                "timestamp": state_timestamp,
+            }
         if smoothed != last_written_verdict or sorted_wrong != last_written_wrong:
-            write_state(smoothed, sorted_wrong)
-            with _state_lock:
-                _current_state = {
-                    "verdict": smoothed,
-                    "wrong_fingers": sorted_wrong,
-                    "timestamp": time.time(),
-                }
+            write_state(smoothed, sorted_wrong, state_fingers)
             last_written_verdict = smoothed
             last_written_wrong = sorted_wrong
 
@@ -741,7 +826,14 @@ def run(headless: bool = False):
                 verdict_history.clear()
                 print("Calibration reset.")
 
-    write_state("IDLE", [])
+    write_state("IDLE", [], [])
+    with _state_lock:
+        _current_state = {
+            "verdict": "IDLE",
+            "wrong_fingers": [],
+            "finger_positions": [],
+            "timestamp": time.time(),
+        }
     if cap is not None:
         cap.release()
     with _camera_source_lock:

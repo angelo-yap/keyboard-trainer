@@ -1,7 +1,7 @@
 import { memo } from "react";
 import type { KeyDef } from "./keyboardLayouts";
 import { KeyboardKey } from "./KeyboardKey";
-import { FINGER_MAP, FINGER_COLORS_SOFT } from "../../../core/keyboard/fingerMap";
+import { FINGER_MAP, FINGER_COLORS_SOFT, SPECIAL_FINGER_MAP } from "../../../core/keyboard/fingerMap";
 
 type KeyboardRowProps = {
   keys: KeyDef[];
@@ -24,6 +24,9 @@ function getCharForKey(def: KeyDef): string | null {
 }
 
 function getFingerColor(def: KeyDef): string | null {
+  const specialIdx = SPECIAL_FINGER_MAP[def.code ?? def.key];
+  if (specialIdx != null) return FINGER_COLORS_SOFT[specialIdx] ?? null;
+
   const ch = getCharForKey(def);
   if (!ch) return null;
   const idx = FINGER_MAP[ch];
