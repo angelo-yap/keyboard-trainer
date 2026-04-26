@@ -230,6 +230,7 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, onStartAdaptiveTest, se
 
   const lesson = PRACTICE_LESSONS.find((l) => l.id === lessonId);
   const text = lesson ? buildText(lesson) : "";
+  const handTrackingEnabled = settings?.handTrackingEnabled !== false;
 
   const typing = useTypingSession({
     text,
@@ -276,7 +277,7 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, onStartAdaptiveTest, se
   }, [lesson, typing.report, guidedTargetKeys, guidedKeySignature]);
 
   useEffect(() => {
-    if (!lesson || typing.report) {
+    if (!lesson || typing.report || !handTrackingEnabled) {
       setFingerMarkers([]);
       return;
     }
@@ -299,7 +300,7 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, onStartAdaptiveTest, se
 
     ws.onerror = () => setFingerMarkers([]);
     return () => ws.close();
-  }, [lesson, typing.report]);
+  }, [handTrackingEnabled, lesson, typing.report]);
 
   const dayLabel =
     streak.count > 0
@@ -366,7 +367,7 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, onStartAdaptiveTest, se
         callout={callout}
         guidedKeys={guidedTargetKeys}
         settings={settings}
-        fingerMarkers={fingerMarkers}
+        fingerMarkers={handTrackingEnabled ? fingerMarkers : []}
         onKeyDown={handleKeyDown}
         onBack={exitSession}
         onRestart={() => typing.reset()}

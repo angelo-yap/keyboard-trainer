@@ -174,6 +174,7 @@ export function Learn({
   }, [step, drill]);
 
   const guidedKeySignature = guidedTargetKeys.join("+");
+  const handTrackingEnabled = settings?.handTrackingEnabled !== false;
 
   useEffect(() => {
     if (step.drill.type === "none" || step.drill.type === "hold") {
@@ -198,6 +199,14 @@ export function Learn({
 
   // Hand-tracking: connect while Learn is mounted, disconnect on exit
   useEffect(() => {
+    if (!handTrackingEnabled) {
+      setVerdict("");
+      setWrongFingers([]);
+      setFingerMarkers([]);
+      setShowCamera(false);
+      return;
+    }
+
     const ws = new WebSocket("ws://localhost:8000/ws");
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data) as {
@@ -222,7 +231,7 @@ export function Learn({
       setFingerMarkers([]);
     };
     return () => ws.close();
-  }, []);
+  }, [handTrackingEnabled]);
 
   /* ── Navigation ────────────────────────────────────────────────────── */
   const handleContinue = useCallback(() => {
@@ -424,14 +433,16 @@ export function Learn({
         <span className="learn-topbar__label mono-label">
           {stepIndex + 1} / {TOTAL_STEPS}
         </span>
-        <button
-          type="button"
-          className={`test-topbar-badge ${showCamera ? "on" : "off"}`}
-          onClick={() => setShowCamera((v) => !v)}
-          title="Toggle camera panel"
-        >
-          cam
-        </button>
+        {handTrackingEnabled && (
+          <button
+            type="button"
+            className={`test-topbar-badge ${showCamera ? "on" : "off"}`}
+            onClick={() => setShowCamera((v) => !v)}
+            title="Toggle camera panel"
+          >
+            cam
+          </button>
+        )}
       </div>
 
       <div
@@ -476,7 +487,7 @@ export function Learn({
                 pressedKey={lastKey}
                 showFingerHints={settings?.showFingerHints !== false}
                 mode="lesson"
-                fingerMarkers={fingerMarkers}
+                fingerMarkers={handTrackingEnabled ? fingerMarkers : []}
               />
             </div>
           )}
@@ -554,9 +565,9 @@ export function Learn({
             )}
           </div>
 
-          <FeedbackBanner verdict={verdict} wrongFingers={wrongFingers} />
+          {handTrackingEnabled && <FeedbackBanner verdict={verdict} wrongFingers={wrongFingers} />}
 
-          {showCamera && <CameraPanel active={true} />}
+          {handTrackingEnabled && showCamera && <CameraPanel active={true} />}
         </div>
       </div>
 

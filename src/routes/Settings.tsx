@@ -579,6 +579,15 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
 
           <SettingsSection title="Hand Tracker">
             <SettingRow
+              label="Hand Tracking"
+              desc="Use the camera for finger markers and Good form/Fix fingers feedback."
+            >
+              <Toggle
+                value={settings.handTrackingEnabled !== false}
+                onChange={(v) => update("handTrackingEnabled", v)}
+              />
+            </SettingRow>
+            <SettingRow
               label="Webcam Input Index"
               desc="Use 0 for default camera, 1+ for external/secondary webcams."
             >
@@ -635,14 +644,16 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
               {handednessFlipMessage}
             </div>
           )}
-          <div className="settings-camera-calibration">
-            <CameraPanel
-              active={true}
-              reloadSignal={cameraStreamVersion}
-              showCalibrationControls={true}
-              variant="embedded"
-            />
-          </div>
+          {settings.handTrackingEnabled !== false && (
+            <div className="settings-camera-calibration">
+              <CameraPanel
+                active={true}
+                reloadSignal={cameraStreamVersion}
+                showCalibrationControls={true}
+                variant="embedded"
+              />
+            </div>
+          )}
           </SettingsSection>
 
           <SettingsSection title="Keyboard Lighting">

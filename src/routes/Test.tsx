@@ -143,6 +143,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
   const includePunctuation = modeOptions[mode].includePunctuation;
   const includeNumbers = modeOptions[mode].includeNumbers;
   const randomCase = modeOptions[mode].randomCase;
+  const handTrackingEnabled = settings.handTrackingEnabled !== false;
   modeConfigRef.current = createModeConfig(mode);
 
   const maybeRefill = useCallback((typedLength: number) => {
@@ -268,10 +269,11 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
 
   // Hand-tracking: connect while the test is active, reset verdict on teardown
   useEffect(() => {
-    if (testStatus !== "active") {
+    if (testStatus !== "active" || !handTrackingEnabled) {
       setVerdict("");
       setWrongFingers([]);
       setFingerMarkers([]);
+      setShowCamera(false);
       return;
     }
 
@@ -302,7 +304,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     };
 
     return () => ws.close();
-  }, [testStatus]);
+  }, [handTrackingEnabled, testStatus]);
 
   /* Countdown — 100ms interval against a fixed start timestamp, not integer decrement */
   useEffect(() => {
@@ -705,14 +707,16 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
           >
             new
           </button>
-          <button
-            type="button"
-            className={`test-topbar-badge ${showCamera ? "on" : "off"}`}
-            onClick={() => setShowCamera((v) => !v)}
-            title="Toggle camera panel"
-          >
-            cam
-          </button>
+          {handTrackingEnabled && (
+            <button
+              type="button"
+              className={`test-topbar-badge ${showCamera ? "on" : "off"}`}
+              onClick={() => setShowCamera((v) => !v)}
+              title="Toggle camera panel"
+            >
+              cam
+            </button>
+          )}
         </div>
         <div className={`test-topbar-timer test-topbar-timer--${timerClass}`}>
           {timerStarted ? timeLeft : duration}s
@@ -773,7 +777,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
             )}
           </div>
 
-          <FeedbackBanner verdict={verdict} wrongFingers={wrongFingers} />
+          {handTrackingEnabled && <FeedbackBanner verdict={verdict} wrongFingers={wrongFingers} />}
 
           {settings?.showKeyboard !== false && (
             <div className="lesson-stage-keyboard-wrap">
@@ -782,12 +786,12 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
                 highlightKeys={guidedTargetKeys}
                 showFingerHints={settings?.showFingerHints !== false}
                 mode="test"
-                fingerMarkers={fingerMarkers}
+                fingerMarkers={handTrackingEnabled ? fingerMarkers : []}
               />
             </div>
           )}
 
-          {showCamera && <CameraPanel active={testStatus === "active"} />}
+          {handTrackingEnabled && showCamera && <CameraPanel active={testStatus === "active"} />}
         </div>
       </div>
     </div>

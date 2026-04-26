@@ -17,6 +17,7 @@ export type Settings = {
   keyboardLitKeyOff: boolean;
   keyboardBacklightColor: string;
   keyboardLitKeyColor: string;
+  handTrackingEnabled: boolean;
   handTrackerCameraIndex: number;
   handTrackerFlipHandedness: boolean;
 };
@@ -52,6 +53,7 @@ const DEFAULT_SETTINGS: Settings = {
   keyboardLitKeyOff: false,
   keyboardBacklightColor: "#FF0000",
   keyboardLitKeyColor: "#FFFFFF",
+  handTrackingEnabled: true,
   handTrackerCameraIndex: 0,
   handTrackerFlipHandedness: false,
 };
