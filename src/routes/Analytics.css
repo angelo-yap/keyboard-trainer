@@ -253,10 +253,26 @@
   gap: var(--space-2);
 }
 
+.key-grid-row-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+.key-grid-row-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 .key-grid-row {
   display: flex;
   justify-content: center;
   gap: var(--space-2);
+  flex-wrap: wrap;
 }
 
 .key-grid-item {

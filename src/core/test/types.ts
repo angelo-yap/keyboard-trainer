@@ -1,6 +1,9 @@
 import type { WeakKeyStat } from "../storage/keyStatsStore";
 
-export type TestMode = "standard" | "adaptive";
+import type { NormalizedCodeSnippet } from "./providers/codeSnippetProvider";
+import type { NormalizedQuote } from "./providers/quoteProvider";
+
+export type TestMode = "standard" | "adaptive" | "quotes" | "code";
 
 export type ClassicWordsGeneratorOptions = {
   includePunctuation: boolean;
@@ -15,9 +18,25 @@ export type AdaptiveWeakLetterGeneratorOptions = {
   adaptiveTargets?: WeakKeyStat[];
 };
 
+export type QuotesGeneratorOptions = {
+  includePunctuation: boolean;
+  includeNumbers: boolean;
+  randomCase: boolean;
+  quote?: NormalizedQuote;
+};
+
+export type CodeSnippetGeneratorOptions = {
+  includePunctuation: boolean;
+  includeNumbers: boolean;
+  randomCase: boolean;
+  snippet?: NormalizedCodeSnippet;
+};
+
 export type TestModeOptionsMap = {
   standard: ClassicWordsGeneratorOptions;
   adaptive: AdaptiveWeakLetterGeneratorOptions;
+  quotes: QuotesGeneratorOptions;
+  code: CodeSnippetGeneratorOptions;
 };
 
 export type TestModeConfig = {

@@ -5,6 +5,8 @@ import { getAverageLatency, getKeyScore, getKeyStats } from "../core/storage/key
 import { getStreak } from "../core/storage/streakStore";
 import { sessionHistoryStore } from "../core/storage/sessionHistoryStore";
 import type { SessionReport } from "../core/session/sessionMetrics";
+import { getLocalCodeSnippets } from "../core/test/providers/codeSnippetProvider";
+import { getLocalQuotes } from "../core/test/providers/quoteProvider";
 import { PRACTICE_LESSONS } from "../core/lesson/lessons/practiceLessons";
 import { formatKeyLabel } from "../core/text/formatChar";
 import { Button } from "../ui/components/Button";
@@ -27,6 +29,14 @@ type HandFormReview = {
 
 const HAND_FORM_REVIEW_WINDOW = 20;
 const DEFAULT_TEST_DURATIONS = [15, 30, 60, 120] as const;
+const LETTER_ROWS = [
+  ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+  ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+  ["z", "x", "c", "v", "b", "n", "m"],
+] as const;
+const NUMBER_ROW = "0123456789".split("");
+const PUNCTUATION_ORDER = [".", ",", ";", ":", "'", "\"", "?", "!", "-", "_"];
+const SYMBOL_ORDER = ["(", ")", "[", "]", "{", "}", "<", ">", "=", "+", "*", "/", "\\", "|", "&", "$", "#", "@", "%", "^", "`", "~"];
 
 function buildHandFormReview(reports: SessionReport[]): HandFormReview {
   const recentTests = reports
@@ -105,6 +115,58 @@ function formatCardDate(date: string | null): string {
 
 function formatStartedAt(ts: number): string {
   return new Date(ts).toLocaleString();
+}
+
+function normalizeTrackedChar(char: string): string | null {
+  if (char.trim().length === 0) return null;
+  const normalized = char.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return /^[A-Z]$/.test(normalized) ? normalized.toLowerCase() : normalized;
+}
+
+function collectChars(text: string, target: Set<string>): void {
+  for (const char of text) {
+    const normalized = normalizeTrackedChar(char);
+    if (normalized) {
+      target.add(normalized);
+    }
+  }
+}
+
+function buildTrackedCharacterSet(statsKeys: string[]): Set<string> {
+  const chars = new Set<string>();
+
+  LETTER_ROWS.flat().forEach((key) => chars.add(key));
+
+  getLocalQuotes().forEach((quote) => {
+    collectChars(`${quote.text} ${quote.author}`, chars);
+  });
+
+  getLocalCodeSnippets().forEach((snippet) => {
+    collectChars(snippet.text, chars);
+  });
+
+  statsKeys.forEach((key) => {
+    const normalized = normalizeTrackedChar(key);
+    if (normalized) {
+      chars.add(normalized);
+    }
+  });
+
+  return chars;
+}
+
+function orderedKnownKeys(keys: Set<string>, order: string[]): string[] {
+  return order.filter((key) => keys.has(key));
+}
+
+function orderedOtherKeys(keys: Set<string>, known: Set<string>): string[] {
+  return Array.from(keys)
+    .filter((key) => !known.has(key) && !/^[a-z0-9]$/.test(key))
+    .sort((a, b) => a.localeCompare(b));
+}
+
+function formatAnalyticsKeyLabel(key: string): string {
+  return /^[a-z]$/.test(key) ? key.toUpperCase() : formatKeyLabel(key);
 }
 
 export function Analytics({ onBack }: AnalyticsProps) {
@@ -186,8 +248,8 @@ export function Analytics({ onBack }: AnalyticsProps) {
     };
   });
 
-  const alphabetKeys = "abcdefghijklmnopqrstuvwxyz".split("");
-  const keyList = alphabetKeys.map((key) => {
+  const trackedChars = buildTrackedCharacterSet(Object.keys(keyStats));
+  const keyList = Array.from(trackedChars).map((key) => {
     const stat = keyStats[key];
     const attempts = stat?.attempts ?? 0;
     const errors = stat?.errors ?? 0;
@@ -274,7 +336,7 @@ export function Analytics({ onBack }: AnalyticsProps) {
           </div>
 
           <div className="analytics-panel">
-            <div className="analytics-panel-title">Letter Stats</div>
+            <div className="analytics-panel-title">Character Stats</div>
             <KeyGrid keys={keyList} />
           </div>
 
@@ -555,47 +617,53 @@ function KeyGrid({
 }: {
   keys: { key: string; accuracy: number; score: number; avgLatencyMs: number | null; attempts: number }[];
 }) {
+  const availableKeys = new Set(keys.map((entry) => entry.key));
+  const knownSymbols = new Set([...PUNCTUATION_ORDER, ...SYMBOL_ORDER]);
   const rows = [
-    ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
-    ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
-    ["z", "x", "c", "v", "b", "n", "m"],
-  ] as const;
+    ...LETTER_ROWS.map((row, index) => ({ label: index === 0 ? "letters" : "", keys: [...row] })),
+    { label: "numbers", keys: orderedKnownKeys(availableKeys, NUMBER_ROW) },
+    { label: "punctuation", keys: orderedKnownKeys(availableKeys, PUNCTUATION_ORDER) },
+    { label: "symbols", keys: [...orderedKnownKeys(availableKeys, SYMBOL_ORDER), ...orderedOtherKeys(availableKeys, knownSymbols)] },
+  ].filter((row) => row.keys.length > 0);
   const keyMap = new Map(keys.map((entry) => [entry.key, entry]));
 
   return (
     <div className="key-grid">
       {rows.map((row, rowIndex) => (
-        <div key={rowIndex} className="key-grid-row">
-          {row.map((key) => {
-            const stat = keyMap.get(key) ?? {
-              key,
-              accuracy: 100,
-              score: 100,
-              avgLatencyMs: null,
-              attempts: 0,
-            };
-            const gradeClass =
-              stat.attempts === 0
-                ? "empty"
-                : stat.score < 50
-                ? "weak"
-                : stat.score >= 80
-                ? "strong"
-                : "mid";
+        <div key={rowIndex} className="key-grid-row-wrap">
+          {row.label && <div className="key-grid-row-label">{row.label}</div>}
+          <div className="key-grid-row">
+            {row.keys.map((key) => {
+              const stat = keyMap.get(key) ?? {
+                key,
+                accuracy: 100,
+                score: 100,
+                avgLatencyMs: null,
+                attempts: 0,
+              };
+              const gradeClass =
+                stat.attempts === 0
+                  ? "empty"
+                  : stat.score < 50
+                  ? "weak"
+                  : stat.score >= 80
+                  ? "strong"
+                  : "mid";
 
-            return (
-              <div
-                key={key}
-                className={`key-grid-item key-grid-item--${gradeClass}`}
-                title={`${stat.attempts} attempts · ${stat.accuracy}% accuracy${
-                  stat.avgLatencyMs != null ? ` · ${stat.avgLatencyMs}ms avg` : ""
-                }`}
-              >
-                <div className="key-grid-key">{formatKeyLabel(key).toUpperCase()}</div>
-                <div className="key-grid-acc">{stat.attempts > 0 ? `${stat.score}%` : "—"}</div>
-              </div>
-            );
-          })}
+              return (
+                <div
+                  key={key}
+                  className={`key-grid-item key-grid-item--${gradeClass}`}
+                  title={`${formatKeyLabel(key)} · ${stat.attempts} attempts · ${stat.accuracy}% accuracy${
+                    stat.avgLatencyMs != null ? ` · ${stat.avgLatencyMs}ms avg` : ""
+                  }`}
+                >
+                  <div className="key-grid-key">{formatAnalyticsKeyLabel(key)}</div>
+                  <div className="key-grid-acc">{stat.attempts > 0 ? `${stat.score}%` : "—"}</div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       ))}
     </div>

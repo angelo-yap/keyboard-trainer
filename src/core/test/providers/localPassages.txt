@@ -1,0 +1,644 @@
+:: public-austen-pride-1 | Jane Austen | Pride and Prejudice
+Elizabeth listened in silence, but was not convinced; their behavior at the assembly had not been calculated to please in general, and with more quickness of observation and less pliancy of temper than her sister, and with a judgment too unassailed by any attention to herself, she was very little disposed to approve them.
+
+:: public-dickens-cities-1 | Charles Dickens | A Tale of Two Cities
+It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness, it was the epoch of belief, it was the epoch of incredulity, it was the season of Light, it was the season of Darkness.
+
+:: public-doyle-scarlet-1 | Arthur Conan Doyle | A Study in Scarlet
+There is a strong family resemblance about misdeeds, and if you have all the details of a thousand at your finger ends, it is odd if you cannot unravel the thousand and first.
+
+:: public-austen-sense-1 | Jane Austen | Sense and Sensibility
+Elinor agreed to it all, for she did not think he deserved the compliment of rational opposition. As for Marianne, on the pangs which so unhappy a meeting must already have given her, and on those still more severe which might await her in its probable consequence, she could not reflect without the deepest concern.
+
+:: public-twain-sawyer-1 | Mark Twain | The Adventures of Tom Sawyer
+The old lady pulled her spectacles down and looked over them about the room; then she put them up and looked out under them. She seldom or never looked through them for so small a thing as a boy, for they were her state pair, the pride of her heart, and were built for style, not service.
+
+:: public-montgomery-gables-1 | L. M. Montgomery | Anne of Green Gables
+Anne had no sooner seen Matthew than she dropped her carpet-bag and sprang forward. She had been waiting for him with such eager anxiety, and now that he had come she could not waste another moment in standing still.
+
+:: public-wells-time-1 | H. G. Wells | The Time Machine
+There are really four dimensions, three which we call the three planes of Space, and a fourth, Time. There is, however, a tendency to draw an unreal distinction between the former three dimensions and the latter, because it happens that our consciousness moves intermittently in one direction along the latter.
+
+:: public-alcott-women-1 | Louisa May Alcott | Little Women
+Jo's ambition was to do something very splendid; what it was she had no idea as yet, but left it for time to tell her, and meanwhile found her greatest affliction in the fact that she could not read, run, and ride as much as she liked.
+
+:: public-shelley-frankenstein-1 | Mary Shelley | Frankenstein
+Nothing is so painful to the human mind as a great and sudden change. The sun might shine, or the clouds might lower, but nothing could appear to me as it had done the day before.
+
+:: public-douglass-narrative-1 | Frederick Douglass | Narrative of the Life of Frederick Douglass
+I prefer to be true to myself, even at the hazard of incurring the ridicule of others, rather than to be false, and to incur my own abhorrence. From that time until now, I have been engaged in pleading the cause of my brethren.
+
+:: public-shakespeare-hamlet-1 | William Shakespeare | Hamlet
+This above all: to thine own self be true, and it must follow, as the night the day, thou canst not then be false to any man.
+
+:: public-franklin-almanack-1 | Benjamin Franklin | Poor Richard's Almanack
+Dost thou love life? Then do not squander time, for that is the stuff life is made of. Lost time is never found again, and one today is worth two tomorrows.
+
+:: public-emerson-self-reliance-1 | Ralph Waldo Emerson | Self-Reliance
+There is a time in every man's education when he arrives at the conviction that envy is ignorance; that imitation is suicide; that he must take himself for better, for worse, as his portion.
+
+:: public-thoreau-walden-1 | Henry David Thoreau | Walden
+I went to the woods because I wished to live deliberately, to front only the essential facts of life, and see if I could not learn what it had to teach.
+
+:: public-eliot-middlemarch-1 | George Eliot | Middlemarch
+It is a narrow mind which cannot look at a subject from various points of view. The world is full of hopeful analogies and handsome, dubious eggs, called possibilities.
+
+:: quote-001 | Aristotle | Poetics
+The greatest thing by far is to have command of metaphor, for it implies an eye for resemblances.
+
+:: quote-002 | Socrates | Plato’s Apology
+The unexamined life is not worth living, because a life without reflection cannot truly become wise.
+
+:: quote-003 | Plato | The Republic
+The beginning is the most important part of the work, especially when shaping the character of the young.
+
+:: quote-004 | Marcus Aurelius | Meditations
+You have power over your mind, not outside events; realize this, and you will find strength.
+
+:: quote-005 | Epictetus | Enchiridion
+It is not things themselves that disturb us, but the judgments we make about them.
+
+:: quote-006 | Seneca | Letters from a Stoic
+Luck is what happens when preparation meets opportunity, and wisdom is knowing how to use both.
+
+:: quote-007 | Confucius | Analects
+The person who moves a mountain begins by carrying away small stones.
+
+:: quote-008 | Laozi | Tao Te Ching
+A journey of a thousand miles begins beneath one’s feet.
+
+:: quote-009 | Buddha | Dhammapada
+Hatred is never appeased by hatred; by non-hatred alone is hatred appeased.
+
+:: quote-010 | William Shakespeare | Hamlet
+This above all: to thine own self be true, and it must follow, as night follows day.
+
+:: quote-011 | William Shakespeare | As You Like It
+The fool doth think he is wise, but the wise man knows himself to be a fool.
+
+:: quote-012 | Francis Bacon | Meditationes Sacrae
+Knowledge itself is power, but it becomes useful only when guided by judgment.
+
+:: quote-013 | Galileo Galilei | Attributed Saying
+You cannot teach a person anything; you can only help them find it within themselves.
+
+:: quote-014 | Isaac Newton | Letter to Robert Hooke
+If I have seen further, it is by standing on the shoulders of giants.
+
+:: quote-015 | Benjamin Franklin | Poor Richard’s Almanack
+Lost time is never found again, so use the present before it becomes regret.
+
+:: quote-016 | George Washington | Farewell Address
+Observe good faith and justice toward all nations; cultivate peace and harmony with all.
+
+:: quote-017 | Thomas Jefferson | Letter to Charles Yancey
+If a nation expects to be ignorant and free, it expects what never was and never will be.
+
+:: quote-018 | Abraham Lincoln | Gettysburg Address
+Government of the people, by the people, for the people, shall not perish from the earth.
+
+:: quote-019 | Frederick Douglass | West India Emancipation Speech
+If there is no struggle, there is no progress.
+
+:: quote-020 | Sojourner Truth | Ain’t I a Woman?
+If the first woman God ever made was strong enough to turn the world upside down, women together ought to turn it back.
+
+:: quote-021 | Harriet Tubman | Attributed Saying
+Every great dream begins with a dreamer, and strength comes from knowing the road to freedom.
+
+:: quote-022 | Ralph Waldo Emerson | Self-Reliance
+Trust thyself: every heart vibrates to that iron string.
+
+:: quote-023 | Henry David Thoreau | Walden
+The mass of men lead lives of quiet desperation.
+
+:: quote-024 | Walt Whitman | Song of Myself
+I am large, I contain multitudes.
+
+:: quote-025 | Emily Dickinson | Letter to T. W. Higginson
+If I feel physically as if the top of my head were taken off, I know that is poetry.
+
+:: quote-026 | Mark Twain | Following the Equator
+Truth is stranger than fiction, but it is because fiction is obliged to stick to possibilities.
+
+:: quote-027 | Oscar Wilde | Lady Windermere’s Fan
+We are all in the gutter, but some of us are looking at the stars.
+
+:: quote-028 | George Bernard Shaw | Man and Superman
+The reasonable man adapts himself to the world; the unreasonable one persists in adapting the world to himself.
+
+:: quote-029 | Helen Keller | Optimism
+Keep your face to the sunshine and you cannot see a shadow.
+
+:: quote-030 | Booker T. Washington | Up from Slavery
+Success is to be measured not by position reached, but by obstacles overcome.
+
+:: quote-031 | W. E. B. Du Bois | The Souls of Black Folk
+The problem of the twentieth century is the problem of the color line.
+
+:: quote-032 | Jane Austen | Pride and Prejudice
+Angry people are not always wise.
+
+:: quote-033 | Mary Wollstonecraft | A Vindication of the Rights of Woman
+I do not wish women to have power over men, but over themselves.
+
+:: quote-034 | Virginia Woolf | A Room of One’s Own
+One cannot think well, love well, sleep well, if one has not dined well.
+
+:: quote-035 | Charlotte Bronte | Jane Eyre
+I am no bird; and no net ensnares me.
+
+:: quote-036 | Charles Dickens | David Copperfield
+Never be mean in anything; never be false; never be cruel.
+
+:: quote-037 | Fyodor Dostoevsky | The Brothers Karamazov
+Above all, do not lie to yourself.
+
+:: quote-038 | Leo Tolstoy | Anna Karenina
+All happy families are alike; each unhappy family is unhappy in its own way.
+
+:: quote-039 | Victor Hugo | Les Miserables
+Even the darkest night will end and the sun will rise.
+
+:: quote-040 | Johann Wolfgang von Goethe | Faust
+Whatever you can do or dream you can, begin it.
+
+:: quote-041 | John Stuart Mill | On Liberty
+Over himself, over his own body and mind, the individual is sovereign.
+
+:: quote-042 | Elizabeth Cady Stanton | Declaration of Sentiments
+The history of mankind is a history of repeated injuries and usurpations on the part of man toward woman.
+
+:: quote-043 | Susan B. Anthony | Woman Wants Bread, Not the Ballot!
+Independence is happiness, and self-reliance is the beginning of freedom.
+
+:: quote-044 | Florence Nightingale | Notes on Nursing
+Wise and humane management of the patient is the best safeguard against infection.
+
+:: quote-045 | Marie Curie | Pierre Curie
+Nothing in life is to be feared; it is only to be understood.
+
+:: quote-046 | Nikola Tesla | My Inventions
+The present is theirs; the future, for which I really worked, is mine.
+
+:: quote-047 | Albert Einstein | Ideas and Opinions
+Imagination is more important than knowledge, because knowledge is limited.
+
+:: quote-048 | Mahatma Gandhi | Young India
+Be the change that you wish to see in the world.
+
+:: quote-049 | Rabindranath Tagore | Stray Birds
+You can’t cross the sea merely by standing and staring at the water.
+
+:: quote-050 | Sun Tzu | The Art of War
+In the midst of chaos, there is also opportunity.
+
+:: book-001 | Jane Austen | Pride and Prejudice
+It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.
+
+:: book-002 | Charles Dickens | A Tale of Two Cities
+It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness.
+
+:: book-003 | Herman Melville | Moby-Dick
+Call me Ishmael. Some years ago—never mind how long precisely—I thought I would sail about a little and see the watery part of the world.
+
+:: book-004 | Mary Shelley | Frankenstein
+I beheld the wretch—the miserable monster whom I had created.
+
+:: book-005 | Charlotte Bronte | Jane Eyre
+There was no possibility of taking a walk that day; the cold winter wind had brought clouds so sombre.
+
+:: book-006 | Emily Bronte | Wuthering Heights
+Whatever our souls are made of, his and mine are the same.
+
+:: book-007 | Louisa May Alcott | Little Women
+Christmas won’t be Christmas without any presents, grumbled Jo, lying on the rug.
+
+:: book-008 | Mark Twain | Adventures of Huckleberry Finn
+You don’t know about me without you have read a book by the name of The Adventures of Tom Sawyer.
+
+:: book-009 | Mark Twain | The Adventures of Tom Sawyer
+Tom appeared on the sidewalk with a bucket of whitewash and a long-handled brush.
+
+:: book-010 | L. M. Montgomery | Anne of Green Gables
+Isn’t it nice to think that tomorrow is a new day with no mistakes in it yet?
+
+:: book-011 | Lewis Carroll | Alice’s Adventures in Wonderland
+Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do.
+
+:: book-012 | Lewis Carroll | Through the Looking-Glass
+One thing was certain, that the white kitten had had nothing to do with it.
+
+:: book-013 | J. M. Barrie | Peter Pan
+All children, except one, grow up.
+
+:: book-014 | Frances Hodgson Burnett | The Secret Garden
+When Mary Lennox was sent to Misselthwaite Manor, everybody said she was the most disagreeable-looking child ever seen.
+
+:: book-015 | Frances Hodgson Burnett | A Little Princess
+Once on a dark winter’s day, when the yellow fog hung so thick and heavy in the streets of London.
+
+:: book-016 | Kenneth Grahame | The Wind in the Willows
+The Mole had been working very hard all the morning, spring-cleaning his little home.
+
+:: book-017 | Anna Sewell | Black Beauty
+The first place that I can well remember was a large pleasant meadow with a pond of clear water in it.
+
+:: book-018 | Robert Louis Stevenson | Treasure Island
+Squire Trelawney, Dr. Livesey, and the rest of these gentlemen asked me to write down the whole particulars.
+
+:: book-019 | Robert Louis Stevenson | Strange Case of Dr Jekyll and Mr Hyde
+Mr. Utterson the lawyer was a man of a rugged countenance, that was never lighted by a smile.
+
+:: book-020 | Daniel Defoe | Robinson Crusoe
+I was born in the year 1632, in the city of York, of a good family.
+
+:: book-021 | Jonathan Swift | Gulliver’s Travels
+My father had a small estate in Nottinghamshire; I was the third of five sons.
+
+:: book-022 | Miguel de Cervantes | Don Quixote
+In a village of La Mancha, the name of which I have no desire to call to mind, there lived a gentleman.
+
+:: book-023 | Victor Hugo | Les Miserables
+So long as ignorance and misery remain on earth, books of this kind cannot be useless.
+
+:: book-024 | Alexandre Dumas | The Count of Monte Cristo
+On the 24th of February, 1815, the look-out at Notre-Dame de la Garde signalled the three-master, the Pharaon.
+
+:: book-025 | Alexandre Dumas | The Three Musketeers
+On the first Monday of the month of April, 1625, the market town of Meung was in as perfect a state of revolution.
+
+:: book-026 | Jules Verne | Twenty Thousand Leagues Under the Seas
+The year 1866 was signalised by a remarkable incident, a mysterious and puzzling phenomenon.
+
+:: book-027 | Jules Verne | Around the World in Eighty Days
+Mr. Phileas Fogg lived, in 1872, at No. 7, Saville Row, Burlington Gardens.
+
+:: book-028 | H. G. Wells | The Time Machine
+The Time Traveller was expounding a recondite matter to us.
+
+:: book-029 | H. G. Wells | The War of the Worlds
+No one would have believed in the last years of the nineteenth century that this world was being watched keenly and closely.
+
+:: book-030 | Bram Stoker | Dracula
+Left Munich at 8:35 P.M., on 1st May, arriving at Vienna early next morning.
+
+:: book-031 | Arthur Conan Doyle | A Study in Scarlet
+In the year 1878 I took my degree of Doctor of Medicine of the University of London.
+
+:: book-032 | Arthur Conan Doyle | The Hound of the Baskervilles
+Mr. Sherlock Holmes, who was usually very late in the mornings, save upon those not infrequent occasions when he was up all night.
+
+:: book-033 | Oscar Wilde | The Picture of Dorian Gray
+The studio was filled with the rich odour of roses, and when the light summer wind stirred among the trees.
+
+:: book-034 | George Eliot | Middlemarch
+Miss Brooke had that kind of beauty which seems to be thrown into relief by poor dress.
+
+:: book-035 | George Eliot | Silas Marner
+In the days when the spinning-wheels hummed busily in the farmhouses, there might be seen pale undersized men beside the brawny country-folk.
+
+:: book-036 | Thomas Hardy | Tess of the d’Urbervilles
+On an evening in the latter part of May a middle-aged man was walking homeward from Shaston to the village of Marlott.
+
+:: book-037 | Thomas Hardy | Far from the Madding Crowd
+When Farmer Oak smiled, the corners of his mouth spread till they were within an unimportant distance of his ears.
+
+:: book-038 | Nathaniel Hawthorne | The Scarlet Letter
+A throng of bearded men, in sad-colored garments and gray steeple-crowned hats, was assembled in front of a wooden edifice.
+
+:: book-039 | Nathaniel Hawthorne | The House of the Seven Gables
+Halfway down a by-street of one of our New England towns stands a rusty wooden house.
+
+:: book-040 | Fyodor Dostoevsky | Crime and Punishment
+On an exceptionally hot evening early in July a young man came out of the garret in which he lodged.
+
+:: book-041 | Fyodor Dostoevsky | The Brothers Karamazov
+Alexey Fyodorovich Karamazov was the third son of Fyodor Pavlovich Karamazov, a landowner well known in our district.
+
+:: book-042 | Leo Tolstoy | War and Peace
+Well, Prince, so Genoa and Lucca are now just family estates of the Buonapartes.
+
+:: book-043 | Leo Tolstoy | Anna Karenina
+All happy families are alike; each unhappy family is unhappy in its own way.
+
+:: book-044 | Edith Wharton | The Age of Innocence
+On a January evening of the early seventies, Christine Nilsson was singing in Faust at the Academy of Music in New York.
+
+:: book-045 | Edith Wharton | Ethan Frome
+I had the story, bit by bit, from various people, and, as generally happens in such cases, each time it was a different story.
+
+:: book-046 | Willa Cather | My Antonia
+I first heard of Antonia on what seemed to me an interminable journey across the great midland plain of North America.
+
+:: book-047 | Willa Cather | O Pioneers!
+One January day, thirty years ago, the little town of Hanover, anchored on a windy Nebraska tableland, was trying not to be blown away.
+
+:: book-048 | Jack London | The Call of the Wild
+Buck did not read the newspapers, or he would have known that trouble was brewing.
+
+:: book-049 | Jack London | White Fang
+Dark spruce forest frowned on either side the frozen waterway.
+
+:: book-050 | Joseph Conrad | Heart of Darkness
+The Nellie, a cruising yawl, swung to her anchor without a flutter of the sails, and was at rest.
+
+:: book-001 | Jane Austen | Pride and Prejudice
+The world of manners, marriage, reputation, and first impressions becomes a place where people constantly misread one another. Beneath polite conversation, characters reveal pride, insecurity, wit, longing, and the slow education of judgment.
+
+:: book-002 | Charles Dickens | A Tale of Two Cities
+The novel opens in a world divided by extremes, where hope and despair exist side by side. Its atmosphere suggests that history moves through contradiction, with private lives caught inside public violence and revolution.
+
+:: book-003 | Herman Melville | Moby-Dick
+The narrator turns toward the sea not simply for adventure, but because restlessness has gathered inside him. The ocean becomes a place of escape, mystery, danger, and confrontation with forces larger than human certainty.
+
+:: book-004 | Mary Shelley | Frankenstein
+The creator looks upon what he has made and discovers that ambition without responsibility can become horror. Scientific achievement, separated from compassion, leaves both maker and creation abandoned in fear and suffering.
+
+:: book-005 | Charlotte Bronte | Jane Eyre
+Jane’s story begins in loneliness and restraint, but her inner life refuses to shrink. She learns to value love deeply while still protecting the independence, conscience, and dignity that define her.
+
+:: book-006 | Emily Bronte | Wuthering Heights
+The landscape of the moors mirrors the emotional violence of the people who inhabit it. Love, resentment, pride, and revenge become tangled until affection itself seems inseparable from pain and destruction.
+
+:: book-007 | Louisa May Alcott | Little Women
+The March sisters live with limited money but rich emotional lives, learning that growing up means balancing dreams, duty, love, disappointment, and ambition. Their home becomes a place of warmth and moral testing.
+
+:: book-008 | Mark Twain | Adventures of Huckleberry Finn
+Huck’s journey down the river becomes more than an escape from rules and violence. It becomes a moral education, forcing him to choose between what society teaches and what conscience quietly knows.
+
+:: book-009 | Mark Twain | The Adventures of Tom Sawyer
+Tom turns ordinary childhood into performance, mischief, and adventure. Through games, schemes, and imagination, the novel captures how children transform small-town life into a stage for freedom, risk, and discovery.
+
+:: book-010 | L. M. Montgomery | Anne of Green Gables
+Anne arrives unwanted by mistake, yet quickly fills Green Gables with imagination, emotion, and dramatic language. Her longing to belong gives the story its tenderness, humour, and enduring sense of hope.
+
+:: book-011 | Lewis Carroll | Alice’s Adventures in Wonderland
+Alice enters a world where ordinary logic collapses, language misbehaves, and identity becomes uncertain. The strange conversations and impossible events make childhood curiosity feel both delightful and deeply unsettling.
+
+:: book-012 | Lewis Carroll | Through the Looking-Glass
+The looking-glass world reverses expectations, turning reality into a puzzle of chess, riddles, and absurd rules. Alice must navigate a place where meaning shifts just when she thinks she understands it.
+
+:: book-013 | J. M. Barrie | Peter Pan
+The story imagines childhood as magical, rebellious, and fleeting, but also shadowed by loss. Neverland offers freedom from adulthood, yet its wonder depends on refusing the responsibilities that make love lasting.
+
+:: book-014 | Frances Hodgson Burnett | The Secret Garden
+Mary begins as a neglected, disagreeable child, but the hidden garden slowly changes her. As the earth revives, so does her capacity for friendship, wonder, health, and emotional connection.
+
+:: book-015 | Frances Hodgson Burnett | A Little Princess
+Sara’s dignity is tested when comfort and privilege disappear. Even in poverty and humiliation, she clings to imagination, kindness, and inner nobility, showing that character is not dependent on wealth.
+
+:: book-016 | Kenneth Grahame | The Wind in the Willows
+The riverbank world feels gentle, companionable, and full of small adventures. Mole, Rat, Badger, and Toad each represent different temperaments, reminding readers that friendship must make room for difference.
+
+:: book-017 | Anna Sewell | Black Beauty
+The story gives a horse a voice in order to expose human cruelty and kindness. Through Black Beauty’s experiences, the novel asks readers to consider responsibility toward animals with moral seriousness.
+
+:: book-018 | Robert Louis Stevenson | Treasure Island
+The search for treasure promises excitement, but it also brings danger, betrayal, and moral testing. Jim Hawkins enters adventure as a boy and learns that courage often appears before certainty does.
+
+:: book-019 | Robert Louis Stevenson | Strange Case of Dr Jekyll and Mr Hyde
+The mystery of Jekyll and Hyde reveals a frightening division within human nature. Respectability hides impulses that, once separated from conscience, grow monstrous and threaten to consume the whole person.
+
+:: book-020 | Daniel Defoe | Robinson Crusoe
+Crusoe’s isolation forces him to rebuild life from fragments of survival, memory, labour, and faith. The island becomes both prison and classroom, teaching him discipline, fear, gratitude, and self-reliance.
+
+:: book-021 | Jonathan Swift | Gulliver’s Travels
+Gulliver’s voyages appear fantastical, yet each strange society reflects human foolishness in distorted form. By making the familiar look absurd, Swift exposes pride, politics, cruelty, and the limits of reason.
+
+:: book-022 | Miguel de Cervantes | Don Quixote
+Don Quixote sees the world not as it is, but as his imagination insists it must be. His madness is comic, yet it also reveals the beauty and danger of idealism.
+
+:: book-023 | Victor Hugo | Les Miserables
+The novel follows suffering through prisons, streets, barricades, and homes, insisting that social injustice is never abstract. Mercy becomes a force capable of transforming lives where law alone has failed.
+
+:: book-024 | Alexandre Dumas | The Count of Monte Cristo
+Betrayal sends Edmond Dantes into darkness, but patience turns his suffering into a long and intricate revenge. The story asks whether justice remains pure when it is carried out through vengeance.
+
+:: book-025 | Alexandre Dumas | The Three Musketeers
+Friendship, honour, romance, and political intrigue drive the world of the musketeers. Their famous loyalty is not passive affection, but a shared willingness to face danger together with style and courage.
+
+:: book-026 | Jules Verne | Twenty Thousand Leagues Under the Seas
+The sea becomes a vast unknown world filled with beauty, science, terror, and secrecy. Captain Nemo’s submarine offers freedom from ordinary society, but also reveals isolation and unresolved bitterness.
+
+:: book-027 | Jules Verne | Around the World in Eighty Days
+Phileas Fogg treats time as something measurable, disciplined, and exact, yet his journey around the world becomes unpredictable. The adventure tests whether order can survive chance, delay, and human attachment.
+
+:: book-028 | H. G. Wells | The Time Machine
+The invention of time travel allows the future to become a warning rather than a fantasy. Wells imagines social inequality stretched across centuries until humanity itself appears divided and diminished.
+
+:: book-029 | H. G. Wells | The War of the Worlds
+The invasion unsettles human confidence by making Earth vulnerable to a superior force. Ordinary life collapses quickly, and the novel shows how fragile civilization becomes when its assumptions are overturned.
+
+:: book-030 | Bram Stoker | Dracula
+The novel builds fear through letters, diaries, travel notes, and fragments of testimony. Dracula’s presence threatens bodies, homes, faith, and modern certainty, turning invasion into both horror and symbolism.
+
+:: book-031 | Arthur Conan Doyle | A Study in Scarlet
+Sherlock Holmes enters the story as a figure of sharp observation, strange habits, and remarkable deduction. The ordinary world becomes readable to him because he notices what others dismiss as meaningless.
+
+:: book-032 | Arthur Conan Doyle | The Hound of the Baskervilles
+The moor creates an atmosphere of superstition, danger, and isolation. Holmes and Watson must separate legend from evidence, showing how fear can cloud reason until careful observation restores clarity.
+
+:: book-033 | Oscar Wilde | The Picture of Dorian Gray
+Dorian’s beauty becomes a shield from consequence, while his hidden portrait records what society cannot see. The novel turns aesthetic pleasure into a moral question about corruption, vanity, and secrecy.
+
+:: book-034 | George Eliot | Middlemarch
+Middlemarch explores ambition, marriage, disappointment, and moral growth within an ordinary provincial community. Its characters are not simply heroes or villains, but people shaped by choices, limitations, and misunderstood desires.
+
+:: book-035 | George Eliot | Silas Marner
+Silas begins in isolation, wounded by betrayal and living through mechanical labour and hoarded gold. His life changes when unexpected love enters quietly, replacing loss with human attachment and renewed purpose.
+
+:: book-036 | Thomas Hardy | Tess of the d’Urbervilles
+Tess moves through a world that judges her harshly while failing to protect her innocence. Hardy presents her tragedy as both personal suffering and an indictment of social hypocrisy.
+
+:: book-037 | Thomas Hardy | Far from the Madding Crowd
+Bathsheba Everdene’s independence attracts admiration, desire, and conflict. Around her, love appears in different forms: patient devotion, reckless passion, possessive pride, and the difficult wisdom gained through consequence.
+
+:: book-038 | Nathaniel Hawthorne | The Scarlet Letter
+Hester’s punishment is meant to expose shame, yet it also reveals the cruelty of public judgment. The scarlet letter becomes both a mark of condemnation and a symbol she transforms.
+
+:: book-039 | Nathaniel Hawthorne | The House of the Seven Gables
+The old house carries the weight of ancestral guilt, secrecy, and decay. Hawthorne turns architecture into memory, showing how the past can live inside walls, families, and inherited shame.
+
+:: book-040 | Fyodor Dostoevsky | Crime and Punishment
+Raskolnikov’s crime begins as an idea, but the reality of guilt destroys his theories. The novel follows a mind trapped between pride, suffering, confession, and the possibility of redemption.
+
+:: book-041 | Fyodor Dostoevsky | The Brothers Karamazov
+The Karamazov family becomes a battlefield of faith, doubt, sensuality, resentment, and moral responsibility. Through their conflicts, the novel asks whether love and belief can survive human cruelty.
+
+:: book-042 | Leo Tolstoy | War and Peace
+Tolstoy places private lives against the vast movement of history, refusing to treat war as simple glory. Families, soldiers, and rulers all become part of forces larger than individual intention.
+
+:: book-043 | Leo Tolstoy | Anna Karenina
+Anna’s story unfolds within a society obsessed with appearances, duty, and reputation. Her search for love becomes inseparable from judgment, isolation, passion, and the costs of violating social expectation.
+
+:: book-044 | Edith Wharton | The Age of Innocence
+Old New York society appears elegant and controlled, but its rules quietly govern desire, marriage, and belonging. The novel shows how politeness can become a beautiful form of imprisonment.
+
+:: book-045 | Edith Wharton | Ethan Frome
+The cold landscape reflects Ethan’s emotional confinement, poverty, and regret. His life feels trapped between duty and longing, making the novel’s quiet tragedy feel as severe as winter itself.
+
+:: book-046 | Willa Cather | My Antonia
+The prairie becomes a place of memory, hardship, and beauty. Antonia represents resilience and immigrant strength, while the narrator looks back with tenderness at youth, landscape, and lost time.
+
+:: book-047 | Willa Cather | O Pioneers!
+The novel follows settlers who try to make a future from difficult land. Alexandra’s strength lies in seeing possibility where others see only hardship, debt, loneliness, and uncertainty.
+
+:: book-048 | Jack London | The Call of the Wild
+Buck is pulled from domestic comfort into a brutal world where instinct returns. The story traces his transformation from pet to survivor, shaped by violence, loyalty, memory, and the wilderness.
+
+:: book-049 | Jack London | White Fang
+White Fang’s life begins in hunger, cold, fear, and struggle, but the story gradually asks whether brutality is destiny. Trust becomes possible only when kindness proves stronger than cruelty.
+
+:: book-050 | Joseph Conrad | Heart of Darkness
+The journey into the interior becomes a journey into moral darkness, empire, and human corruption. Conrad’s river carries the narrator away from certainty and toward a disturbing recognition of civilization’s fragility.
+
+:: quote-001 | Aristotle | Nicomachean Ethics
+Excellence is not something we become in a single moment, but something shaped through repeated action, disciplined choices, and the habits we practice when no one is watching. Character is built slowly, through what we continue to do.
+
+:: quote-002 | Socrates | Apology
+A life that is never examined becomes easy to live on the surface, but difficult to understand in truth. To question ourselves is not weakness; it is the beginning of wisdom, humility, and moral courage.
+
+:: quote-003 | Plato | The Republic
+The education of a person begins long before they understand its importance, because the stories, examples, and values placed before the young quietly shape what they later believe to be good, just, and possible.
+
+:: quote-004 | Confucius | Analects
+Learning is not only about gathering knowledge, but about returning to what we have learned and practicing it with sincerity. A person becomes wise by reflecting, correcting themselves, and acting with care toward others.
+
+:: quote-005 | Laozi | Tao Te Ching
+Great things often begin quietly, without force or announcement. The longest journey still begins with one step, and the strongest tree still grows from something small, patient, rooted, and easily overlooked.
+
+:: quote-006 | Marcus Aurelius | Meditations
+You may not control what happens around you, but you can choose the judgment you place upon it. Peace begins when the mind stops surrendering its strength to every outside event.
+
+:: quote-007 | Epictetus | Enchiridion
+Freedom does not come from controlling the world, because the world will always resist control. True freedom begins when a person learns to govern their own desires, reactions, fears, and expectations.
+
+:: quote-008 | Seneca | Letters from a Stoic
+Time is the one possession people waste most carelessly, even though it cannot be recovered once lost. A wise person treats each day as something borrowed, precious, and worthy of intentional use.
+
+:: quote-009 | Cicero | On Duties
+Justice is not simply a law written by others, but a responsibility carried within the character of each person. A good society depends on people choosing fairness even when selfishness would be easier.
+
+:: quote-010 | Buddha | Dhammapada
+Hatred does not end by answering it with more hatred, because anger only feeds the fire it claims to defeat. Peace begins when compassion interrupts the cycle and refuses to pass suffering onward.
+
+:: quote-011 | Jesus | Sermon on the Mount
+The measure of a life is not found only in outward appearance, public praise, or visible success, but in the condition of the heart and the mercy one shows when no reward is expected.
+
+:: quote-012 | Muhammad | Hadith Tradition
+The strongest person is not the one who can overpower others, but the one who can restrain themselves when anger rises. Self-control is a quieter strength, but often the more difficult victory.
+
+:: quote-013 | Rumi | Masnavi
+The wound is not always the end of something; sometimes it is the place where understanding begins. Pain can open a door in the heart that comfort never knew how to find.
+
+:: quote-014 | William Shakespeare | Hamlet
+A person may deceive the world with language, appearance, and performance, but the self remains difficult to escape. To be honest with oneself is the foundation from which all other honesty grows.
+
+:: quote-015 | Francis Bacon | Of Studies
+Reading gives the mind material, conversation gives it movement, and writing gives it precision. Knowledge becomes most useful when it is not merely collected, but tested, organized, and applied with judgment.
+
+:: quote-016 | Galileo Galilei | Letter to the Grand Duchess Christina
+Truth does not become false simply because it is difficult to accept, nor does inquiry become dangerous because it challenges old assumptions. The honest search for understanding requires courage, patience, and humility.
+
+:: quote-017 | Isaac Newton | Letter to Robert Hooke
+No discovery belongs only to one person, because every thinker stands upon the work, questions, and struggles of those who came before. Progress is often less a solitary leap than a shared ascent.
+
+:: quote-018 | Benjamin Franklin | Poor Richard’s Almanack
+Time, once wasted, does not return with regret. A person who delays every useful action until tomorrow may eventually find that tomorrow has become a place where opportunity no longer waits.
+
+:: quote-019 | George Washington | Farewell Address
+Public trust is fragile, and a nation depends on citizens who value unity, responsibility, and restraint. Liberty cannot survive on passion alone; it requires character, wisdom, and a willingness to serve something larger than self.
+
+:: quote-020 | Thomas Jefferson | Declaration of Independence
+Human dignity rests on the belief that people are not born to be ruled as property, silenced as subjects, or denied the rights of conscience, liberty, and participation in shaping their collective future.
+
+:: quote-021 | Thomas Paine | Common Sense
+A long habit of accepting wrong can make injustice appear natural, but familiarity does not make oppression right. When people begin to question inherited power, they also begin to imagine freedom differently.
+
+:: quote-022 | Abraham Lincoln | Gettysburg Address
+A nation dedicated to liberty must constantly prove that its ideals are more than words. The living are responsible for carrying forward the unfinished work of justice, sacrifice, and democratic purpose.
+
+:: quote-023 | Frederick Douglass | West India Emancipation Speech
+Progress does not arrive because people simply wish for it, nor because power becomes generous on its own. Every movement toward freedom requires struggle, pressure, sacrifice, and the refusal to accept injustice as permanent.
+
+:: quote-024 | Sojourner Truth | Ain’t I a Woman?
+Strength is not limited to the people society chooses to recognize. Those who have labored, suffered, endured, and still spoken with courage reveal a power that prejudice tries, but fails, to erase.
+
+:: quote-025 | Harriet Tubman | Reflections on Freedom
+Freedom requires more than escaping chains; it requires believing that another life is possible. Courage is not the absence of fear, but the decision to move forward while fear walks beside you.
+
+:: quote-026 | Elizabeth Cady Stanton | Declaration of Sentiments
+Equality cannot be partial and still be called justice. When laws, customs, and institutions deny women full personhood, the demand for rights becomes not rebellion, but a necessary correction of society.
+
+:: quote-027 | Susan B. Anthony | Speech After Arrest for Voting
+Citizenship loses its meaning when half the people are governed without equal voice. Justice requires that rights belong not only to those already powerful, but to every person subject to the law.
+
+:: quote-028 | Mary Wollstonecraft | A Vindication of the Rights of Woman
+Women should not be educated merely to please others, but to strengthen their own reason, judgment, and independence. A society that weakens women’s minds cannot honestly claim to value virtue or progress.
+
+:: quote-029 | Florence Nightingale | Notes on Nursing
+Care is not only kindness, but close observation, discipline, cleanliness, and attention to conditions that allow healing. The environment surrounding a patient can either support recovery or quietly work against it.
+
+:: quote-030 | Charles Darwin | On the Origin of Species
+Nature is not fixed in perfect stillness, but shaped through variation, pressure, survival, and time. Small differences, accumulated across generations, can alter the living world in ways no single moment reveals.
+
+:: quote-031 | Marie Curie | Reflections on Science
+Fear often grows where understanding is absent. The task of science is not to remove wonder from life, but to replace helpless fear with careful knowledge, patient investigation, and respect for truth.
+
+:: quote-032 | Nikola Tesla | My Inventions
+The future belongs not only to those who inherit the present, but to those willing to imagine what does not yet exist. Invention begins where dissatisfaction meets disciplined vision.
+
+:: quote-033 | Albert Einstein | Ideas and Opinions
+Imagination allows the mind to move beyond what is already known, while knowledge gives that movement structure. Both are needed, because discovery requires facts, curiosity, and the courage to ask impossible questions.
+
+:: quote-034 | Helen Keller | Optimism
+Optimism is not pretending that hardship does not exist, but believing that hardship is not the whole story. Hope gives people the strength to act when despair would prefer them to stop.
+
+:: quote-035 | Booker T. Washington | Up from Slavery
+Success should not be measured only by the height someone reaches, but by the obstacles they had to overcome on the way. Effort, dignity, and perseverance reveal more than position alone.
+
+:: quote-036 | W. E. B. Du Bois | The Souls of Black Folk
+To live behind a veil is to understand a society that sees you incompletely. The struggle is not only for opportunity, but for recognition, dignity, and the right to be fully human.
+
+:: quote-037 | Jane Austen | Pride and Prejudice
+Pride may protect a person’s dignity, but it can also blind them to their own faults. Wisdom requires learning when judgment is clear and when it has been quietly distorted by vanity.
+
+:: quote-038 | Charles Dickens | David Copperfield
+Kindness, honesty, and tenderness are not small virtues simply because they appear ordinary. A person’s moral life is often revealed in daily conduct, especially toward those with less power.
+
+:: quote-039 | Charlotte Bronte | Jane Eyre
+Independence does not mean a heart without feeling; it means refusing to surrender one’s conscience, dignity, or self-respect for comfort, approval, or love that asks too much in return.
+
+:: quote-040 | Emily Dickinson | Letters
+The mind can travel farther than the body, and poetry can open rooms that ordinary speech leaves locked. A few carefully chosen words may hold more feeling than an entire conversation.
+
+:: quote-041 | Walt Whitman | Leaves of Grass
+A person is never only one thing, but a gathering of contradictions, memories, desires, and possibilities. To contain multitudes is not confusion; it is part of being fully alive.
+
+:: quote-042 | Ralph Waldo Emerson | Self-Reliance
+To trust oneself is difficult because society rewards imitation and punishes difference. Yet every original life begins when a person stops asking permission to become what conscience already knows.
+
+:: quote-043 | Henry David Thoreau | Walden
+A person may live surrounded by possessions and still feel poor in spirit. Simplicity asks us to notice what is truly necessary, and to stop mistaking accumulation for meaning.
+
+:: quote-044 | Mark Twain | Following the Equator
+Truth often appears stranger than fiction because reality does not need to be believable. Fiction must obey possibility, but life moves with a wildness that no storyteller would always dare invent.
+
+:: quote-045 | Oscar Wilde | The Picture of Dorian Gray
+Beauty can attract admiration, but it cannot substitute for conscience. A life devoted only to appearance eventually reveals the emptiness beneath the surface it worked so carefully to preserve.
+
+:: quote-046 | George Bernard Shaw | Man and Superman
+Progress often depends on people unreasonable enough to question what everyone else has accepted. The world changes because someone refuses to treat present limits as permanent laws.
+
+:: quote-047 | Victor Hugo | Les Miserables
+Even the darkest night is not eternal, because human suffering is never the final word. Hope survives in the smallest acts of mercy, courage, and love offered against despair.
+
+:: quote-048 | Leo Tolstoy | Anna Karenina
+Happiness may look simple from the outside, but unhappiness has its own particular history. Every family carries private wounds, hidden conflicts, and stories that cannot be understood from appearances alone.
+
+:: quote-049 | Fyodor Dostoevsky | The Brothers Karamazov
+To lie to others is harmful, but to lie to oneself is spiritually destructive. A person who refuses self-honesty slowly loses the ability to recognize truth anywhere else.
+
+:: quote-050 | Sun Tzu | The Art of War
+The greatest victory is not always the loudest battle, but the outcome shaped before conflict fully begins. Strategy requires knowing oneself, understanding the opponent, and acting with patience rather than impulse.

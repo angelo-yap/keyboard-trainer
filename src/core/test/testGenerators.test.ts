@@ -1,8 +1,12 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { classicWordsGenerator } from "./classicWordsGenerator";
 import { adaptiveWeakLetterGenerator } from "./adaptiveWeakLetterGenerator";
+import { codeSnippetGenerator } from "./codeSnippetGenerator";
+import { quotesGenerator } from "./quotesGenerator";
 import { TEST_GENERATORS } from "./registry";
 import { applyRandomCase } from "./generatorUtils";
+import { getRandomLocalCodeSnippet } from "./providers/codeSnippetProvider";
+import { fetchQuote } from "./providers/quoteProvider";
 
 describe("test generators", () => {
   afterEach(() => {
@@ -118,5 +122,114 @@ describe("test generators", () => {
   it("registry contains standard and adaptive modes", () => {
     expect(TEST_GENERATORS.standard).toBe(classicWordsGenerator);
     expect(TEST_GENERATORS.adaptive).toBe(adaptiveWeakLetterGenerator);
+    expect(TEST_GENERATORS.quotes).toBe(quotesGenerator);
+    expect(TEST_GENERATORS.code).toBe(codeSnippetGenerator);
+  });
+
+  it("quotes generator keeps natural sentence punctuation from quote text", () => {
+    const text = quotesGenerator.generateInitialText({
+      durationSeconds: 15,
+      options: {
+        includePunctuation: true,
+        includeNumbers: true,
+        randomCase: false,
+        quote: {
+          id: "test-quote",
+          text: "Practice should feel like real writing, not only word lists.",
+          author: "Test Author",
+          source: "Test",
+        },
+      },
+    });
+
+    expect(text).toContain("Practice should feel like real writing, not only word lists. Test Author");
+    expect(text).toBe("Practice should feel like real writing, not only word lists. Test Author");
+  });
+
+  it("quotes generator preserves quote capitalization even if random case is enabled", () => {
+    const text = quotesGenerator.generateInitialText({
+      durationSeconds: 15,
+      options: {
+        includePunctuation: true,
+        includeNumbers: true,
+        randomCase: true,
+        quote: {
+          id: "case-test",
+          text: "This sentence should not become Title Case.",
+          author: "Case Author",
+          source: "Test",
+        },
+      },
+    });
+
+    expect(text).toContain("This sentence should not become Title Case. Case Author");
+    expect(text).not.toContain("This Sentence Should Not Become Title Case");
+  });
+
+  it("quote provider pulls from bundled local passages by default", async () => {
+    const result = await fetchQuote({
+      retries: 0,
+      timeoutMs: 1,
+      fetchImpl: vi.fn().mockRejectedValue(new Error("offline")),
+    });
+
+    expect(result.sourceType).toBe("local");
+    expect(result.failureReason).toBeUndefined();
+    expect(result.quote.text.length).toBeGreaterThan(0);
+  });
+
+  it("quote provider can still normalize successful ZenQuotes responses when local-first is disabled", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          h: "zen-42",
+          q: "  Keep\tmoving\nforward. <script> ",
+          a: "  Someone  ",
+        },
+      ],
+    });
+
+    const result = await fetchQuote({
+      preferLocal: false,
+      retries: 0,
+      timeoutMs: 100,
+      fetchImpl,
+    });
+
+    expect(result.sourceType).toBe("api");
+    expect(result.quote).toEqual({
+      id: "zen-42",
+      text: "Keep moving forward. script",
+      author: "Someone",
+      source: "ZenQuotes",
+    });
+  });
+
+  it("code generator uses exactly one snippet and preserves code casing", () => {
+    const text = codeSnippetGenerator.generateInitialText({
+      durationSeconds: 15,
+      options: {
+        includePunctuation: true,
+        includeNumbers: true,
+        randomCase: true,
+        snippet: {
+          id: "code-test",
+          language: "TypeScript",
+          source: "Example",
+          text: "const userName = formatName(input.value);",
+        },
+      },
+    });
+
+    expect(text).toBe("const userName = formatName(input.value);");
+  });
+
+  it("code provider pulls a bundled local snippet", () => {
+    const snippet = getRandomLocalCodeSnippet();
+
+    expect(snippet.text.length).toBeGreaterThan(0);
+    expect(snippet.language.length).toBeGreaterThan(0);
+    expect(snippet.source.length).toBeGreaterThan(0);
   });
 });

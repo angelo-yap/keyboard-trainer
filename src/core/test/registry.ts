@@ -1,5 +1,7 @@
 import { adaptiveWeakLetterGenerator } from "./adaptiveWeakLetterGenerator";
 import { classicWordsGenerator } from "./classicWordsGenerator";
+import { codeSnippetGenerator } from "./codeSnippetGenerator";
+import { quotesGenerator } from "./quotesGenerator";
 import type { TestGenerator, TestMode, TestModeOptionsMap } from "./types";
 
 export const TEST_GENERATORS: {
@@ -7,6 +9,8 @@ export const TEST_GENERATORS: {
 } = {
   standard: classicWordsGenerator,
   adaptive: adaptiveWeakLetterGenerator,
+  quotes: quotesGenerator,
+  code: codeSnippetGenerator,
 };
 
 export function getTestGenerator<M extends TestMode>(
