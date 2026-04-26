@@ -11,8 +11,8 @@ export const classicWordsGenerator: TestGenerator<ClassicWordsGeneratorOptions> 
       return { valid: false, reason: "Classic generator requires includeNumbers to be a boolean." };
     }
 
-    if (!["lowercase", "uppercase", "mixed"].includes(options.caseMode)) {
-      return { valid: false, reason: "Classic generator requires caseMode to be lowercase, uppercase, or mixed." };
+    if (typeof options.randomCase !== "boolean") {
+      return { valid: false, reason: "Classic generator requires randomCase to be a boolean." };
     }
 
     return {
@@ -20,7 +20,7 @@ export const classicWordsGenerator: TestGenerator<ClassicWordsGeneratorOptions> 
       options: {
         includePunctuation: options.includePunctuation,
         includeNumbers: options.includeNumbers,
-        caseMode: options.caseMode,
+        randomCase: options.randomCase,
       },
     };
   },
@@ -28,11 +28,11 @@ export const classicWordsGenerator: TestGenerator<ClassicWordsGeneratorOptions> 
   generateInitialText({ durationSeconds, options }) {
     const wordCount = Math.max(wordsForDuration(durationSeconds) * 2, 80);
     const words = buildClassicWordList(wordCount);
-    return buildWordString(words, options.includePunctuation, options.includeNumbers, options.caseMode);
+    return buildWordString(words, options.includePunctuation, options.includeNumbers, options.randomCase);
   },
 
   generateChunk({ wordCount, options }) {
     const words = buildClassicWordList(wordCount);
-    return buildWordString(words, options.includePunctuation, options.includeNumbers, options.caseMode);
+    return buildWordString(words, options.includePunctuation, options.includeNumbers, options.randomCase);
   },
 };

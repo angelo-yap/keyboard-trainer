@@ -2,6 +2,7 @@ import { describe, expect, it, vi, afterEach } from "vitest";
 import { classicWordsGenerator } from "./classicWordsGenerator";
 import { adaptiveWeakLetterGenerator } from "./adaptiveWeakLetterGenerator";
 import { TEST_GENERATORS } from "./registry";
+import { applyRandomCase } from "./generatorUtils";
 
 describe("test generators", () => {
   afterEach(() => {
@@ -16,7 +17,7 @@ describe("test generators", () => {
       options: {
         includePunctuation: false,
         includeNumbers: false,
-        caseMode: "lowercase",
+        randomCase: false,
       },
     });
 
@@ -25,7 +26,7 @@ describe("test generators", () => {
       options: {
         includePunctuation: true,
         includeNumbers: true,
-        caseMode: "lowercase",
+        randomCase: false,
       },
     });
 
@@ -34,40 +35,23 @@ describe("test generators", () => {
     expect(withExtras).toBe("0. 0. 0");
   });
 
-  it("classic generator applies case mode", () => {
-    vi.spyOn(Math, "random").mockReturnValue(0.2);
-
+  it("classic generator applies random case without clustered capitals", () => {
     const lowercase = classicWordsGenerator.generateChunk({
       wordCount: 2,
       options: {
         includePunctuation: false,
         includeNumbers: false,
-        caseMode: "lowercase",
+        randomCase: false,
       },
     });
 
-    const uppercase = classicWordsGenerator.generateChunk({
-      wordCount: 2,
-      options: {
-        includePunctuation: false,
-        includeNumbers: false,
-        caseMode: "uppercase",
-      },
-    });
-
-    const mixed = classicWordsGenerator.generateChunk({
-      wordCount: 2,
-      options: {
-        includePunctuation: false,
-        includeNumbers: false,
-        caseMode: "mixed",
-      },
-    });
+    vi.spyOn(Math, "random").mockImplementation(() => 0.4);
+    const randomCase = applyRandomCase("make it like this at most", true);
 
     expect(lowercase).toBe(lowercase.toLowerCase());
-    expect(uppercase).toBe(uppercase.toUpperCase());
-    expect(mixed).toMatch(/[A-Z]/);
-    expect(mixed).toMatch(/[a-z]/);
+    expect(randomCase).toMatch(/[A-Z]/);
+    expect(randomCase).toMatch(/[a-z]/);
+    expect(randomCase.split(/\s+/).every((word) => !/[A-Z]{2}/.test(word))).toBe(true);
   });
 
   it("adaptive generator falls back when there is not enough key history", () => {
@@ -78,7 +62,7 @@ describe("test generators", () => {
       options: {
         includePunctuation: false,
         includeNumbers: false,
-        caseMode: "lowercase",
+        randomCase: false,
         adaptiveTargets: [{ key: "q", accuracy: 40, attempts: 10, errors: 6, avgLatencyMs: null, score: 40 }],
       },
     });
@@ -88,7 +72,7 @@ describe("test generators", () => {
       options: {
         includePunctuation: false,
         includeNumbers: false,
-        caseMode: "lowercase",
+        randomCase: false,
       },
     });
 
@@ -100,7 +84,7 @@ describe("test generators", () => {
       classicWordsGenerator.validateOptions({
         includePunctuation: "yes" as never,
         includeNumbers: false,
-        caseMode: "lowercase",
+        randomCase: false,
       })
     ).toEqual({
       valid: false,
@@ -111,7 +95,7 @@ describe("test generators", () => {
       adaptiveWeakLetterGenerator.validateOptions({
         includePunctuation: false,
         includeNumbers: false,
-        caseMode: "lowercase",
+        randomCase: false,
         adaptiveTargets: "bad" as never,
       })
     ).toEqual({
@@ -123,11 +107,11 @@ describe("test generators", () => {
       classicWordsGenerator.validateOptions({
         includePunctuation: false,
         includeNumbers: false,
-        caseMode: "bad" as never,
+        randomCase: "yes" as never,
       })
     ).toEqual({
       valid: false,
-      reason: "Classic generator requires caseMode to be lowercase, uppercase, or mixed.",
+      reason: "Classic generator requires randomCase to be a boolean.",
     });
   });
 

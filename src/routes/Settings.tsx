@@ -519,17 +519,6 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
                 onChange={(v) => update("testDuration", v)}
               />
             </SettingRow>
-            <SettingRow label="Case Mode" desc="Default letter casing for generated test text">
-              <SegmentControl
-                options={[
-                  ["lowercase", "Lowercase"],
-                  ["uppercase", "Uppercase"],
-                  ["mixed", "Mixed"],
-                ]}
-                value={settings.caseMode}
-                onChange={(v) => update("caseMode", v as SettingsType["caseMode"])}
-              />
-            </SettingRow>
           </SettingsSection>
 
           <SettingsSection title="Display">

@@ -35,11 +35,6 @@ type TestProps = {
 };
 
 const DURATION_OPTIONS = [15, 30, 60, 120] as const;
-const CASE_MODE_OPTIONS = [
-  ["lowercase", "Lowercase"],
-  ["uppercase", "Uppercase"],
-  ["mixed", "Mixed"],
-] as const;
 const TRANSITION_MS = 180;
 
 /**
@@ -73,12 +68,12 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     standard: {
       includePunctuation: false,
       includeNumbers: false,
-      caseMode: settings.caseMode ?? "lowercase",
+      randomCase: false,
     },
     adaptive: {
       includePunctuation: false,
       includeNumbers: false,
-      caseMode: settings.caseMode ?? "lowercase",
+      randomCase: false,
       adaptiveTargets: [],
     },
   });
@@ -115,7 +110,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     mode,
     includePunctuation: false,
     includeNumbers: false,
-    caseMode: settings.caseMode ?? "lowercase",
+    randomCase: false,
   });
   const adaptiveTargetsRef = useRef(getWeakLetterTargets(5));
   const modeConfigRef = useRef<TestModeConfig>(
@@ -147,7 +142,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
 
   const includePunctuation = modeOptions[mode].includePunctuation;
   const includeNumbers = modeOptions[mode].includeNumbers;
-  const caseMode = modeOptions[mode].caseMode;
+  const randomCase = modeOptions[mode].randomCase;
   modeConfigRef.current = createModeConfig(mode);
 
   const maybeRefill = useCallback((typedLength: number) => {
@@ -228,20 +223,20 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
       prev.mode !== mode ||
       prev.includePunctuation !== includePunctuation ||
       prev.includeNumbers !== includeNumbers ||
-      prev.caseMode !== caseMode;
+      prev.randomCase !== randomCase;
     prevSettingsRef.current = {
       duration,
       mode,
       includePunctuation,
       includeNumbers,
-      caseMode,
+      randomCase,
     };
     if (changed) {
       modeConfigRef.current = createModeConfig(mode);
       const cleanup = regenerateTest();
       return cleanup;
     }
-  }, [testStatus, text, duration, mode, includePunctuation, includeNumbers, caseMode, createModeConfig, regenerateTest]);
+  }, [testStatus, text, duration, mode, includePunctuation, includeNumbers, randomCase, createModeConfig, regenerateTest]);
 
   const currentTargetChar = testStatus === "active" ? text.charAt(typing.typed.length) : "";
   const guidedTargetKeys = getGuidanceKeysForChar(currentTargetChar);
@@ -355,7 +350,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
       mode,
       includePunctuation: validatedConfig.options.includePunctuation,
       includeNumbers: validatedConfig.options.includeNumbers,
-      caseMode: validatedConfig.options.caseMode,
+      randomCase: validatedConfig.options.randomCase,
     };
     generateAndLoadTest(validatedConfig);
     setTestStatus("active");
@@ -611,27 +606,18 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
               >
                 Numbers
               </button>
-            </div>
-          </div>
-
-          <div className="test-setup-section">
-            <div className="test-setup-label">Case Mode</div>
-            <div className="test-setup-duration">
-              {CASE_MODE_OPTIONS.map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={`test-setup-duration-btn ${caseMode === value ? "active" : ""}`}
-                  onClick={() =>
-                    updateCurrentWordOptions((current) => ({
-                      ...current,
-                      caseMode: value,
-                    }))
-                  }
-                >
-                  {label}
-                </button>
-              ))}
+              <button
+                type="button"
+                className={`test-setup-toggle ${randomCase ? "active" : ""}`}
+                onClick={() =>
+                  updateCurrentWordOptions((current) => ({
+                    ...current,
+                    randomCase: !current.randomCase,
+                  }))
+                }
+              >
+                Random Case
+              </button>
             </div>
           </div>
 
@@ -698,6 +684,18 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
             }
           >
             nums
+          </button>
+          <button
+            type="button"
+            className={`test-topbar-badge ${randomCase ? "on" : "off"}`}
+            onClick={() =>
+              updateCurrentWordOptions((current) => ({
+                ...current,
+                randomCase: !current.randomCase,
+              }))
+            }
+          >
+            case
           </button>
           <button
             type="button"

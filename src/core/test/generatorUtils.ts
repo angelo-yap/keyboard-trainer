@@ -1,6 +1,5 @@
 import { shuffle } from "../../lib/shuffle";
 import { TOP_500 } from "../../data/topWords";
-import type { CaseMode } from "../storage/settingsStore";
 
 export const PUNCTUATION = [".", ",", "!", "?", ";", ":", "'"];
 export const NUMBERS = "0123456789";
@@ -32,7 +31,7 @@ export function buildWordString(
   words: string[],
   includePunctuation: boolean,
   includeNumbers: boolean,
-  caseMode: CaseMode
+  randomCase: boolean
 ): string {
   const result: string[] = [];
 
@@ -58,29 +57,27 @@ export function buildWordString(
     }
   }
 
-  return applyCaseMode(result.join(""), caseMode);
+  return applyRandomCase(result.join(""), randomCase);
 }
 
-export function applyCaseMode(text: string, caseMode: CaseMode): string {
-  if (caseMode === "lowercase") {
+export function applyRandomCase(text: string, randomCase: boolean): string {
+  if (!randomCase) {
     return text.toLowerCase();
   }
 
-  if (caseMode === "uppercase") {
-    return text.toUpperCase();
-  }
-
   return text.replace(/[a-z]+/gi, (word) => {
-    const roll = Math.random();
+    const result: string[] = [];
 
-    if (roll < 0.12) {
-      return word.toUpperCase();
+    for (const char of word.toLowerCase()) {
+      const previousChar = result[result.length - 1];
+      if ((!previousChar || previousChar === previousChar.toLowerCase()) && Math.random() < 0.5) {
+        result.push(char.toUpperCase());
+        continue;
+      }
+
+      result.push(char);
     }
 
-    if (roll < 0.35) {
-      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-    }
-
-    return word.toLowerCase();
+    return result.join("");
   });
 }
