@@ -40,6 +40,7 @@ export const KeyboardKey = memo(function KeyboardKey({
   if (isPressed) className += " kb-key--pressed";
   if (isHome) className += " kb-key--home";
   if (onClick) className += " kb-key--clickable";
+  if (showFingerHint && fingerColor) className += " kb-key--finger-hint";
 
   const style: React.CSSProperties = {
     width: `${width}px`,
@@ -47,9 +48,13 @@ export const KeyboardKey = memo(function KeyboardKey({
     minWidth: `${width}px`,
   };
 
-  if (showFingerHint && fingerColor && !isHighlighted && !isPressed) {
+  if (showFingerHint && fingerColor && !isPressed) {
     style.background = fingerColor;
     style.borderColor = fingerColor;
+    if (isHighlighted) {
+      style.boxShadow = `inset 0 0 0 1px var(--color-accent), 0 0 8px rgba(200, 169, 110, 0.2)`;
+      style.color = "var(--color-accent)";
+    }
   }
 
   return (

@@ -3,10 +3,10 @@ import { keyboardLayouts, type LayoutType } from "./keyboardLayouts";
 import { KeyboardRow } from "./KeyboardRow";
 import "./Keyboard.css";
 
-const UNIT_SIZE = 36;
-const GAP = 4;
-const MAX_WIDTH = 720;
-const FINGER_MARKER_X_OFFSET = 0.04;
+const UNIT_SIZE = 42;
+const GAP = 5;
+const MAX_WIDTH = 860;
+const FINGER_MARKER_X_OFFSET = 0;
 
 export type KeyboardMode = "lesson" | "test";
 
@@ -91,8 +91,11 @@ export function Keyboard({
   if (!layout) return null;
 
   const { rows, indents } = layout;
-  const totalUnits = 15.75;
-  const scale = Math.min(1, MAX_WIDTH / (totalUnits * UNIT_SIZE + (totalUnits - 1) * GAP));
+  const intrinsicWidth = rows.reduce((max, row, index) => {
+    const units = row.reduce((sum, key) => sum + key.width, indents?.[index] ?? 0);
+    return Math.max(max, units * UNIT_SIZE + Math.max(0, units - 1) * GAP);
+  }, 0);
+  const scale = Math.min(1, MAX_WIDTH / intrinsicWidth);
 
   return (
     <div

@@ -78,6 +78,7 @@ ZONE_BY_NAME = {zone_name: correct for zone_name, correct in ZONE_ORDER}
 
 # Space bar: bottom 20% of keyboard height → thumbs only
 SPACEBAR_Y_FRAC = 0.78  # below this y-fraction = spacebar row
+ZONE_OVERLAP_FRAC = 0.010
 
 # ──────────────────────────────────────────────────────────────
 # ZONE COLORS (BGR) for visualization
@@ -114,13 +115,13 @@ KEYBOARD_ROWS = [
         "y1": 0.20,
         "segments": [
             (0.000, 0.155, "L_PINKY_ZONE"),
-            (0.155, 0.235, "L_RING_ZONE"),
-            (0.235, 0.305, "L_MIDDLE_ZONE"),
-            (0.305, 0.475, "L_INDEX_ZONE"),
-            (0.475, 0.565, "R_INDEX_ZONE"),
-            (0.565, 0.630, "R_MIDDLE_ZONE"),
-            (0.630, 0.720, "R_RING_ZONE"),
-            (0.720, 1.000, "R_PINKY_ZONE"),
+            (0.162, 0.242, "L_RING_ZONE"),
+            (0.242, 0.318, "L_MIDDLE_ZONE"),
+            (0.318, 0.406, "L_INDEX_ZONE"),
+            (0.406, 0.565, "R_INDEX_ZONE"),
+            (0.565, 0.638, "R_MIDDLE_ZONE"),
+            (0.638, 0.728, "R_RING_ZONE"),
+            (0.728, 1.000, "R_PINKY_ZONE"),
         ],
     },
     {
@@ -128,13 +129,13 @@ KEYBOARD_ROWS = [
         "y1": 0.42,
         "segments": [
             (0.000, 0.150, "L_PINKY_ZONE"),
-            (0.150, 0.230, "L_RING_ZONE"),
-            (0.230, 0.305, "L_MIDDLE_ZONE"),
-            (0.305, 0.490, "L_INDEX_ZONE"),
-            (0.490, 0.575, "R_INDEX_ZONE"),
-            (0.575, 0.640, "R_MIDDLE_ZONE"),
-            (0.640, 0.730, "R_RING_ZONE"),
-            (0.730, 1.000, "R_PINKY_ZONE"),
+            (0.158, 0.240, "L_RING_ZONE"),
+            (0.240, 0.318, "L_MIDDLE_ZONE"),
+            (0.318, 0.413, "L_INDEX_ZONE"),
+            (0.413, 0.575, "R_INDEX_ZONE"),
+            (0.575, 0.643, "R_MIDDLE_ZONE"),
+            (0.643, 0.733, "R_RING_ZONE"),
+            (0.733, 1.000, "R_PINKY_ZONE"),
         ],
     },
     {
@@ -144,8 +145,8 @@ KEYBOARD_ROWS = [
             (0.000, 0.165, "L_PINKY_ZONE"),
             (0.165, 0.250, "L_RING_ZONE"),
             (0.250, 0.330, "L_MIDDLE_ZONE"),
-            (0.330, 0.525, "L_INDEX_ZONE"),
-            (0.525, 0.575, "R_INDEX_ZONE"),
+            (0.330, 0.428, "L_INDEX_ZONE"),
+            (0.428, 0.575, "R_INDEX_ZONE"),
             (0.575, 0.645, "R_MIDDLE_ZONE"),
             (0.645, 0.735, "R_RING_ZONE"),
             (0.735, 1.000, "R_PINKY_ZONE"),
@@ -158,8 +159,8 @@ KEYBOARD_ROWS = [
             (0.000, 0.185, "L_PINKY_ZONE"),
             (0.185, 0.270, "L_RING_ZONE"),
             (0.270, 0.360, "L_MIDDLE_ZONE"),
-            (0.360, 0.565, "L_INDEX_ZONE"),
-            (0.565, 0.610, "R_INDEX_ZONE"),
+            (0.360, 0.463, "L_INDEX_ZONE"),
+            (0.463, 0.610, "R_INDEX_ZONE"),
             (0.610, 0.675, "R_MIDDLE_ZONE"),
             (0.675, 0.765, "R_RING_ZONE"),
             (0.765, 1.000, "R_PINKY_ZONE"),
@@ -265,9 +266,15 @@ def get_zone_for_keyboard_point(fx, fy):
         return "SPACEBAR", {"L_THUMB", "R_THUMB"}
     for row in KEYBOARD_ROWS:
         if row["y0"] <= fy <= row["y1"]:
-            for x0, x1, zone_name in row["segments"]:
+            segments = row["segments"]
+            for i, (x0, x1, zone_name) in enumerate(segments):
                 if x0 <= fx <= x1:
-                    return zone_name, ZONE_BY_NAME[zone_name]
+                    correct = set(ZONE_BY_NAME[zone_name])
+                    if i > 0 and fx - x0 <= ZONE_OVERLAP_FRAC:
+                        correct.update(ZONE_BY_NAME[segments[i - 1][2]])
+                    if i < len(segments) - 1 and x1 - fx <= ZONE_OVERLAP_FRAC:
+                        correct.update(ZONE_BY_NAME[segments[i + 1][2]])
+                    return zone_name, correct
     return None, set()
 
 

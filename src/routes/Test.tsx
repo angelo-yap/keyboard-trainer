@@ -782,7 +782,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
               <Keyboard
                 layoutType={settings?.keyboardLayout ?? "mac"}
                 highlightKeys={guidedTargetKeys}
-                showFingerHints={false}
+                showFingerHints={settings?.showFingerHints !== false}
                 mode="test"
                 fingerMarkers={fingerMarkers}
               />

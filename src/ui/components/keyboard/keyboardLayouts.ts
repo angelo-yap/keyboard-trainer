@@ -29,11 +29,11 @@ const ROW_1: KeyDef[] = [
   { key: "0", label: "0", width: 1 },
   { key: "-", label: "-", width: 1 },
   { key: "=", label: "=", width: 1 },
-  { key: "Backspace", label: "⌫", width: 2, code: "Backspace" },
+  { key: "Backspace", label: "⌫", width: 2.5, code: "Backspace" },
 ];
 
 const ROW_2: KeyDef[] = [
-  { key: "Tab", label: "Tab", width: 1.5, code: "Tab" },
+  { key: "Tab", label: "Tab", width: 2, code: "Tab" },
   { key: "q", label: "Q", width: 1 },
   { key: "w", label: "W", width: 1 },
   { key: "e", label: "E", width: 1 },
@@ -50,7 +50,7 @@ const ROW_2: KeyDef[] = [
 ];
 
 const ROW_3: KeyDef[] = [
-  { key: "CapsLock", label: "Caps", width: 1.75, code: "CapsLock" },
+  { key: "CapsLock", label: "Caps", width: 2.25, code: "CapsLock" },
   { key: "a", label: "A", width: 1 },
   { key: "s", label: "S", width: 1 },
   { key: "d", label: "D", width: 1 },
@@ -66,7 +66,7 @@ const ROW_3: KeyDef[] = [
 ];
 
 const ROW_4: KeyDef[] = [
-  { key: "Shift", label: "⇧", width: 2.25, code: "ShiftLeft" },
+  { key: "Shift", label: "⇧", width: 2.75, code: "ShiftLeft" },
   { key: "z", label: "Z", width: 1 },
   { key: "x", label: "X", width: 1 },
   { key: "c", label: "C", width: 1 },
@@ -101,7 +101,7 @@ const ROW_5_WIN: KeyDef[] = [
   { key: "Control", label: "ctrl", width: 1.25, code: "ControlRight" },
 ];
 
-const ROW_INDENTS = [0, 0.5, 0.75, 0.75, 0];
+const ROW_INDENTS = [0, 0, 0, 0, 0];
 
 export const keyboardLayouts = {
   mac: {
