@@ -48,6 +48,7 @@ export function useTyping({
   const inputRef = useRef<HTMLInputElement>(null);
   const pressTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const startTimeRef = useRef<number | null>(null);
+  const previousTextRef = useRef(text);
  
   // Keep latest text in a ref so handleKeyDown always sees the current value,
   // even if setText (from dynamic refill) hasn't re-rendered the component yet.
@@ -58,6 +59,18 @@ export function useTyping({
   const errorsRef = useRef<Set<number>>(new Set());
  
   useEffect(() => {
+    const previousText = previousTextRef.current;
+    const isAppendOnlyExtension =
+      text.length >= previousText.length && text.startsWith(previousText);
+
+    previousTextRef.current = text;
+
+    // Timed test refills append more words to the existing text buffer.
+    // Keep the active typing state in that case instead of resetting mid-run.
+    if (isAppendOnlyExtension) {
+      return;
+    }
+
     setTyped("");
     errorsRef.current = new Set();
     setErrors(new Set());

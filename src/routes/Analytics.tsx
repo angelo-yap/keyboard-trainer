@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { getTestHistory } from "../core/storage/testHistoryStore";
 import { getPracticeProgress } from "../core/storage/progressStore";
 import { getAverageLatency, getKeyScore, getKeyStats } from "../core/storage/keyStatsStore";
@@ -102,12 +103,35 @@ function formatCardDate(date: string | null): string {
   });
 }
 
+function formatStartedAt(ts: number): string {
+  return new Date(ts).toLocaleString();
+}
+
 export function Analytics({ onBack }: AnalyticsProps) {
   const history = getTestHistory();
-  const handFormReview = buildHandFormReview(sessionHistoryStore.getAll());
+  const allSessionReports = sessionHistoryStore.getAll();
+  const testSessionReports = allSessionReports
+    .filter((report) => report.sessionType === "test" && report.completed !== false)
+    .slice()
+    .reverse();
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const selectedReport = testSessionReports.find((report) => report.id === selectedReportId) ?? null;
+  const handFormReview = buildHandFormReview(allSessionReports);
   const progress = getPracticeProgress();
   const keyStats = getKeyStats();
   const streak = getStreak();
+
+  useEffect(() => {
+    if (!selectedReportId) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSelectedReportId(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedReportId]);
 
   const bestWpm = history.length ? Math.max(...history.map((h) => h.wpm)) : 0;
   const avgWpm = history.length
@@ -162,20 +186,21 @@ export function Analytics({ onBack }: AnalyticsProps) {
     };
   });
 
-  const keyList = Object.entries(keyStats)
-    .map(([k, v]) => ({
-      key: k,
-      accuracy: Math.round(((v.attempts - v.errors) / v.attempts) * 100),
-      score: getKeyScore(k) ?? Math.round(((v.attempts - v.errors) / v.attempts) * 100),
-      avgLatencyMs: getAverageLatency(k),
-      attempts: v.attempts,
-      errors: v.errors,
-    }))
-    .filter((k) => k.attempts >= 3)
-    .sort((a, b) => a.score - b.score);
-
-  const worstKeys = keyList.slice(0, 8);
-  const bestKeys = keyList.slice(-8).reverse();
+  const alphabetKeys = "abcdefghijklmnopqrstuvwxyz".split("");
+  const keyList = alphabetKeys.map((key) => {
+    const stat = keyStats[key];
+    const attempts = stat?.attempts ?? 0;
+    const errors = stat?.errors ?? 0;
+    const accuracy = attempts > 0 ? Math.round(((attempts - errors) / attempts) * 100) : 100;
+    return {
+      key,
+      accuracy,
+      score: getKeyScore(key) ?? accuracy,
+      avgLatencyMs: getAverageLatency(key),
+      attempts,
+      errors,
+    };
+  });
 
   return (
     <div className="analytics">
@@ -248,57 +273,58 @@ export function Analytics({ onBack }: AnalyticsProps) {
             </div>
           </div>
 
-          <div className="analytics-keys-grid">
-            <div className="analytics-panel">
-              <div className="analytics-panel-title">Weakest keys</div>
-              {worstKeys.length ? (
-                <KeyGrid keys={worstKeys} variant="weak" />
-              ) : (
-                <Empty msg="Not enough data yet" />
-              )}
-            </div>
-            <div className="analytics-panel">
-              <div className="analytics-panel-title">Strongest keys</div>
-              {bestKeys.length ? (
-                <KeyGrid keys={bestKeys} variant="strong" />
-              ) : (
-                <Empty msg="Not enough data yet" />
-              )}
-            </div>
+          <div className="analytics-panel">
+            <div className="analytics-panel-title">Letter Stats</div>
+            <KeyGrid keys={keyList} />
           </div>
 
           <HandFormReviewPanel review={handFormReview} />
         
         <div className="analytics-panel">
             <div className="analytics-panel-title">
-              All test sessions ({history.length})
+              All test sessions ({testSessionReports.length})
             </div>
-            {history.length === 0 ? (
+            {testSessionReports.length === 0 ? (
               <Empty msg="No tests yet" />
             ) : (
-              <div className="analytics-history-list">
-                {history.map((h, i) => (
-                  <div key={i} className="analytics-history-item">
-                    <span className="analytics-history-wpm">{h.wpm} WPM</span>
-                    <span
-                      className={`analytics-history-acc analytics-history-acc--${
-                        h.accuracy >= 95 ? "good" : h.accuracy >= 85 ? "warn" : "weak"
-                      }`}
-                    >
-                      {h.accuracy}% acc
-                    </span>
-                    {h.errors !== undefined && (
-                      <span className="analytics-history-err">{h.errors} err</span>
-                    )}
-                    {h.duration && (
-                      <span className="analytics-history-dur">{h.duration}s</span>
-                    )}
-                    <span className="analytics-history-date">
-                      {new Date(h.date).toLocaleString()}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              <>
+                <div className="analytics-history-list">
+                  {testSessionReports.map((report) => {
+                    const isSelected = selectedReport?.id === report.id;
+                    const handScore = report.handForm?.score;
+                    const badFormMs = report.handForm?.badMs;
+                    return (
+                      <button
+                        key={report.id}
+                        type="button"
+                        className={`analytics-history-item ${isSelected ? "analytics-history-item--selected" : ""}`}
+                        onClick={() => setSelectedReportId(report.id)}
+                      >
+                        <span className="analytics-history-wpm">{report.wpm} WPM</span>
+                        <span
+                          className={`analytics-history-acc analytics-history-acc--${
+                            report.accuracy >= 95
+                              ? "good"
+                              : report.accuracy >= 85
+                              ? "warn"
+                              : "weak"
+                          }`}
+                        >
+                          {report.accuracy}% acc
+                        </span>
+                        <span className="analytics-history-hand">
+                          {handScore != null ? `${handScore}% hand` : "hand —"}
+                        </span>
+                        <span className="analytics-history-badform">
+                          {badFormMs != null ? `${formatSecondsFromMs(badFormMs)} bad` : "bad —"}
+                        </span>
+                        <span className="analytics-history-dur">{report.durationSeconds}s</span>
+                        <span className="analytics-history-date">{formatStartedAt(report.startedAt)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </div>
         
@@ -307,6 +333,103 @@ export function Analytics({ onBack }: AnalyticsProps) {
         
 
       </div>
+
+      {selectedReport && (
+        <div
+          className="analytics-session-modal-backdrop"
+          onClick={() => setSelectedReportId(null)}
+        >
+          <div
+            className="analytics-session-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Selected test details"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="analytics-session-modal-header">
+              <div className="analytics-panel-title">Selected test details</div>
+              <button
+                type="button"
+                className="analytics-session-modal-close"
+                onClick={() => setSelectedReportId(null)}
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="analytics-session-detail">
+              <div className="analytics-session-metrics">
+                <div className="analytics-session-metric">
+                  <span>raw wpm</span>
+                  <strong>{selectedReport.rawWpm}</strong>
+                </div>
+                <div className="analytics-session-metric">
+                  <span>consistency</span>
+                  <strong>{selectedReport.consistency}%</strong>
+                </div>
+                <div className="analytics-session-metric">
+                  <span>errors</span>
+                  <strong>{selectedReport.errorChars}</strong>
+                </div>
+                <div className="analytics-session-metric">
+                  <span>total chars</span>
+                  <strong>{selectedReport.totalChars}</strong>
+                </div>
+              </div>
+
+              <div className="analytics-session-groups">
+                <div className="analytics-session-group">
+                  <div className="analytics-session-label">weak keys</div>
+                  <div className="analytics-session-chip-list">
+                    {selectedReport.weakKeys.length > 0 ? (
+                      selectedReport.weakKeys.slice(0, 10).map((key) => (
+                        <span key={key}>{formatKeyLabel(key)}</span>
+                      ))
+                    ) : (
+                      <span className="analytics-session-empty-chip">none</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="analytics-session-group">
+                  <div className="analytics-session-label">hesistation</div>
+                  <div className="analytics-session-chip-list">
+                    {selectedReport.slowKeys.length > 0 ? (
+                      selectedReport.slowKeys.slice(0, 10).map((key) => {
+                        const stat = selectedReport.keyStats.find((k) => k.key === key);
+                        return (
+                          <span key={key}>
+                            {formatKeyLabel(key)}
+                            {stat?.avgReactionMs ? ` ${Math.round(stat.avgReactionMs)}ms` : ""}
+                          </span>
+                        );
+                      })
+                    ) : (
+                      <span className="analytics-session-empty-chip">none</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="analytics-session-group analytics-session-group--full">
+                  <div className="analytics-session-label">form</div>
+                  {selectedReport.handForm ? (
+                    <div className="analytics-session-hand-summary">
+                      <span>{selectedReport.handForm.score}% score</span>
+                      <span>{formatSecondsFromMs(selectedReport.handForm.badMs)} bad form</span>
+                      <span>{selectedReport.handForm.badEvents} bad events</span>
+                      <span>{selectedReport.handForm.coverage}% coverage</span>
+                    </div>
+                  ) : (
+                    <div className="analytics-session-hand-summary">
+                      <span>tracking not available for this test</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -315,7 +438,7 @@ function HandFormReviewPanel({ review }: { review: HandFormReview }) {
   return (
     <div className="analytics-panel">
       <div className="analytics-panel-title">
-        Hand form review (last {HAND_FORM_REVIEW_WINDOW} tests)
+        Form review (last {HAND_FORM_REVIEW_WINDOW} tests)
       </div>
       {review.trackedCount === 0 ? (
         <Empty msg="No hand-tracked test data in the last 20 tests" />
@@ -384,6 +507,8 @@ function WpmChart({
   maxWpm: number;
 }) {
   const H = 120;
+  const LABEL_HEADROOM = 28;
+  const DATE_FOOTER = 30;
   const W_unit = Math.max(24, Math.min(48, 700 / data.length));
 
   return (
@@ -391,7 +516,7 @@ function WpmChart({
       <div
         className="wpm-chart-bars"
         style={{
-          height: H + 30,
+          height: H + LABEL_HEADROOM + DATE_FOOTER,
           minWidth: data.length * (W_unit + 4),
         }}
       >
@@ -400,11 +525,7 @@ function WpmChart({
           const isRecent = i === data.length - 1;
           return (
             <div key={i} className="wpm-chart-bar">
-              <div
-                className={`wpm-chart-value ${isRecent ? "recent" : ""}`}
-              >
-                {d.wpm}
-              </div>
+              <div className={`wpm-chart-value ${isRecent ? "recent" : ""}`}>{d.wpm}</div>
               <div
                 className={`wpm-chart-rect wpm-chart-rect--${
                   isRecent ? "recent" : d.accuracy >= 95 ? "good" : "warn"
@@ -431,25 +552,50 @@ function WpmChart({
 
 function KeyGrid({
   keys,
-  variant,
 }: {
   keys: { key: string; accuracy: number; score: number; avgLatencyMs: number | null; attempts: number }[];
-  variant: "weak" | "strong";
 }) {
+  const rows = [
+    ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+    ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+    ["z", "x", "c", "v", "b", "n", "m"],
+  ] as const;
+  const keyMap = new Map(keys.map((entry) => [entry.key, entry]));
+
   return (
     <div className="key-grid">
-      {keys.map(({ key, accuracy, score, avgLatencyMs, attempts }) => (
-        <div
-          key={key}
-          className={`key-grid-item key-grid-item--${variant}`}
-          title={`${attempts} attempts · ${accuracy}% accuracy${
-            avgLatencyMs != null ? ` · ${avgLatencyMs}ms avg` : ""
-          }`}
-        >
-          <div className="key-grid-key">{formatKeyLabel(key).toUpperCase()}</div>
-          <div className="key-grid-acc">
-            {score}%
-          </div>
+      {rows.map((row, rowIndex) => (
+        <div key={rowIndex} className="key-grid-row">
+          {row.map((key) => {
+            const stat = keyMap.get(key) ?? {
+              key,
+              accuracy: 100,
+              score: 100,
+              avgLatencyMs: null,
+              attempts: 0,
+            };
+            const gradeClass =
+              stat.attempts === 0
+                ? "empty"
+                : stat.score < 50
+                ? "weak"
+                : stat.score >= 80
+                ? "strong"
+                : "mid";
+
+            return (
+              <div
+                key={key}
+                className={`key-grid-item key-grid-item--${gradeClass}`}
+                title={`${stat.attempts} attempts · ${stat.accuracy}% accuracy${
+                  stat.avgLatencyMs != null ? ` · ${stat.avgLatencyMs}ms avg` : ""
+                }`}
+              >
+                <div className="key-grid-key">{formatKeyLabel(key).toUpperCase()}</div>
+                <div className="key-grid-acc">{stat.attempts > 0 ? `${stat.score}%` : "—"}</div>
+              </div>
+            );
+          })}
         </div>
       ))}
     </div>

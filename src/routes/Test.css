@@ -181,6 +181,10 @@
 }
 
 /* ── Active: Test-specific overrides on LessonStage layout ────────────── */
+.test--active .lesson-stage-content-col {
+  max-width: min(980px, 96vw);
+}
+
 .test-topbar-controls {
   flex: 1;
   display: flex;
@@ -292,7 +296,7 @@
 
 .test-meta-row {
   width: 100%;
-  max-width: 680px;
+  max-width: 920px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -321,7 +325,7 @@
 .test-typing-stage {
   position: relative;
   width: 100%;
-  max-width: 680px;
+  max-width: 920px;
 }
 
 .test-typing-stage--armed .test-typing-wrap {
@@ -368,9 +372,20 @@
 
 .test-typing-wrap {
   width: 100%;
-  max-width: 680px;
+  max-width: 920px;
   cursor: text;
   transition: opacity 0.18s ease, filter 0.18s ease;
+}
+
+/* Larger typing viewport in Test mode only */
+.test-typing-wrap .typing-display--viewport-wrap {
+  height: calc(34px * 4); /* 4 visible lines */
+}
+
+.test-typing-wrap .typing-display--viewport-wrap .typing-display {
+  font-size: 19px;
+  line-height: 34px;
+  letter-spacing: 0.03em;
 }
 
 .test-typing-wrap--transitioning {
@@ -398,7 +413,7 @@
   font-family: var(--font-mono);
   font-size: 12px;
   width: 100%;
-  max-width: 680px;
+  max-width: 920px;
   transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 

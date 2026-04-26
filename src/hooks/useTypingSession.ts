@@ -60,6 +60,7 @@ export function useTypingSession({
     wrongFingers?: string[];
   } | null>(null);
   const pendingKeyStatsRef = useRef<PendingKeyStatsSample[]>([]);
+  const previousTextRef = useRef(text);
   const tickIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const [report, setReport] = useState<SessionReport | null>(null);
 
@@ -211,6 +212,17 @@ export function useTypingSession({
  
   // Reset session state when text changes
   useEffect(() => {
+    const previousText = previousTextRef.current;
+    const isAppendOnlyExtension =
+      text.length >= previousText.length && text.startsWith(previousText);
+
+    previousTextRef.current = text;
+
+    // Timed test refill extends text; don't wipe session/reporting state mid-session.
+    if (isAppendOnlyExtension) {
+      return;
+    }
+
     sessionRef.current = null;
     lastCorrectTimeRef.current = null;
     previousKeyTimeRef.current = null;
