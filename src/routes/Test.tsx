@@ -227,11 +227,15 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
       elapsed: stats.elapsed,
       date: new Date().toISOString(),
       completed: true,
+      testMode: mode,
+      contentTitle: mode === "quotes" ? quoteStatus?.source : codeStatus?.source,
+      contentAuthor: mode === "quotes" ? quoteStatus?.author : undefined,
+      contentLanguage: mode === "code" ? codeStatus?.language : undefined,
     });
     updateStreak();
     onStatsChange?.();
     setTestStatus("finished");
-  }, [onStatsChange]);
+  }, [codeStatus, mode, onStatsChange, quoteStatus]);
 
   const typing = useTypingSession({
     text,
@@ -460,6 +464,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
             duration,
             date: new Date().toISOString(),
             completed: true,
+            testMode: mode,
           });
           updateStreak();
           onStatsChange?.();
@@ -468,7 +473,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
       }
     }, 100);
     return () => clearInterval(interval);
-  }, [testStatus, duration, isFinitePassageMode, onStatsChange]);
+  }, [testStatus, duration, isFinitePassageMode, mode, onStatsChange]);
 
   const startTest = useCallback(async () => {
     hasEndedRef.current = false;

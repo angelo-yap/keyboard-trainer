@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSettings, saveSettings, type Settings as SettingsType } from "../core/storage/settingsStore";
 import { clearAdaptiveTrainingData, clearAllData } from "../core/storage/clearData";
+import { seedDemoData } from "../core/storage/demoData";
 import { getLastKeyboardLedEvent, resetKeyboardLed, sendKeyboardLedForKey, subscribeKeyboardLedDebug, syncKeyboardBacklightPreference, type KeyboardLedDebugEvent } from "../core/keyboard/keyboardLedBridge";
 import { Keyboard } from "../ui/components/keyboard";
 import { Button } from "../ui/components/Button";
@@ -24,6 +25,7 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
   const [settings, setSettings] = useState<SettingsType>(getSettings);
   const [adaptiveCleared, setAdaptiveCleared] = useState(false);
   const [cleared, setCleared] = useState(false);
+  const [demoLoaded, setDemoLoaded] = useState(false);
   const [view, setView] = useState<"general" | "hid">("general");
   const [lastClickedKey, setLastClickedKey] = useState<string>("-");
   const [typedTestLetter, setTypedTestLetter] = useState<string>("");
@@ -151,6 +153,13 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
       setAdaptiveCleared(true);
       setTimeout(() => setAdaptiveCleared(false), 3000);
     }
+  };
+
+  const handleLoadDemoData = () => {
+    seedDemoData();
+    setDemoLoaded(true);
+    setTimeout(() => setDemoLoaded(false), 3000);
+    onSettingsChange?.();
   };
 
   const handleHidTestKey = async (key: string) => {
@@ -770,14 +779,27 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
               <div className="settings-storage-badge">Local only</div>
             </SettingRow>
             <SettingRow
+              label="Demo Data"
+              desc="Load realistic local history for analytics and product demos."
+            >
+              <button
+                type="button"
+                onClick={handleLoadDemoData}
+                className={`settings-secondary-action-btn ${demoLoaded ? "cleared" : ""}`}
+              >
+                {demoLoaded ? "Loaded" : "Load Demo Data"}
+              </button>
+            </SettingRow>
+            <SettingRow
               label="Reset Adaptive Training"
               desc="Clear weak-key history used for adaptive typing text"
             >
               <button
+                type="button"
                 onClick={handleClearAdaptiveData}
                 className={`settings-secondary-action-btn ${adaptiveCleared ? "cleared" : ""}`}
               >
-                {adaptiveCleared ? "âœ“ Reset" : "Reset Adaptive"}
+                {adaptiveCleared ? "Reset" : "Reset Adaptive"}
               </button>
             </SettingRow>
             <SettingRow
@@ -785,6 +807,7 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
               desc="Permanently delete all progress, settings, and history"
             >
               <button
+                type="button"
                 onClick={handleClearData}
                 className={`settings-clear-btn ${cleared ? "cleared" : ""}`}
               >

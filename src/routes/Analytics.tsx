@@ -29,6 +29,7 @@ type HandFormReview = {
 
 const HAND_FORM_REVIEW_WINDOW = 20;
 const DEFAULT_TEST_DURATIONS = [15, 30, 60, 120] as const;
+const TIMED_TEST_MODES = new Set(["standard", "adaptive", undefined]);
 const LETTER_ROWS = [
   ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
   ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
@@ -169,6 +170,39 @@ function formatAnalyticsKeyLabel(key: string): string {
   return /^[a-z]$/.test(key) ? key.toUpperCase() : formatKeyLabel(key);
 }
 
+function summarizeMode(history: ReturnType<typeof getTestHistory>, mode: "quotes" | "code") {
+  const tests = history.filter((entry) => entry.testMode === mode);
+  if (tests.length === 0) {
+    return {
+      mode,
+      sessions: 0,
+      averageWpm: null,
+      bestWpm: null,
+      averageAccuracy: null,
+      bestAccuracy: null,
+      bestTestDate: null,
+      bestTitle: null,
+    };
+  }
+
+  const bestWpmTest = tests.reduce((best, test) => {
+    if (test.wpm > best.wpm) return test;
+    if (test.wpm < best.wpm) return best;
+    return new Date(test.date).getTime() > new Date(best.date).getTime() ? test : best;
+  }, tests[0]);
+
+  return {
+    mode,
+    sessions: tests.length,
+    averageWpm: Math.round(tests.reduce((sum, test) => sum + test.wpm, 0) / tests.length),
+    bestWpm: Math.max(...tests.map((test) => test.wpm)),
+    averageAccuracy: Math.round(tests.reduce((sum, test) => sum + test.accuracy, 0) / tests.length),
+    bestAccuracy: Math.max(...tests.map((test) => test.accuracy)),
+    bestTestDate: bestWpmTest?.date ?? null,
+    bestTitle: bestWpmTest?.contentTitle ?? null,
+  };
+}
+
 export function Analytics({ onBack }: AnalyticsProps) {
   const history = getTestHistory();
   const allSessionReports = sessionHistoryStore.getAll();
@@ -206,17 +240,13 @@ export function Analytics({ onBack }: AnalyticsProps) {
   const chartData = history.slice(0, 20).reverse();
   const maxWpm = chartData.length ? Math.max(...chartData.map((h) => h.wpm), 10) : 100;
 
-  const testDurations = Array.from(
-    new Set([
-      ...DEFAULT_TEST_DURATIONS,
-      ...history
-        .map((entry) => entry.duration)
-        .filter((duration): duration is number => typeof duration === "number" && duration > 0),
-    ])
-  ).sort((a, b) => a - b);
+  const testDurations = [...DEFAULT_TEST_DURATIONS];
 
   const wpmByDuration = testDurations.map((duration) => {
-    const tests = history.filter((entry) => entry.duration === duration);
+    const tests = history.filter((entry) => (
+      entry.duration === duration &&
+      TIMED_TEST_MODES.has(entry.testMode)
+    ));
     if (tests.length === 0) {
       return {
         duration,
@@ -247,6 +277,10 @@ export function Analytics({ onBack }: AnalyticsProps) {
       bestTestDate: bestWpmTest?.date ?? null,
     };
   });
+  const finiteModeSummaries = [
+    summarizeMode(history, "quotes"),
+    summarizeMode(history, "code"),
+  ];
 
   const trackedChars = buildTrackedCharacterSet(Object.keys(keyStats));
   const keyList = Array.from(trackedChars).map((key) => {
@@ -317,7 +351,7 @@ export function Analytics({ onBack }: AnalyticsProps) {
                     {entry.bestAccuracy != null ? `${entry.bestAccuracy}% best acc` : "—"}
                   </div>
                   <div className="analytics-duration-date">
-                    Best test: {formatCardDate(entry.bestTestDate)}
+                    Best: {formatCardDate(entry.bestTestDate)}
                   </div>
                   <div className="analytics-duration-hover" aria-hidden="true">
                     <div className="analytics-duration-hover-line">
@@ -328,6 +362,45 @@ export function Analytics({ onBack }: AnalyticsProps) {
                     </div>
                     <div className="analytics-duration-hover-line">
                       Sessions: {entry.sessions}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="analytics-panel">
+            <div className="analytics-panel-title">WPM by mode</div>
+            <div className="analytics-duration-grid analytics-duration-grid--compact">
+              {finiteModeSummaries.map((entry) => (
+                <div key={entry.mode} className="analytics-duration-card" tabIndex={0}>
+                  <div className="analytics-duration-title">
+                    {entry.mode === "quotes" ? "Quotes" : "Code"}
+                  </div>
+                  <div className="analytics-duration-value">
+                    {entry.bestWpm != null ? `${entry.bestWpm} best WPM` : "—"}
+                  </div>
+                  <div className="analytics-duration-accuracy">
+                    {entry.bestAccuracy != null ? `${entry.bestAccuracy}% best acc` : "—"}
+                  </div>
+                  <div className="analytics-duration-date">
+                    Best test: {formatCardDate(entry.bestTestDate)}
+                  </div>
+                  <div className="analytics-duration-date">
+                    Title: {entry.bestTitle ?? "—"}
+                  </div>
+                  <div className="analytics-duration-hover" aria-hidden="true">
+                    <div className="analytics-duration-hover-line">
+                      Avg WPM: {entry.averageWpm != null ? entry.averageWpm : "—"}
+                    </div>
+                    <div className="analytics-duration-hover-line">
+                      Avg Accuracy: {entry.averageAccuracy != null ? `${entry.averageAccuracy}%` : "—"}
+                    </div>
+                    <div className="analytics-duration-hover-line">
+                      Sessions: {entry.sessions}
+                    </div>
+                    <div className="analytics-duration-hover-line">
+                      Best test: {formatCardDate(entry.bestTestDate)}
                     </div>
                   </div>
                 </div>

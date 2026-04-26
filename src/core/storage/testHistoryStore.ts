@@ -10,6 +10,11 @@ export type TestResult = {
   duration?: number;
   date: string;
   completed?: boolean;
+  demo?: boolean;
+  testMode?: "standard" | "adaptive" | "quotes" | "code";
+  contentTitle?: string;
+  contentAuthor?: string;
+  contentLanguage?: string;
 };
 
 function isCompletedTest(result: TestResult): boolean {

@@ -64,6 +64,11 @@ export interface SessionReport {
   id: string;                 /* crypto.randomUUID() */
   sessionType: 'practice' | 'test' | 'drill';
   lessonId?: string;          /* set for practice/drill sessions */
+  testMode?: 'standard' | 'adaptive' | 'quotes' | 'code';
+  contentTitle?: string;
+  contentAuthor?: string;
+  contentLanguage?: string;
+  demo?: boolean;
   startedAt: number;          /* Date.now() at session start */
   durationSeconds: number;
   completed: boolean;         /* false for abandoned/interrupted sessions */
