@@ -32,6 +32,7 @@ import { resetKeyboardLed, sendKeyboardLedForKeys } from "../core/keyboard/keybo
 import { getGuidanceKeysForChar } from "../core/keyboard/keyNormalization";
 import { FeedbackBanner } from "../ui/components/FeedbackBanner";
 import { CameraPanel } from "../ui/components/CameraPanel";
+import { formatKeyLabel } from "../core/text/formatChar";
 
 /* ── Props ────────────────────────────────────────────────────────────── */
 
@@ -284,7 +285,7 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
         return;
       }
 
-      if (restartArmed && e.key === "Enter") {
+      if (restartArmed && (e.key === " " || e.code === "Space")) {
         e.preventDefault();
         restartCurrentDrill();
         return;
@@ -471,7 +472,7 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
                           key={k}
                           className={`learn-drill__key-target${done ? " learn-drill__key-target--done" : ""}`}
                         >
-                          <span className="learn-drill__key-target-key">{k}</span>
+                          <span className="learn-drill__key-target-key">{formatKeyLabel(k)}</span>
                           <div className="learn-drill__key-pips">
                             {Array.from({ length: required }, (_, i) => (
                               <div
@@ -517,7 +518,7 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
               <div className="test-restart-overlay" aria-live="polite" aria-label="Restart lesson confirmation">
                 <div className="test-restart-overlay__icon" aria-hidden="true">↻</div>
                 <div className="test-restart-overlay__body">
-                  <div>press enter to restart</div>
+                  <div>press space to restart</div>
                   <div>click on the screen to resume</div>
                 </div>
               </div>

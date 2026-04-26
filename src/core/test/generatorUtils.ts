@@ -1,5 +1,6 @@
 import { shuffle } from "../../lib/shuffle";
 import { TOP_500 } from "../../data/topWords";
+import type { CaseMode } from "../storage/settingsStore";
 
 export const PUNCTUATION = [".", ",", "!", "?", ";", ":", "'"];
 export const NUMBERS = "0123456789";
@@ -30,7 +31,8 @@ export function buildClassicWordList(wordCount: number): string[] {
 export function buildWordString(
   words: string[],
   includePunctuation: boolean,
-  includeNumbers: boolean
+  includeNumbers: boolean,
+  caseMode: CaseMode
 ): string {
   const result: string[] = [];
 
@@ -56,5 +58,29 @@ export function buildWordString(
     }
   }
 
-  return result.join("");
+  return applyCaseMode(result.join(""), caseMode);
+}
+
+export function applyCaseMode(text: string, caseMode: CaseMode): string {
+  if (caseMode === "lowercase") {
+    return text.toLowerCase();
+  }
+
+  if (caseMode === "uppercase") {
+    return text.toUpperCase();
+  }
+
+  return text.replace(/[a-z]+/gi, (word) => {
+    const roll = Math.random();
+
+    if (roll < 0.12) {
+      return word.toUpperCase();
+    }
+
+    if (roll < 0.35) {
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    }
+
+    return word.toLowerCase();
+  });
 }

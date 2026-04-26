@@ -9,14 +9,16 @@ import { SettingRow } from "../ui/components/settings/SettingRow";
 import { Toggle } from "../ui/components/settings/Toggle";
 import { SegmentControl } from "../ui/components/settings/SegmentControl";
 import { CameraPanel } from "../ui/components/CameraPanel";
+import { formatKeyLabel } from "../core/text/formatChar";
 import "./Settings.css";
 
 type SettingsProps = {
   onBack: () => void;
   onSettingsChange?: () => void;
+  onResetOnboarding?: () => void;
 };
 
-export function Settings({ onBack, onSettingsChange }: SettingsProps) {
+export function Settings({ onBack, onSettingsChange, onResetOnboarding }: SettingsProps) {
   const [settings, setSettings] = useState<SettingsType>(getSettings);
   const [adaptiveCleared, setAdaptiveCleared] = useState(false);
   const [cleared, setCleared] = useState(false);
@@ -129,6 +131,7 @@ export function Settings({ onBack, onSettingsChange }: SettingsProps) {
   const handleClearData = () => {
     if (window.confirm("Clear ALL data? This cannot be undone.")) {
       clearAllData();
+      onResetOnboarding?.();
       setCleared(true);
       setTimeout(() => setCleared(false), 3000);
     }
@@ -143,7 +146,7 @@ export function Settings({ onBack, onSettingsChange }: SettingsProps) {
   };
 
   const handleHidTestKey = async (key: string) => {
-    const printable = key.length === 1 ? key.toUpperCase() : key;
+    const printable = formatKeyLabel(key.length === 1 ? key.toUpperCase() : key);
     setLastClickedKey(printable);
     setUnsupportedKey("");
 
@@ -170,7 +173,7 @@ export function Settings({ onBack, onSettingsChange }: SettingsProps) {
     }
 
     if (next.length > 0) {
-      setUnsupportedKey(next);
+      setUnsupportedKey(formatKeyLabel(next));
     }
   };
 
@@ -516,6 +519,17 @@ export function Settings({ onBack, onSettingsChange }: SettingsProps) {
                 onChange={(v) => update("testDuration", v)}
               />
             </SettingRow>
+            <SettingRow label="Case Mode" desc="Default letter casing for generated test text">
+              <SegmentControl
+                options={[
+                  ["lowercase", "Lowercase"],
+                  ["uppercase", "Uppercase"],
+                  ["mixed", "Mixed"],
+                ]}
+                value={settings.caseMode}
+                onChange={(v) => update("caseMode", v as SettingsType["caseMode"])}
+              />
+            </SettingRow>
           </SettingsSection>
 
           <SettingsSection title="Display">
@@ -752,6 +766,12 @@ export function Settings({ onBack, onSettingsChange }: SettingsProps) {
               <div className="settings-about-note">
                 Camera integration placeholder ready — connect MediaPipe Hands when
                 hardware is available.
+              </div>
+              <div className="settings-about-credit">
+                <div className="settings-about-credit__label">Created By</div>
+                <div className="settings-about-credit__names">
+                  Javier Deng · Jake Sacilotto · Angelo Yap · Tony Wu
+                </div>
               </div>
             </div>
           </SettingsSection>

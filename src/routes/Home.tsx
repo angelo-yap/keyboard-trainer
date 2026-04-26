@@ -27,6 +27,7 @@ import { TypingDisplay } from "../ui/components/TypingDisplay";
 import { SessionReportCard } from "../ui/components/SessionReport";
 import { Keyboard } from "../ui/components/keyboard";
 import type { Settings } from "../core/storage/settingsStore";
+import { formatKeyLabel } from "../core/text/formatChar";
 
 /* ── Types ───────────────────────────────────────────────────────────── */
 
@@ -471,7 +472,7 @@ export const Home: React.FC<HomeProps> = ({ onTabChange, onStartAdaptiveTest, se
             <div className="home-weak-list">
               {weakKeys.slice(0, 5).map((wk) => (
                 <div key={wk.key} className="home-weak-row">
-                  <span className="home-weak-row__key">{wk.key}</span>
+                  <span className="home-weak-row__key">{formatKeyLabel(wk.key)}</span>
                   <div className="home-weak-row__track">
                     <div
                       className="home-weak-row__fill"
@@ -558,7 +559,7 @@ function PracticeSessionView({
         return;
       }
 
-      if (restartArmed && e.key === "Enter") {
+      if (restartArmed && (e.key === " " || e.code === "Space")) {
         e.preventDefault();
         clearRestartArm();
         onRestart();
@@ -625,7 +626,7 @@ function PracticeSessionView({
             <div className="test-restart-overlay" aria-live="polite" aria-label="Restart lesson confirmation">
               <div className="test-restart-overlay__icon" aria-hidden="true">↻</div>
               <div className="test-restart-overlay__body">
-                <div>press enter to restart</div>
+                <div>press space to restart</div>
                 <div>click on the screen to resume</div>
               </div>
             </div>
@@ -635,7 +636,7 @@ function PracticeSessionView({
           {callout ? (
             <>
               <div className="practice-callout__key">
-                {callout.key === " " ? "␣" : callout.key}
+                {formatKeyLabel(callout.key)}
               </div>
               <div className="practice-callout__divider" />
               <div className="practice-callout__text">

@@ -35,6 +35,11 @@ type TestProps = {
 };
 
 const DURATION_OPTIONS = [15, 30, 60, 120] as const;
+const CASE_MODE_OPTIONS = [
+  ["lowercase", "Lowercase"],
+  ["uppercase", "Uppercase"],
+  ["mixed", "Mixed"],
+] as const;
 const TRANSITION_MS = 180;
 
 /**
@@ -43,17 +48,6 @@ const TRANSITION_MS = 180;
  */
 const BUFFER_AHEAD_CHARS = 300;
 const REFILL_WORD_COUNT = 30;
-const DEFAULT_MODE_OPTIONS: TestModeOptionsMap = {
-  standard: {
-    includePunctuation: false,
-    includeNumbers: false,
-  },
-  adaptive: {
-    includePunctuation: false,
-    includeNumbers: false,
-    adaptiveTargets: [],
-  },
-};
 
 const MODE_CONFIG_BUILDERS: {
   [K in TestMode]: (
@@ -75,10 +69,23 @@ const MODE_CONFIG_BUILDERS: {
 };
 
 export function Test({ onBack, onStatsChange, settings, initialMode = "standard" }: TestProps) {
+  const defaultModeOptions = useRef<TestModeOptionsMap>({
+    standard: {
+      includePunctuation: false,
+      includeNumbers: false,
+      caseMode: settings.caseMode ?? "lowercase",
+    },
+    adaptive: {
+      includePunctuation: false,
+      includeNumbers: false,
+      caseMode: settings.caseMode ?? "lowercase",
+      adaptiveTargets: [],
+    },
+  });
   const [testStatus, setTestStatus] = useState<TestStatus>("setup");
   const [mode, setMode] = useState<TestMode>(initialMode);
   const [duration, setDuration] = useState(settings?.testDuration || 60);
-  const [modeOptions, setModeOptions] = useState<TestModeOptionsMap>(DEFAULT_MODE_OPTIONS);
+  const [modeOptions, setModeOptions] = useState<TestModeOptionsMap>(defaultModeOptions.current);
   const [text, setText] = useState("");
   const [timeLeft, setTimeLeft] = useState(duration);
   const [timerStarted, setTimerStarted] = useState(false);
@@ -108,10 +115,11 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     mode,
     includePunctuation: false,
     includeNumbers: false,
+    caseMode: settings.caseMode ?? "lowercase",
   });
   const adaptiveTargetsRef = useRef(getWeakLetterTargets(5));
   const modeConfigRef = useRef<TestModeConfig>(
-    MODE_CONFIG_BUILDERS[initialMode](DEFAULT_MODE_OPTIONS[initialMode] as never, adaptiveTargetsRef.current)
+    MODE_CONFIG_BUILDERS[initialMode](defaultModeOptions.current[initialMode] as never, adaptiveTargetsRef.current)
   );
   const typingRef = useRef<{ reset: () => void } | null>(null);
   const refillingRef = useRef(false);
@@ -139,6 +147,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
 
   const includePunctuation = modeOptions[mode].includePunctuation;
   const includeNumbers = modeOptions[mode].includeNumbers;
+  const caseMode = modeOptions[mode].caseMode;
   modeConfigRef.current = createModeConfig(mode);
 
   const maybeRefill = useCallback((typedLength: number) => {
@@ -218,19 +227,21 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
       prev.duration !== duration ||
       prev.mode !== mode ||
       prev.includePunctuation !== includePunctuation ||
-      prev.includeNumbers !== includeNumbers;
+      prev.includeNumbers !== includeNumbers ||
+      prev.caseMode !== caseMode;
     prevSettingsRef.current = {
       duration,
       mode,
       includePunctuation,
       includeNumbers,
+      caseMode,
     };
     if (changed) {
       modeConfigRef.current = createModeConfig(mode);
       const cleanup = regenerateTest();
       return cleanup;
     }
-  }, [testStatus, text, duration, mode, includePunctuation, includeNumbers, createModeConfig, regenerateTest]);
+  }, [testStatus, text, duration, mode, includePunctuation, includeNumbers, caseMode, createModeConfig, regenerateTest]);
 
   const currentTargetChar = testStatus === "active" ? text.charAt(typing.typed.length) : "";
   const guidedTargetKeys = getGuidanceKeysForChar(currentTargetChar);
@@ -344,6 +355,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
       mode,
       includePunctuation: validatedConfig.options.includePunctuation,
       includeNumbers: validatedConfig.options.includeNumbers,
+      caseMode: validatedConfig.options.caseMode,
     };
     generateAndLoadTest(validatedConfig);
     setTestStatus("active");
@@ -469,7 +481,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
         return;
       }
 
-      if (restartArmed && e.key === "Enter") {
+      if (restartArmed && (e.key === " " || e.code === "Space")) {
         e.preventDefault();
         clearRestartArm();
         handleNewTest();
@@ -599,6 +611,27 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
               >
                 Numbers
               </button>
+            </div>
+          </div>
+
+          <div className="test-setup-section">
+            <div className="test-setup-label">Case Mode</div>
+            <div className="test-setup-duration">
+              {CASE_MODE_OPTIONS.map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={`test-setup-duration-btn ${caseMode === value ? "active" : ""}`}
+                  onClick={() =>
+                    updateCurrentWordOptions((current) => ({
+                      ...current,
+                      caseMode: value,
+                    }))
+                  }
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -735,7 +768,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
               <div className="test-restart-overlay" aria-live="polite" aria-label="Restart test confirmation">
                 <div className="test-restart-overlay__icon" aria-hidden="true">↻</div>
                 <div className="test-restart-overlay__body">
-                  <div>press enter to restart</div>
+                  <div>press space to restart</div>
                   <div>click on the screen to resume</div>
                 </div>
               </div>

@@ -6,6 +6,7 @@
 import React, { useEffect, useRef } from 'react';
 import './SessionReport.css';
 import type { SessionReport, KeyStat } from '../../core/session/sessionMetrics';
+import { formatKeyLabel } from '../../core/text/formatChar';
 
 /* ── Props ────────────────────────────────────────────────────────────── */
 interface SessionReportProps {
@@ -216,9 +217,9 @@ const KeyGrid: React.FC<{ keyStats: KeyStat[]; highlightWeak: boolean }> = ({
               <div
                 key={key}
                 className={`sr-key ${keyClass(key)}`}
-                title={stat ? `${key}: ${stat.accuracy}% (${stat.attempts} presses)` : key}
+                title={stat ? `${formatKeyLabel(key)}: ${stat.accuracy}% (${stat.attempts} presses)` : formatKeyLabel(key)}
               >
-                {key}
+                {formatKeyLabel(key)}
                 {stat && stat.attempts >= 2 && (
                   <div className="sr-key-acc">{stat.accuracy}</div>
                 )}
@@ -255,14 +256,14 @@ function getVerdict(report: SessionReport): { headline: string; detail: string }
   if (consistency < 65) {
     return {
       headline: 'Speed is uneven.',
-      detail: `Your WPM varied a lot through the session. This usually means you're fast on familiar keys and hesitating on others. The weak ones are: ${weakKeys.slice(0, 3).join(', ') || 'scattered'}.`,
+      detail: `Your WPM varied a lot through the session. This usually means you're fast on familiar keys and hesitating on others. The weak ones are: ${weakKeys.slice(0, 3).map(formatKeyLabel).join(', ') || 'scattered'}.`,
     };
   }
 
   if (slowKeys.length > 0) {
     return {
       headline: 'Watch the hesitation.',
-      detail: `You're accurate but pausing on: ${slowKeys.slice(0, 4).join(', ')}. That pause is the muscle memory not quite landing yet. Drill those keys specifically.`,
+      detail: `You're accurate but pausing on: ${slowKeys.slice(0, 4).map(formatKeyLabel).join(', ')}. That pause is the muscle memory not quite landing yet. Drill those keys specifically.`,
     };
   }
 
@@ -385,7 +386,7 @@ export const SessionReportCard: React.FC<SessionReportProps> = ({
             <div className="sr-key-callout sr-key-callout--weak">
               <span className="mono-label">needs work:</span>
               {report.weakKeys.slice(0, 6).map(k => (
-                <span key={k} className="sr-key-chip sr-key-chip--weak">{k}</span>
+                <span key={k} className="sr-key-chip sr-key-chip--weak">{formatKeyLabel(k)}</span>
               ))}
             </div>
           )}
@@ -394,7 +395,7 @@ export const SessionReportCard: React.FC<SessionReportProps> = ({
             <div className="sr-key-callout sr-key-callout--slow">
               <span className="mono-label">hesitation:</span>
               {report.slowKeys.slice(0, 4).map(k => (
-                <span key={k} className="sr-key-chip sr-key-chip--slow">{k}</span>
+                <span key={k} className="sr-key-chip sr-key-chip--slow">{formatKeyLabel(k)}</span>
               ))}
             </div>
           )}
