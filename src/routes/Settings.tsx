@@ -99,8 +99,8 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
       ...settings,
       keyboardBacklightOff: false,
       keyboardLitKeyOff: false,
-      keyboardBacklightColor: "#FF0000",
-      keyboardLitKeyColor: "#FFFFFF",
+      keyboardBacklightColor: "#80FD77",
+      keyboardLitKeyColor: "#0087A8",
     };
     setSettings(next);
     saveSettings(next);
