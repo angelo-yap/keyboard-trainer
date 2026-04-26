@@ -236,6 +236,23 @@ function resolveHsvColor(colorCandidate, fallback) {
   return rgbToHsv(rgb);
 }
 
+function resolveBacklightKeyHsvMap(candidate) {
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+    return {};
+  }
+
+  const result = {};
+  for (const [rawKey, rawColor] of Object.entries(candidate)) {
+    const keyResult = validateLetter(rawKey);
+    const rgb = parseHexColor(rawColor);
+    if (keyResult.ok && rgb) {
+      result[keyResult.key] = rgbToHsv(rgb);
+    }
+  }
+
+  return result;
+}
+
 function tryLoadNodeHid() {
   try {
     return require("node-hid");
@@ -500,11 +517,20 @@ function fillAllLeds(device, ledCount, hsv) {
   }
 }
 
+function applyBacklightKeyColors(device, keyHsvMap) {
+  for (const [key, hsv] of Object.entries(keyHsvMap)) {
+    for (const ledIndex of getLedIndicesForKey(key)) {
+      setLedRangeColor(device, ledIndex, 1, hsv);
+    }
+  }
+}
+
 function sendKeysToKeychronRgb(device, keys, colors) {
   const forcedMode = ensurePerKeyRgbMode(device);
   applyBacklightPowerState(device, colors.backlightOff);
   setPerKeyType(device);
   fillAllLeds(device, KEYCHRON_LED_COUNT, colors.backlightHsv);
+  applyBacklightKeyColors(device, colors.backlightKeyHsvMap ?? {});
 
   const allLedIndices = [];
   for (const key of keys) {
@@ -525,6 +551,7 @@ function resetKeychronRgb(device, colors) {
   applyBacklightPowerState(device, colors.backlightOff);
   setPerKeyType(device);
   fillAllLeds(device, KEYCHRON_LED_COUNT, colors.backlightHsv);
+  applyBacklightKeyColors(device, colors.backlightKeyHsvMap ?? {});
   return { forcedMode };
 }
 
@@ -693,12 +720,14 @@ ipcMain.handle("keyboard-led:set-target-letter", (_event, payload) => {
   const backlightOff = Boolean(payload?.backlightOff);
   const litKeyOff = backlightOff || Boolean(payload?.litKeyOff);
   const backlightBaseHsv = resolveHsvColor(payload?.backlightColor, DEFAULT_BACKLIGHT_HSV);
+  const backlightKeyHsvMap = resolveBacklightKeyHsvMap(payload?.backlightKeyColors);
   lastSelectedBacklightHsv = backlightBaseHsv;
   const litBaseHsv = resolveHsvColor(payload?.litKeyColor, DEFAULT_HIGHLIGHT_HSV);
   const colors = {
     backlightOff,
     litKeyOff,
     backlightHsv: backlightBaseHsv,
+    backlightKeyHsvMap,
     // In per-key solid mode firmware scales output by global matrix brightness.
     // Keeping per-key HSV intact and controlling off through matrix brightness
     // matches keyboard-native behavior.
@@ -741,11 +770,13 @@ ipcMain.handle("keyboard-led:reset", (_event, payload) => {
   resetKeyboardIdleTimer();
   const backlightOff = Boolean(payload?.backlightOff);
   const backlightBaseHsv = resolveHsvColor(payload?.backlightColor, DEFAULT_BACKLIGHT_HSV);
+  const backlightKeyHsvMap = resolveBacklightKeyHsvMap(payload?.backlightKeyColors);
   lastSelectedBacklightHsv = backlightBaseHsv;
   const colors = {
     backlightOff,
     litKeyOff: true,
     backlightHsv: backlightBaseHsv,
+    backlightKeyHsvMap,
     highlightHsv: backlightBaseHsv,
   };
   const transport = resetKeyboardTransport(colors);

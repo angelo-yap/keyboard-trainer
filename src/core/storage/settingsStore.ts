@@ -1,6 +1,7 @@
 import { getLS, setLS } from "./localStorage";
 
 export type KeyboardLayoutType = "mac" | "windows";
+export type KeyboardLightingMode = "solid" | "fingerBounds";
 
 export type Settings = {
   testDuration: number;
@@ -15,6 +16,7 @@ export type Settings = {
   fontSize: "sm" | "md" | "lg";
   keyboardBacklightOff: boolean;
   keyboardLitKeyOff: boolean;
+  keyboardLightingMode: KeyboardLightingMode;
   keyboardBacklightColor: string;
   keyboardLitKeyColor: string;
   handTrackingEnabled: boolean;
@@ -38,6 +40,10 @@ function normalizeCameraIndex(value: unknown, fallback: number): number {
   return fallback;
 }
 
+function normalizeLightingMode(value: unknown, fallback: KeyboardLightingMode): KeyboardLightingMode {
+  return value === "solid" || value === "fingerBounds" ? value : fallback;
+}
+
 const DEFAULT_SETTINGS: Settings = {
   testDuration: 60,
   wordCount: 25,
@@ -51,6 +57,7 @@ const DEFAULT_SETTINGS: Settings = {
   fontSize: "md",
   keyboardBacklightOff: false,
   keyboardLitKeyOff: false,
+  keyboardLightingMode: "solid",
   keyboardBacklightColor: "#80FD77",
   keyboardLitKeyColor: "#0087A8",
   handTrackingEnabled: true,
@@ -69,6 +76,7 @@ export function getSettings(): Settings {
     ...savedSettings,
     keyboardBacklightColor: normalizeHexColor(raw.keyboardBacklightColor, DEFAULT_SETTINGS.keyboardBacklightColor),
     keyboardLitKeyColor: normalizeHexColor(raw.keyboardLitKeyColor, DEFAULT_SETTINGS.keyboardLitKeyColor),
+    keyboardLightingMode: normalizeLightingMode(raw.keyboardLightingMode, DEFAULT_SETTINGS.keyboardLightingMode),
     handTrackerCameraIndex: normalizeCameraIndex(raw.handTrackerCameraIndex, DEFAULT_SETTINGS.handTrackerCameraIndex),
   };
 }

@@ -12,6 +12,8 @@ import { CameraPanel } from "../ui/components/CameraPanel";
 import { formatKeyLabel } from "../core/text/formatChar";
 import "./Settings.css";
 
+const FINGER_BOUNDS_LIT_KEY_COLOR = "#FF0000";
+
 type SettingsProps = {
   onBack: () => void;
   onSettingsChange?: () => void;
@@ -51,6 +53,7 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
   const lightingKeys = new Set<keyof SettingsType>([
     "keyboardBacklightColor",
     "keyboardLitKeyColor",
+    "keyboardLightingMode",
     "keyboardBacklightOff",
     "keyboardLitKeyOff",
   ]);
@@ -99,6 +102,7 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
       ...settings,
       keyboardBacklightOff: false,
       keyboardLitKeyOff: false,
+      keyboardLightingMode: "solid" as const,
       keyboardBacklightColor: "#80FD77",
       keyboardLitKeyColor: "#0087A8",
     };
@@ -117,9 +121,13 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
     if (key === "keyboardLitKeyOff" && settings.keyboardBacklightOff && val === false) {
       next.keyboardLitKeyOff = true;
     }
+    if (key === "keyboardLightingMode" && val === "fingerBounds") {
+      next.keyboardLitKeyColor = FINGER_BOUNDS_LIT_KEY_COLOR;
+      next.keyboardLitKeyOff = false;
+    }
     setSettings(next);
     saveSettings(next);
-    if (key === "keyboardBacklightColor") {
+    if (key === "keyboardBacklightColor" || key === "keyboardLightingMode") {
       void syncKeyboardBacklightPreference();
     }
     if (lightingKeys.has(key)) {
@@ -658,6 +666,20 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
 
           <SettingsSection title="Keyboard Lighting">
             <SettingRow
+              label="Lighting Mode"
+              desc="Use one base color, or color the keyboard by touch-typing finger zones."
+            >
+              <SegmentControl
+                options={[
+                  ["solid", "Solid"],
+                  ["fingerBounds", "Finger Bounds"],
+                ]}
+                value={settings.keyboardLightingMode ?? "solid"}
+                onChange={(v) => update("keyboardLightingMode", v as SettingsType["keyboardLightingMode"])}
+              />
+            </SettingRow>
+
+            <SettingRow
               label="Backlight Off"
               desc="Turn off base backlight regardless of selected color"
             >
@@ -669,7 +691,11 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
 
             <SettingRow
               label="Backlight Color"
-              desc="Base color applied to all keys before highlighting the typed key"
+              desc={
+                settings.keyboardLightingMode === "fingerBounds"
+                  ? "Fallback color for keys outside the finger-zone map"
+                  : "Base color applied to all keys before highlighting the typed key"
+              }
             >
               <label className="settings-color-input-wrap" aria-label="Backlight Color">
                 <input
@@ -699,14 +725,22 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
 
             <SettingRow
               label="Lit Key Color"
-              desc="Color used for the key you just typed"
+              desc={
+                settings.keyboardLightingMode === "fingerBounds"
+                  ? "Finger Bounds uses red for the active key so it stays visible"
+                  : "Color used for the key you just typed"
+              }
             >
               <label className="settings-color-input-wrap" aria-label="Lit Key Color">
                 <input
                   type="color"
                   className="settings-color-input"
                   value={settings.keyboardLitKeyColor}
-                  disabled={settings.keyboardLitKeyOff || settings.keyboardBacklightOff}
+                  disabled={
+                    settings.keyboardLitKeyOff ||
+                    settings.keyboardBacklightOff ||
+                    settings.keyboardLightingMode === "fingerBounds"
+                  }
                   onChange={(e) => update("keyboardLitKeyColor", e.target.value.toUpperCase())}
                 />
                 <span className="settings-color-code">{settings.keyboardLitKeyColor}</span>
