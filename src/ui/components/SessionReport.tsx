@@ -37,6 +37,25 @@ function consistencyLabel(c: number): string {
   return 'erratic';
 }
 
+function handFormLabel(score: number): string {
+  if (score >= 95) return 'steady form';
+  if (score >= 85) return 'mostly steady';
+  if (score >= 70) return 'drifting';
+  return 'needs attention';
+}
+
+function formatSecondsFromMs(ms: number): string {
+  const seconds = Math.round(ms / 100) / 10;
+  return `${seconds}s`;
+}
+
+function formatFingerLabel(finger: string): string {
+  const [hand, ...parts] = finger.split('_');
+  const handLabel = hand === 'L' ? 'Left' : hand === 'R' ? 'Right' : hand;
+  const fingerLabel = parts.join(' ').toLowerCase();
+  return `${handLabel} ${fingerLabel}`;
+}
+
 /* ── WPM Trend chart (pure Canvas, no library) ────────────────────────── */
 
 interface WpmChartProps {
@@ -232,6 +251,61 @@ const KeyGrid: React.FC<{ keyStats: KeyStat[]; highlightWeak: boolean }> = ({
   );
 };
 
+const HandFormPanel: React.FC<{ report: SessionReport }> = ({ report }) => {
+  const handForm = report.handForm;
+  if (!handForm) return null;
+
+  return (
+    <div className="sr-form-panel">
+      <div className="sr-form-score">
+        <div className="sr-stat__label mono-label">hand position</div>
+        <div className="sr-stat__value">
+          {handForm.score}<span className="sr-stat__unit">%</span>
+        </div>
+        <div className="sr-stat__sub">{handFormLabel(handForm.score)}</div>
+      </div>
+
+      <div className="sr-form-details">
+        <div className="sr-form-detail">
+          <span className="mono-label">bad form</span>
+          <strong>{formatSecondsFromMs(handForm.badMs)}</strong>
+          <span>after {handForm.debounceMs}ms grace</span>
+        </div>
+        <div className="sr-form-detail">
+          <span className="mono-label">coverage</span>
+          <strong>{handForm.coverage}%</strong>
+          <span>{formatSecondsFromMs(handForm.observedMs)} observed</span>
+        </div>
+        <div className="sr-form-detail">
+          <span className="mono-label">events</span>
+          <strong>{handForm.badEvents}</strong>
+          <span>bad-form runs</span>
+        </div>
+      </div>
+
+      {(handForm.weakKeys.length > 0 || handForm.topWrongFingers.length > 0) && (
+        <div className="sr-form-callouts">
+          {handForm.weakKeys.length > 0 && (
+            <div className="sr-key-callout sr-key-callout--form">
+              <span className="mono-label">form slips:</span>
+              {handForm.weakKeys.slice(0, 6).map(k => (
+                <span key={k} className="sr-key-chip sr-key-chip--form">{formatKeyLabel(k)}</span>
+              ))}
+            </div>
+          )}
+          {handForm.topWrongFingers.length > 0 && (
+            <div className="sr-form-fingers">
+              {handForm.topWrongFingers.map(finger => (
+                <span key={finger}>{formatFingerLabel(finger)}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* ── Verdict generator ────────────────────────────────────────────────── */
 
 function getVerdict(report: SessionReport): { headline: string; detail: string } {
@@ -347,6 +421,8 @@ export const SessionReportCard: React.FC<SessionReportProps> = ({
           <div className="sr-stat__sub">incl. corrections</div>
         </div>
       </div>
+
+      <HandFormPanel report={report} />
 
       {/* ── Chart + key analysis side by side ───────────────────── */}
       <div className="sr-lower">

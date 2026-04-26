@@ -1,5 +1,9 @@
 import { getSettings } from "../storage/settingsStore";
+import { FINGER_COLORS, FINGER_MAP, SPECIAL_FINGER_MAP } from "./fingerMap";
 import { getGuidanceKeysForChar, normalizeTargetKeyForGuidance } from "./keyNormalization";
+
+const FINGER_BOUNDS_LIT_KEY_COLOR = "#FF0000";
+const FINGER_BOUNDS_SPACE_COLOR = "#C8C8C8";
 
 type LedTransport = {
   delivered?: boolean;
@@ -31,6 +35,7 @@ type KeyboardApi = {
     letter: string;
     keys?: string[];
     backlightColor?: string;
+    backlightKeyColors?: Record<string, string>;
     litKeyColor?: string;
     backlightOff?: boolean;
     litKeyOff?: boolean;
@@ -40,6 +45,7 @@ type KeyboardApi = {
   }) => Promise<KeyboardLedResponse>;
   keyboardLedReset?: (payload?: {
     backlightColor?: string;
+    backlightKeyColors?: Record<string, string>;
     backlightOff?: boolean;
   }) => Promise<KeyboardLedResponse>;
   keyboardLedGetState?: () => Promise<KeyboardLedResponse>;
@@ -110,6 +116,45 @@ function normalizeKeyTokenList(rawKeys: string[]): string[] {
   return Array.from(new Set(tokens));
 }
 
+function getFingerBoundsBacklightKeyColors(): Record<string, string> {
+  const keyColors: Record<string, string> = {};
+
+  for (const [key, fingerIndex] of Object.entries(FINGER_MAP)) {
+    const token = normalizeKeyTokenFromRaw(key);
+    const color = FINGER_COLORS[fingerIndex];
+    if (token && color) {
+      keyColors[token] = color;
+    }
+  }
+
+  for (const [key, fingerIndex] of Object.entries(SPECIAL_FINGER_MAP)) {
+    const token = normalizeKeyTokenFromRaw(key);
+    const color = FINGER_COLORS[fingerIndex];
+    if (token && color) {
+      keyColors[token] = color;
+    }
+  }
+
+  keyColors.SPACE = FINGER_BOUNDS_SPACE_COLOR;
+  return keyColors;
+}
+
+function getEffectiveLightingPayload(settings: ReturnType<typeof getSettings>) {
+  if (settings.keyboardLightingMode !== "fingerBounds") {
+    return {
+      backlightColor: settings.keyboardBacklightColor,
+      litKeyColor: settings.keyboardLitKeyColor,
+      backlightKeyColors: undefined,
+    };
+  }
+
+  return {
+    backlightColor: settings.keyboardBacklightColor,
+    litKeyColor: FINGER_BOUNDS_LIT_KEY_COLOR,
+    backlightKeyColors: getFingerBoundsBacklightKeyColors(),
+  };
+}
+
 async function sendKeys(tokens: string[]): Promise<KeyboardLedResponse> {
   const api = getApi();
   if (!api?.keyboardLedSetTargetLetter) {
@@ -137,11 +182,13 @@ async function sendKeys(tokens: string[]): Promise<KeyboardLedResponse> {
       };
     }
 
+    const lighting = getEffectiveLightingPayload(settings);
     const response = await api.keyboardLedSetTargetLetter({
       letter: primary,
       keys: tokens,
-      backlightColor: settings.keyboardBacklightColor,
-      litKeyColor: settings.keyboardLitKeyColor,
+      backlightColor: lighting.backlightColor,
+      backlightKeyColors: lighting.backlightKeyColors,
+      litKeyColor: lighting.litKeyColor,
       backlightOff: settings.keyboardBacklightOff,
       litKeyOff: settings.keyboardLitKeyOff,
     });
@@ -199,9 +246,11 @@ export function resetKeyboardLed(): Promise<KeyboardLedResponse> {
   }
 
   const settings = getSettings();
+  const lighting = getEffectiveLightingPayload(settings);
   inFlight = inFlight.then(async () => {
     const response = await resetFn({
-      backlightColor: settings.keyboardBacklightColor,
+      backlightColor: lighting.backlightColor,
+      backlightKeyColors: lighting.backlightKeyColors,
       backlightOff: settings.keyboardBacklightOff,
     });
     emit({

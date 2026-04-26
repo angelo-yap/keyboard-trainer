@@ -283,6 +283,19 @@
   color: var(--color-text-3);
 }
 
+.learn-tool-callout {
+  max-width: 380px;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-accent-border);
+  border-radius: var(--radius-md);
+  background: var(--color-accent-dim);
+  color: var(--color-text-2);
+  font-size: 13px;
+  font-weight: var(--font-weight-light);
+  line-height: 1.6;
+  text-align: center;
+}
+
 /* Completion message */
 .learn-drill__complete {
   font-family: var(--font-mono);

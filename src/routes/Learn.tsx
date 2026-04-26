@@ -19,7 +19,7 @@ import "../ui/Layout/LessonStage.css";
 import "./Learn.css";
 import "./Test.css";
 import { TypingDisplay } from "../ui/components/TypingDisplay";
-import { Keyboard } from "../ui/components/keyboard";
+import { Keyboard, type KeyboardFingerMarker } from "../ui/components/keyboard";
 import type { Settings } from "../core/storage/settingsStore";
 import {
   LEARN_STEPS,
@@ -42,6 +42,7 @@ interface LearnProps {
   /** Called when user completes the final step (curriculum complete). If not provided, onBack is used. */
   onCurriculumComplete?: () => void;
   settings?: Settings;
+  showKeyboardLightIntro?: boolean;
 }
 
 /* ── Drill state machine ──────────────────────────────────────────────── */
@@ -117,7 +118,12 @@ function renderBody(text: string): React.ReactNode[] {
 
 /* ── Main component ──────────────────────────────────────────────────── */
 
-export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
+export function Learn({
+  onBack,
+  onCurriculumComplete,
+  settings,
+  showKeyboardLightIntro = false,
+}: LearnProps) {
   const [stepIndex, setStepIndex] = useState(() =>
     Math.min(getLearnProgress(), TOTAL_STEPS - 1),
   );
@@ -127,7 +133,9 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
   const [capsLockOn, setCapsLockOn] = useState(false);
   const [verdict, setVerdict] = useState<"GOOD" | "BAD" | "IDLE" | "">("");
   const [wrongFingers, setWrongFingers] = useState<string[]>([]);
+  const [fingerMarkers, setFingerMarkers] = useState<KeyboardFingerMarker[]>([]);
   const [showCamera, setShowCamera] = useState(false);
+  const [keyboardLightIntroSeen, setKeyboardLightIntroSeen] = useState(false);
   const lastGuidedKeyRef = useRef<string | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -166,6 +174,7 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
   }, [step, drill]);
 
   const guidedKeySignature = guidedTargetKeys.join("+");
+  const handTrackingEnabled = settings?.handTrackingEnabled !== false;
 
   useEffect(() => {
     if (step.drill.type === "none" || step.drill.type === "hold") {
@@ -190,21 +199,39 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
 
   // Hand-tracking: connect while Learn is mounted, disconnect on exit
   useEffect(() => {
+    if (!handTrackingEnabled) {
+      setVerdict("");
+      setWrongFingers([]);
+      setFingerMarkers([]);
+      setShowCamera(false);
+      return;
+    }
+
     const ws = new WebSocket("ws://localhost:8000/ws");
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data) as {
         verdict: "GOOD" | "BAD" | "IDLE";
         wrong_fingers: string[];
+        finger_positions?: KeyboardFingerMarker[];
       };
       setVerdict(data.verdict);
       setWrongFingers(data.wrong_fingers);
+      setFingerMarkers(
+        (data.finger_positions ?? []).filter(
+          (finger) =>
+            typeof finger.label === "string" &&
+            Number.isFinite(finger.x) &&
+            Number.isFinite(finger.y),
+        ),
+      );
     };
     ws.onerror = () => {
       setVerdict("");
       setWrongFingers([]);
+      setFingerMarkers([]);
     };
     return () => ws.close();
-  }, []);
+  }, [handTrackingEnabled]);
 
   /* ── Navigation ────────────────────────────────────────────────────── */
   const handleContinue = useCallback(() => {
@@ -301,6 +328,9 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
 
       const key = e.key === " " ? " " : e.key.toLowerCase();
       setLastKey(key);
+      if (e.key.length === 1) {
+        setKeyboardLightIntroSeen(true);
+      }
 
       if (step.drill.type === "keys") {
         const validKeys = step.drill.keys ?? [];
@@ -403,14 +433,16 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
         <span className="learn-topbar__label mono-label">
           {stepIndex + 1} / {TOTAL_STEPS}
         </span>
-        <button
-          type="button"
-          className={`test-topbar-badge ${showCamera ? "on" : "off"}`}
-          onClick={() => setShowCamera((v) => !v)}
-          title="Toggle camera panel"
-        >
-          cam
-        </button>
+        {handTrackingEnabled && (
+          <button
+            type="button"
+            className={`test-topbar-badge ${showCamera ? "on" : "off"}`}
+            onClick={() => setShowCamera((v) => !v)}
+            title="Toggle camera panel"
+          >
+            cam
+          </button>
+        )}
       </div>
 
       <div
@@ -455,6 +487,7 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
                 pressedKey={lastKey}
                 showFingerHints={settings?.showFingerHints !== false}
                 mode="lesson"
+                fingerMarkers={handTrackingEnabled ? fingerMarkers : []}
               />
             </div>
           )}
@@ -509,6 +542,13 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
                   </div>
                 )}
 
+                {showKeyboardLightIntro && isTypingDrill && !keyboardLightIntroSeen && (
+                  <div className="learn-tool-callout">
+                    The keyboard lights change to the next key. Follow the glow
+                    when you start typing.
+                  </div>
+                )}
+
                 {drillDone && step.drill.type !== "none" && (
                   <div className="learn-drill__complete">ready to continue</div>
                 )}
@@ -525,9 +565,9 @@ export function Learn({ onBack, onCurriculumComplete, settings }: LearnProps) {
             )}
           </div>
 
-          <FeedbackBanner verdict={verdict} wrongFingers={wrongFingers} />
+          {handTrackingEnabled && <FeedbackBanner verdict={verdict} wrongFingers={wrongFingers} />}
 
-          {showCamera && <CameraPanel active={true} />}
+          {handTrackingEnabled && showCamera && <CameraPanel active={true} />}
         </div>
       </div>
 

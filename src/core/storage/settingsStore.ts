@@ -1,7 +1,7 @@
 import { getLS, setLS } from "./localStorage";
 
 export type KeyboardLayoutType = "mac" | "windows";
-export type CaseMode = "lowercase" | "uppercase" | "mixed";
+export type KeyboardLightingMode = "solid" | "fingerBounds";
 
 export type Settings = {
   testDuration: number;
@@ -16,11 +16,12 @@ export type Settings = {
   fontSize: "sm" | "md" | "lg";
   keyboardBacklightOff: boolean;
   keyboardLitKeyOff: boolean;
+  keyboardLightingMode: KeyboardLightingMode;
   keyboardBacklightColor: string;
   keyboardLitKeyColor: string;
+  handTrackingEnabled: boolean;
   handTrackerCameraIndex: number;
   handTrackerFlipHandedness: boolean;
-  caseMode: CaseMode;
 };
 
 function normalizeHexColor(value: unknown, fallback: string): string {
@@ -39,10 +40,8 @@ function normalizeCameraIndex(value: unknown, fallback: number): number {
   return fallback;
 }
 
-function normalizeCaseMode(value: unknown, fallback: CaseMode): CaseMode {
-  return value === "lowercase" || value === "uppercase" || value === "mixed"
-    ? value
-    : fallback;
+function normalizeLightingMode(value: unknown, fallback: KeyboardLightingMode): KeyboardLightingMode {
+  return value === "solid" || value === "fingerBounds" ? value : fallback;
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -58,22 +57,27 @@ const DEFAULT_SETTINGS: Settings = {
   fontSize: "md",
   keyboardBacklightOff: false,
   keyboardLitKeyOff: false,
-  keyboardBacklightColor: "#FF0000",
-  keyboardLitKeyColor: "#FFFFFF",
+  keyboardLightingMode: "solid",
+  keyboardBacklightColor: "#80FD77",
+  keyboardLitKeyColor: "#0087A8",
+  handTrackingEnabled: true,
   handTrackerCameraIndex: 0,
   handTrackerFlipHandedness: false,
-  caseMode: "lowercase",
 };
 
 export function getSettings(): Settings {
   const raw = getLS("kt_settings", {}) as Partial<Settings>;
+  const savedSettings = { ...raw } as Partial<Settings> & {
+    caseMode?: unknown;
+  };
+  delete savedSettings.caseMode;
   return {
     ...DEFAULT_SETTINGS,
-    ...raw,
+    ...savedSettings,
     keyboardBacklightColor: normalizeHexColor(raw.keyboardBacklightColor, DEFAULT_SETTINGS.keyboardBacklightColor),
     keyboardLitKeyColor: normalizeHexColor(raw.keyboardLitKeyColor, DEFAULT_SETTINGS.keyboardLitKeyColor),
+    keyboardLightingMode: normalizeLightingMode(raw.keyboardLightingMode, DEFAULT_SETTINGS.keyboardLightingMode),
     handTrackerCameraIndex: normalizeCameraIndex(raw.handTrackerCameraIndex, DEFAULT_SETTINGS.handTrackerCameraIndex),
-    caseMode: normalizeCaseMode(raw.caseMode, DEFAULT_SETTINGS.caseMode),
   };
 }
 

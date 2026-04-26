@@ -29,11 +29,23 @@ function persist(sessions: SessionReport[]): void {
   }
 }
 
+function isCompletedReport(report: SessionReport): boolean {
+  return report.completed !== false;
+}
+
+function loadCompleted(): SessionReport[] {
+  return load().filter(isCompletedReport);
+}
+
 /* ── Public API ───────────────────────────────────────────────────────── */
 
 export const sessionHistoryStore = {
   /** Save a completed session report */
   save(report: SessionReport): void {
+    if (report.completed === false) {
+      return;
+    }
+
     const all = load();
     all.push(report);
     /* Keep only the most recent MAX_STORED */
@@ -43,31 +55,31 @@ export const sessionHistoryStore = {
 
   /** All sessions, oldest first */
   getAll(): SessionReport[] {
-    return load();
+    return loadCompleted();
   },
 
   /** Most recent N sessions (newest first) */
   getRecent(n = 10): SessionReport[] {
-    return load().slice(-n).reverse();
+    return loadCompleted().slice(-n).reverse();
   },
 
   /** Personal best WPM across all sessions */
   getPersonalBest(): number | undefined {
-    const all = load();
+    const all = loadCompleted();
     if (all.length === 0) return undefined;
     return Math.max(...all.map(s => s.wpm));
   },
 
   /** Rolling average WPM over the last N sessions */
   getAverageWpm(n = 20): number {
-    const recent = load().slice(-n);
+    const recent = loadCompleted().slice(-n);
     if (recent.length === 0) return 0;
     return Math.round(recent.reduce((s, r) => s + r.wpm, 0) / recent.length);
   },
 
   /** WPM delta vs the previous N-session window */
   getWpmDeltaThisWeek(): number {
-    const all = load();
+    const all = loadCompleted();
     if (all.length < 4) return 0;
     const recent   = all.slice(-7).map(s => s.wpm);
     const previous = all.slice(-14, -7).map(s => s.wpm);
@@ -79,7 +91,7 @@ export const sessionHistoryStore = {
 
   /** Aggregate weak key list across the last N sessions */
   getAggregateWeakKeys(n = 10): { key: string; accuracy: number }[] {
-    const recent = load().slice(-n);
+    const recent = loadCompleted().slice(-n);
     const totals: Map<string, { correct: number; attempts: number }> = new Map();
 
     recent.forEach(session => {
@@ -103,7 +115,7 @@ export const sessionHistoryStore = {
 
   /** WPM history for trend chart — one point per session (last N) */
   getWpmHistory(n = 30): { date: number; wpm: number }[] {
-    return load()
+    return loadCompleted()
       .slice(-n)
       .map(s => ({ date: s.startedAt, wpm: s.wpm }));
   },

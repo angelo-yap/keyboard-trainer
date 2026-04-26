@@ -1,6 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
 import { AppLayout } from "./ui/layout/AppLayout";
 import { Welcome } from "./ui/components/Welcome";
+import {
+  OnboardingCalibration,
+  OnboardingFingerMarkers,
+} from "./ui/components/OnboardingTools";
 import { Home } from "./routes/Home";
 import { Learn } from "./routes/Learn";
 import { Test } from "./routes/Test";
@@ -19,7 +23,7 @@ import "./App.css";
 type Tab = "home" | "learn" | "test" | "analytics" | "settings";
 type TestEntryMode = "standard" | "adaptive";
 
-type OnboardingView = "welcome" | "learn" | null;
+type OnboardingView = "welcome" | "calibration" | "finger-markers" | "learn" | null;
 
 export function App() {
   const [tab, setTab] = useState<Tab>("home");
@@ -122,7 +126,32 @@ export function App() {
     return (
       <div className="app-onboarding-shell">
         <Welcome
-          onStart={() => setOnboardingView("learn")}
+          onStart={() => setOnboardingView("calibration")}
+          onSkip={exitOnboarding.skip}
+        />
+      </div>
+    );
+  }
+
+  if (onboardingView === "calibration") {
+    return (
+      <div className="app-onboarding-shell">
+        <OnboardingCalibration
+          onBack={() => setOnboardingView("welcome")}
+          onNext={() => setOnboardingView("finger-markers")}
+          onSkip={exitOnboarding.skip}
+        />
+      </div>
+    );
+  }
+
+  if (onboardingView === "finger-markers") {
+    return (
+      <div className="app-onboarding-shell">
+        <OnboardingFingerMarkers
+          settings={settings}
+          onBack={() => setOnboardingView("calibration")}
+          onNext={() => setOnboardingView("learn")}
           onSkip={exitOnboarding.skip}
         />
       </div>
@@ -147,6 +176,7 @@ export function App() {
             onBack={exitOnboarding.skip}
             onCurriculumComplete={exitOnboarding.complete}
             settings={settings}
+            showKeyboardLightIntro={true}
           />
         </div>
       </AppLayout>

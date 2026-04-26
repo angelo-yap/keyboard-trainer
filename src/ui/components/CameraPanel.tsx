@@ -12,6 +12,7 @@ type CameraPanelProps = {
   reloadSignal?: number;
   showCalibrationControls?: boolean;
   variant?: "floating" | "embedded";
+  onCalibrationChange?: (calibrated: boolean) => void;
 };
 
 export function CameraPanel({
@@ -19,6 +20,7 @@ export function CameraPanel({
   reloadSignal = 0,
   showCalibrationControls = false,
   variant = "floating",
+  onCalibrationChange,
 }: CameraPanelProps) {
   const [calibMode, setCalibMode] = useState<CalibMode>("idle");
   const [corners, setCorners] = useState<[number, number][]>([]);
@@ -34,13 +36,15 @@ export function CameraPanel({
     fetch("http://localhost:8000/info")
       .then((r) => r.json())
       .then((d) => {
-        setCalibrated(d.calibrated ?? false);
+        const nextCalibrated = d.calibrated ?? false;
+        setCalibrated(nextCalibrated);
+        onCalibrationChange?.(nextCalibrated);
         if (Number.isFinite(d.frame_width) && Number.isFinite(d.frame_height)) {
           setFrameSize({ width: d.frame_width, height: d.frame_height });
         }
       })
       .catch(() => {});
-  }, [active]);
+  }, [active, onCalibrationChange]);
 
   useEffect(() => {
     if (!active) {
@@ -72,9 +76,10 @@ export function CameraPanel({
   const handleReset = useCallback(() => {
     fetch("http://localhost:8000/calibrate/reset", { method: "POST" }).catch(() => {});
     setCalibrated(false);
+    onCalibrationChange?.(false);
     setCalibMode("idle");
     setCorners([]);
-  }, []);
+  }, [onCalibrationChange]);
 
   const handleImageClick = useCallback(
     (e: React.MouseEvent<HTMLImageElement>) => {
@@ -97,6 +102,7 @@ export function CameraPanel({
                 throw new Error(payload.error || "Calibration failed.");
               }
               setCalibrated(true);
+              onCalibrationChange?.(true);
               setCalibMode("done");
             })
             .catch(() => setCalibMode("idle"));
@@ -104,7 +110,7 @@ export function CameraPanel({
         return next;
       });
     },
-    [calibMode, frameSize.height, frameSize.width],
+    [calibMode, frameSize.height, frameSize.width, onCalibrationChange],
   );
 
   const handleImageError = useCallback(() => {

@@ -35,11 +35,6 @@ type TestProps = {
 };
 
 const DURATION_OPTIONS = [15, 30, 60, 120] as const;
-const CASE_MODE_OPTIONS = [
-  ["lowercase", "Lowercase"],
-  ["uppercase", "Uppercase"],
-  ["mixed", "Mixed"],
-] as const;
 const TRANSITION_MS = 180;
 
 /**
@@ -73,12 +68,12 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     standard: {
       includePunctuation: false,
       includeNumbers: false,
-      caseMode: settings.caseMode ?? "lowercase",
+      randomCase: false,
     },
     adaptive: {
       includePunctuation: false,
       includeNumbers: false,
-      caseMode: settings.caseMode ?? "lowercase",
+      randomCase: false,
       adaptiveTargets: [],
     },
   });
@@ -115,7 +110,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     mode,
     includePunctuation: false,
     includeNumbers: false,
-    caseMode: settings.caseMode ?? "lowercase",
+    randomCase: false,
   });
   const adaptiveTargetsRef = useRef(getWeakLetterTargets(5));
   const modeConfigRef = useRef<TestModeConfig>(
@@ -147,7 +142,8 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
 
   const includePunctuation = modeOptions[mode].includePunctuation;
   const includeNumbers = modeOptions[mode].includeNumbers;
-  const caseMode = modeOptions[mode].caseMode;
+  const randomCase = modeOptions[mode].randomCase;
+  const handTrackingEnabled = settings.handTrackingEnabled !== false;
   modeConfigRef.current = createModeConfig(mode);
 
   const maybeRefill = useCallback((typedLength: number) => {
@@ -228,24 +224,34 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
       prev.mode !== mode ||
       prev.includePunctuation !== includePunctuation ||
       prev.includeNumbers !== includeNumbers ||
-      prev.caseMode !== caseMode;
+      prev.randomCase !== randomCase;
     prevSettingsRef.current = {
       duration,
       mode,
       includePunctuation,
       includeNumbers,
-      caseMode,
+      randomCase,
     };
     if (changed) {
       modeConfigRef.current = createModeConfig(mode);
       const cleanup = regenerateTest();
       return cleanup;
     }
-  }, [testStatus, text, duration, mode, includePunctuation, includeNumbers, caseMode, createModeConfig, regenerateTest]);
+  }, [testStatus, text, duration, mode, includePunctuation, includeNumbers, randomCase, createModeConfig, regenerateTest]);
 
   const currentTargetChar = testStatus === "active" ? text.charAt(typing.typed.length) : "";
   const guidedTargetKeys = getGuidanceKeysForChar(currentTargetChar);
   const guidedKeySignature = guidedTargetKeys.join("+");
+  const currentTargetCharRef = useRef(currentTargetChar);
+  const recordHandFormSampleRef = useRef(typing.recordHandFormSample);
+
+  useEffect(() => {
+    currentTargetCharRef.current = currentTargetChar;
+  }, [currentTargetChar]);
+
+  useEffect(() => {
+    recordHandFormSampleRef.current = typing.recordHandFormSample;
+  }, [typing.recordHandFormSample]);
 
   // Drive hardware guidance from the current target character, not from typed key events.
   useEffect(() => {
@@ -273,10 +279,11 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
 
   // Hand-tracking: connect while the test is active, reset verdict on teardown
   useEffect(() => {
-    if (testStatus !== "active") {
+    if (testStatus !== "active" || !handTrackingEnabled) {
       setVerdict("");
       setWrongFingers([]);
       setFingerMarkers([]);
+      setShowCamera(false);
       return;
     }
 
@@ -298,6 +305,11 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
             Number.isFinite(finger.y),
         ),
       );
+      recordHandFormSampleRef.current({
+        verdict: data.verdict,
+        expectedKey: currentTargetCharRef.current,
+        wrongFingers: data.wrong_fingers ?? [],
+      });
     };
 
     ws.onerror = () => {
@@ -307,7 +319,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
     };
 
     return () => ws.close();
-  }, [testStatus]);
+  }, [handTrackingEnabled, testStatus]);
 
   /* Countdown — 100ms interval against a fixed start timestamp, not integer decrement */
   useEffect(() => {
@@ -332,6 +344,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
             chars: metrics.chars,
             duration,
             date: new Date().toISOString(),
+            completed: true,
           });
           updateStreak();
           onStatsChange?.();
@@ -355,7 +368,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
       mode,
       includePunctuation: validatedConfig.options.includePunctuation,
       includeNumbers: validatedConfig.options.includeNumbers,
-      caseMode: validatedConfig.options.caseMode,
+      randomCase: validatedConfig.options.randomCase,
     };
     generateAndLoadTest(validatedConfig);
     setTestStatus("active");
@@ -611,27 +624,18 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
               >
                 Numbers
               </button>
-            </div>
-          </div>
-
-          <div className="test-setup-section">
-            <div className="test-setup-label">Case Mode</div>
-            <div className="test-setup-duration">
-              {CASE_MODE_OPTIONS.map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={`test-setup-duration-btn ${caseMode === value ? "active" : ""}`}
-                  onClick={() =>
-                    updateCurrentWordOptions((current) => ({
-                      ...current,
-                      caseMode: value,
-                    }))
-                  }
-                >
-                  {label}
-                </button>
-              ))}
+              <button
+                type="button"
+                className={`test-setup-toggle ${randomCase ? "active" : ""}`}
+                onClick={() =>
+                  updateCurrentWordOptions((current) => ({
+                    ...current,
+                    randomCase: !current.randomCase,
+                  }))
+                }
+              >
+                Random Case
+              </button>
             </div>
           </div>
 
@@ -701,20 +705,34 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
           </button>
           <button
             type="button"
+            className={`test-topbar-badge ${randomCase ? "on" : "off"}`}
+            onClick={() =>
+              updateCurrentWordOptions((current) => ({
+                ...current,
+                randomCase: !current.randomCase,
+              }))
+            }
+          >
+            case
+          </button>
+          <button
+            type="button"
             className="test-topbar-new-btn"
             onClick={handleNewTest}
             title="New test"
           >
             new
           </button>
-          <button
-            type="button"
-            className={`test-topbar-badge ${showCamera ? "on" : "off"}`}
-            onClick={() => setShowCamera((v) => !v)}
-            title="Toggle camera panel"
-          >
-            cam
-          </button>
+          {handTrackingEnabled && (
+            <button
+              type="button"
+              className={`test-topbar-badge ${showCamera ? "on" : "off"}`}
+              onClick={() => setShowCamera((v) => !v)}
+              title="Toggle camera panel"
+            >
+              cam
+            </button>
+          )}
         </div>
         <div className={`test-topbar-timer test-topbar-timer--${timerClass}`}>
           {timerStarted ? timeLeft : duration}s
@@ -775,7 +793,7 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
             )}
           </div>
 
-          <FeedbackBanner verdict={verdict} wrongFingers={wrongFingers} />
+          {handTrackingEnabled && <FeedbackBanner verdict={verdict} wrongFingers={wrongFingers} />}
 
           {settings?.showKeyboard !== false && (
             <div className="lesson-stage-keyboard-wrap">
@@ -784,12 +802,12 @@ export function Test({ onBack, onStatsChange, settings, initialMode = "standard"
                 highlightKeys={guidedTargetKeys}
                 showFingerHints={settings?.showFingerHints !== false}
                 mode="test"
-                fingerMarkers={fingerMarkers}
+                fingerMarkers={handTrackingEnabled ? fingerMarkers : []}
               />
             </div>
           )}
 
-          {showCamera && <CameraPanel active={testStatus === "active"} />}
+          {handTrackingEnabled && showCamera && <CameraPanel active={testStatus === "active"} />}
         </div>
       </div>
     </div>

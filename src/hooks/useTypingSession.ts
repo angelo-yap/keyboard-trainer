@@ -10,7 +10,7 @@ import {
   getSessionMetrics,
 } from "../core/session/sessionTracker";
 import { createSessionRecorder } from "../core/session/sessionMetrics";
-import type { SessionReport } from "../core/session/sessionMetrics";
+import type { HandFormVerdict, SessionReport } from "../core/session/sessionMetrics";
 import { sessionHistoryStore } from "../core/storage/sessionHistoryStore";
 import { recordKeyStats } from "../core/storage/keyStatsStore";
  
@@ -25,6 +25,12 @@ export type UseTypingSessionOptions = {
   lessonId?: string;
   onComplete?: (stats: TypingStats, session: SessionState) => void;
   onProgress?: (progress: { nextChar: string; typedLength: number; totalLength: number }) => void;
+};
+
+type PendingKeyStatsSample = {
+  char: string;
+  wasError: boolean;
+  latencyMs: number | null;
 };
  
 /**
@@ -48,8 +54,24 @@ export function useTypingSession({
   const previousKeyTimeRef = useRef<number | null>(null);
   const wpmIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const recorderRef = useRef<ReturnType<typeof createSessionRecorder> | null>(null);
+  const pendingHandFormRef = useRef<{
+    verdict: HandFormVerdict;
+    expectedKey?: string;
+    wrongFingers?: string[];
+  } | null>(null);
+  const pendingKeyStatsRef = useRef<PendingKeyStatsSample[]>([]);
+  const previousTextRef = useRef(text);
   const tickIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const [report, setReport] = useState<SessionReport | null>(null);
+
+  const flushPendingKeyStats = useCallback(() => {
+    if (pendingKeyStatsRef.current.length === 0) return;
+    const samples = pendingKeyStatsRef.current;
+    pendingKeyStatsRef.current = [];
+    for (const sample of samples) {
+      recordKeyStats(sample.char, sample.wasError, sample.latencyMs);
+    }
+  }, []);
  
   const finishRecorder = useCallback((finalStats?: TypingStats) => {
     const rec = recorderRef.current;
@@ -65,13 +87,17 @@ export function useTypingSession({
             correctChars: Math.max(0, finalStats.chars - finalStats.errors),
             errorChars: finalStats.errors,
             totalChars: finalStats.chars,
+            completed: true,
           }
         : undefined
     );
+    if (sessionType === "test" && finalStats) {
+      flushPendingKeyStats();
+    }
     sessionHistoryStore.save(r);
     setReport(r);
     return r;
-  }, []);
+  }, [flushPendingKeyStats, sessionType]);
  
   const handleKeystroke = useCallback(
     (event: {
@@ -95,6 +121,10 @@ export function useTypingSession({
           prevAvgWpm: prevAvg,
         });
         tickIntervalRef.current = setInterval(() => recorderRef.current?.tick(), 3000);
+        if (pendingHandFormRef.current) {
+          recorderRef.current.recordHandFormSample(pendingHandFormRef.current);
+          pendingHandFormRef.current = null;
+        }
       }
       recorderRef.current.recordKeypress({
         key: event.typedChar.toLowerCase(),
@@ -104,7 +134,15 @@ export function useTypingSession({
       const previousKeyTime = previousKeyTimeRef.current;
       const latencyMs = previousKeyTime != null ? event.time - previousKeyTime : null;
       if (event.expectedChar.trim().length > 0) {
-        recordKeyStats(event.expectedChar, !event.correct, latencyMs);
+        if (sessionType === "test") {
+          pendingKeyStatsRef.current.push({
+            char: event.expectedChar,
+            wasError: !event.correct,
+            latencyMs,
+          });
+        } else {
+          recordKeyStats(event.expectedChar, !event.correct, latencyMs);
+        }
       }
       const lastCorrect = lastCorrectTimeRef.current;
       sessionRef.current = recordKeystroke(
@@ -174,10 +212,23 @@ export function useTypingSession({
  
   // Reset session state when text changes
   useEffect(() => {
+    const previousText = previousTextRef.current;
+    const isAppendOnlyExtension =
+      text.length >= previousText.length && text.startsWith(previousText);
+
+    previousTextRef.current = text;
+
+    // Timed test refill extends text; don't wipe session/reporting state mid-session.
+    if (isAppendOnlyExtension) {
+      return;
+    }
+
     sessionRef.current = null;
     lastCorrectTimeRef.current = null;
     previousKeyTimeRef.current = null;
     recorderRef.current = null;
+    pendingHandFormRef.current = null;
+    pendingKeyStatsRef.current = [];
     clearInterval(tickIntervalRef.current);
     setReport(null);
   }, [text]);
@@ -195,10 +246,24 @@ export function useTypingSession({
     lastCorrectTimeRef.current = null;
     previousKeyTimeRef.current = null;
     recorderRef.current = null;
+    pendingHandFormRef.current = null;
+    pendingKeyStatsRef.current = [];
     clearInterval(tickIntervalRef.current);
     setReport(null);
     typing.reset();
   }, [typing]);
+
+  const recordHandFormSample = useCallback((params: {
+    verdict: HandFormVerdict;
+    expectedKey?: string;
+    wrongFingers?: string[];
+  }) => {
+    if (!recorderRef.current) {
+      pendingHandFormRef.current = params;
+      return;
+    }
+    recorderRef.current.recordHandFormSample(params);
+  }, []);
  
   /** End session early (e.g. for timed tests). Returns finalized session state. */
   const endSessionEarly = useCallback((): SessionState | null => {
@@ -219,6 +284,8 @@ export function useTypingSession({
     sessionMetrics,
     /** Report from reportcard when session finishes */
     report,
+    /** Optional hand-tracking form sample. No-op before the first keypress. */
+    recordHandFormSample,
     /** Live WPM during session (from recorder) */
     liveWpm,
     /** Live accuracy during session (from recorder) */

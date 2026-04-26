@@ -9,17 +9,30 @@ export type TestResult = {
   elapsed?: number;
   duration?: number;
   date: string;
+  completed?: boolean;
 };
 
-export function getTestHistory(): TestResult[] {
+function isCompletedTest(result: TestResult): boolean {
+  return result.completed !== false;
+}
+
+function getAllTestHistory(): TestResult[] {
   return getLS("kt_tests", []);
 }
 
+export function getTestHistory(): TestResult[] {
+  return getAllTestHistory().filter(isCompletedTest);
+}
+
 export function saveTestResult(result: TestResult): TestResult[] {
-  const history = getTestHistory();
-  const next = [{ ...result, date: new Date().toISOString() }, ...history].slice(0, 100);
+  const history = getAllTestHistory();
+  if (result.completed === false) {
+    return history.filter(isCompletedTest);
+  }
+
+  const next = [{ ...result, completed: true, date: new Date().toISOString() }, ...history].slice(0, 100);
   setLS("kt_tests", next);
-  return next;
+  return next.filter(isCompletedTest);
 }
 
 export function getPersonalBest(): number | null {
