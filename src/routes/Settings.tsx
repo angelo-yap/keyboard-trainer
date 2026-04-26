@@ -540,6 +540,19 @@ export function Settings({ onBack, onSettingsChange, onResetOnboarding }: Settin
 
           <SettingsSection title="Display">
             <SettingRow
+              label="Theme"
+              desc="Choose the app color theme"
+            >
+              <SegmentControl
+                options={[
+                  ["dark", "Dark"],
+                  ["light", "Light"],
+                ]}
+                value={settings.theme ?? "dark"}
+                onChange={(v) => update("theme", v as SettingsType["theme"])}
+              />
+            </SettingRow>
+            <SettingRow
               label="Show Keyboard"
               desc="Show keyboard while typing. Ctrl+K or Cmd+K to toggle."
             >

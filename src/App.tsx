@@ -40,6 +40,10 @@ export function App() {
     void syncKeyboardBacklightPreference();
   }, [settings.keyboardBacklightColor]);
 
+  useEffect(() => {
+    document.body.setAttribute("data-theme", settings.theme);
+  }, [settings.theme]);
+
   /* Ctrl+K / Cmd+K toggles keyboard visibility */
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
