@@ -1,4 +1,4 @@
-# keyboard-trainer
+# Typr
 
 ## UI Architecture
 
